@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FQ MMA/Team S.N.R.G. MMA - Live Stream</title>
+<link rel="icon" href="favicon-BOTH-brands-512.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script>tailwind.config={theme:{extend:{colors:{red1:'#E50914'},fontFamily:{head:['Oswald','sans-serif']}}}}</script>
+<style>
+body{background:#07080a;color:#e2e8f0;font-family:'Inter',sans-serif}
+.glass{background:rgba(17,19,25,.9);border:1px solid rgba(255,255,255,.08);border-radius:1rem}
+.hero{border-radius:1rem;padding:2rem;min-height:170px;display:flex;flex-direction:column;justify-content:center;
+ background:radial-gradient(ellipse at 50% 120%,rgba(120,10,10,.55),transparent 65%),#0b0b0d;
+ border:1px solid rgba(229,9,20,.5);border-top:6px solid #f00;border-bottom:6px solid #f00}
+.hero h2,h3.sec{font-family:'Oswald',sans-serif;text-transform:uppercase;font-weight:700;color:#fff}
+.hero h2{font-size:clamp(2rem,5vw,3.2rem);line-height:1}
+h3.sec{font-size:1.5rem;border-left:4px solid #E50914;padding-left:.75rem;margin-bottom:1rem}
+.btn{background:linear-gradient(90deg,#E50914,#991b1b);color:#fff;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;padding:.75rem 1.5rem;border-radius:.75rem;box-shadow:0 0 18px rgba(229,9,20,.4)}
+.btn2{background:#1f2937;color:#fff;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;padding:.75rem 1.5rem;border-radius:.75rem;border:1px solid #374151}
+.nav{padding:.5rem .75rem;border-radius:.375rem;font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:.875rem;color:#d1d5db}
+.nav.on{color:#E50914;background:rgba(229,9,20,.1)}
+input,textarea,select{background:#111827;border:1px solid #374151;border-radius:.5rem;padding:.5rem .75rem;color:#fff;font-size:.8rem;width:100%}
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<div class="bg-gradient-to-r from-red-950 via-red1 to-black text-white text-xs py-1.5 px-4 text-center font-bold tracking-wider uppercase">
+  FQ MMA / TEAM S.N.R.G. MMA • LIVE STREAM <button onclick="openPass()" class="underline ml-2">BUY STREAM PASS ($35)</button>
+</div>
+
+<header class="sticky top-0 z-40 bg-black/90 backdrop-blur border-b border-gray-800">
+  <div class="max-w-6xl mx-auto px-4 flex items-center justify-between h-20">
+    <a href="#" onclick="go('home')"><img src="logo-combined-dark-bg.png" alt="FQ MMA / Team S.N.R.G. MMA" class="h-12 w-auto"></a>
+    <nav id="nav" class="hidden lg:flex gap-1"></nav>
+    <button onclick="openPass()" class="btn hidden sm:block text-sm">Buy Stream Pass ($35)</button>
+    <button onclick="document.getElementById('mnav').classList.toggle('hidden')" class="lg:hidden text-2xl p-2"><i class="fa-solid fa-bars"></i></button>
+  </div>
+  <div id="mnav" class="hidden lg:hidden px-4 pb-3 flex flex-col"></div>
+</header>
+
+<main class="flex-grow max-w-6xl w-full mx-auto px-4 py-6">
+
+<!-- HOME -->
+<section id="p-home" class="page space-y-8">
+  <div class="rounded-2xl overflow-hidden border border-red-600/50 bg-black">
+    <img src="hero-banner-1920x800.png" alt="Live Combat Sports. Anywhere." class="w-full h-auto block">
+    <div class="flex flex-wrap justify-center gap-3 p-4">
+      <button onclick="openPass()" class="btn"><i class="fa-solid fa-play-circle mr-2"></i>Buy Stream Pass ($35)</button>
+      <button onclick="go('watch')" class="btn2">Watch Live</button>
+    </div>
+  </div>
+
+  <div class="glass p-6 md:p-8 grid md:grid-cols-2 gap-6 items-center">
+    <div class="text-center md:text-left space-y-2">
+      <span class="text-xs font-bold text-red-500 uppercase tracking-widest">Next Event</span>
+      <h2 class="font-head text-3xl sm:text-4xl font-bold uppercase text-white">Team S.N.R.G. Championship Night</h2>
+      <p class="text-gray-300 text-sm">Saturday, October 24, 2026 • 7:00 PM PT</p>
+      <p class="font-head text-xl text-gray-300 uppercase">Tyler <span class="text-red1">"The Storm"</span> Jenkins vs. Eli <span class="text-white">"Nightmare"</span> Rodriguez</p>
+      <p class="text-xs text-gray-400">Amateur Lightweight Championship • 3 x 3 minute rounds</p>
+    </div>
+    <div class="rounded-xl text-center py-5 px-3 border-4 border-black" style="background:#E50914;color:#000">
+      <div class="font-head text-sm tracking-[.3em] uppercase font-bold">Event starts in</div>
+      <div id="cd" class="font-head text-3xl sm:text-4xl font-bold uppercase" style="font-family:Impact,'Arial Black',sans-serif"></div>
+    </div>
+  </div>
+
+  <div>
+    <h3 class="sec">Why Watch With Us</h3>
+    <div class="grid sm:grid-cols-3 gap-4" id="why"></div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-6">
+    <div class="glass p-6"><h3 class="sec">Fighter Spotlight</h3><p class="text-sm text-gray-400">[Fighter name, "nickname", record, and one sentence about them.] Coming soon.</p></div>
+    <div class="glass p-6"><h3 class="sec">Our Sponsors</h3><p class="text-sm text-gray-400">Sponsor logos coming soon.</p></div>
+  </div>
+  <div class="glass p-6 text-center"><h3 class="sec text-left">Follow Us</h3>
+    <div class="flex justify-center gap-6 text-2xl text-gray-300"><i class="fa-brands fa-facebook"></i><i class="fa-brands fa-instagram"></i><i class="fa-brands fa-youtube"></i></div>
+  </div>
+</section>
+
+<!-- WATCH LIVE -->
+<section id="p-watch" class="page hidden space-y-6">
+  <div class="hero"><h2>Watch Live</h2><p class="text-gray-300 mt-2 text-sm">Sign in with the email you used to buy your stream pass.</p></div>
+  <div class="relative w-full aspect-video rounded-2xl overflow-hidden bg-black border border-gray-800">
+    <div id="playing" class="hidden absolute inset-0 flex-col items-center justify-center text-center p-6">
+      <span class="px-3 py-1 bg-red-600 rounded font-head text-xs uppercase animate-pulse mb-3">YoloCast player goes here</span>
+      <p class="text-gray-400 text-sm">Paste your YoloCast embed code in this box on Google Sites.</p>
+    </div>
+    <div id="locked" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center p-6">
+      <img src="favicon-BOTH-brands-512.png" alt="" class="h-24 w-24 rounded-2xl border-2 border-red-600 mb-4">
+      <h3 class="font-head text-3xl font-bold uppercase text-white mb-1">Live Stream Locked</h3>
+      <p class="text-gray-400 text-xs max-w-md mb-5">A $35 Stream Pass unlocks the full HD broadcast with commentary.</p>
+      <button onclick="openPass()" class="btn"><i class="fa-solid fa-ticket mr-2"></i>Buy Stream Pass ($35)</button>
+    </div>
+  </div>
+  <p class="text-xs text-gray-400">Having trouble? Refresh the page, sign in with your purchase email, or see <a href="#" onclick="go('support')" class="text-red-500 underline">Support</a>.</p>
+  <div class="demo-box glass p-3 flex items-center justify-between border-yellow-700/40"><span class="text-xs text-yellow-400"><i class="fa-solid fa-flask mr-1"></i>Demo only (not on the real site)</span>
+    <div class="flex gap-2"><button onclick="access(false)" class="btn2 text-xs !py-1">Lock</button><button onclick="access(true)" class="btn2 text-xs !py-1">Unlock</button></div></div>
+</section>
+
+<!-- STREAM PASS -->
+<section id="p-pass" class="page hidden space-y-6">
+  <div class="hero"><h2>Buy Your Stream Pass</h2><p class="text-gray-300 mt-2 text-sm">Watch every fight live in full HD, on any device.</p></div>
+  <div class="glass p-6 max-w-md mx-auto text-center space-y-3 border-red-600/50">
+    <i class="fa-solid fa-ticket text-5xl text-red1"></i>
+    <h3 class="font-head text-2xl font-bold uppercase text-white">Live Stream Pass</h3>
+    <p class="text-sm text-gray-400">Full HD broadcast with commentary on any device.</p>
+    <div class="font-head text-5xl font-bold text-red-500">$35</div>
+    <button onclick="openPass()" class="btn w-full">Buy Stream Pass</button>
+  </div>
+  <div><h3 class="sec">How It Works</h3>
+    <ol class="list-decimal ml-6 space-y-1 text-sm text-gray-300"><li>Choose your pass and pay.</li><li>Check your email for your confirmation.</li><li>On event night, go to the Watch Live page and sign in.</li></ol></div>
+</section>
+
+<!-- EVENTS -->
+<section id="p-events" class="page hidden space-y-6">
+  <div class="hero"><h2>Upcoming Fights</h2><p class="text-gray-300 mt-2 text-sm">Every event streams live. One $35 pass per event.</p></div>
+  <div id="events" class="grid md:grid-cols-3 gap-6"></div>
+  <p class="text-xs text-gray-500">Fighters and matchups shown are placeholders. Replace them with your real cards.</p>
+</section>
+
+<!-- PHOTOS & VIDEOS -->
+<section id="p-media" class="page hidden space-y-6">
+  <div class="hero"><h2>Fight Photos &amp; Videos</h2><p class="text-gray-300 mt-2 text-sm">Buy photos and videos from every fight. Browse the watermarked previews, then pay with a pay link.</p></div>
+  <div id="media" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+  <div><h3 class="sec">How It Works</h3>
+    <ol class="list-decimal ml-6 space-y-1 text-sm text-gray-300"><li>Browse the preview gallery.</li><li>Click Buy and pay.</li><li>Email us the names of what you bought.</li><li>We send your files by Google Drive link.</li></ol></div>
+</section>
+
+<!-- ADVERTISING -->
+<section id="p-ads" class="page hidden space-y-6">
+  <div class="hero"><h2>Partner With Us</h2><p class="text-gray-300 mt-2 text-sm">Put your business in front of local fight fans, in the arena and online.</p></div>
+  <div><h3 class="sec">What Sponsors Get</h3>
+    <ul class="list-disc ml-6 space-y-1 text-sm text-gray-300"><li>Your logo on our website</li><li>Banner or overlay during the live stream</li><li>Broadcast shoutout</li><li>Cageside / in-venue signage</li><li>Social media posts</li></ul></div>
+  <div id="tiers" class="grid md:grid-cols-3 gap-6"></div>
+  <div class="glass p-6 max-w-lg space-y-2"><h3 class="sec">Want Rates?</h3>
+    <input placeholder="Business name"><input placeholder="Email"><textarea rows="3" placeholder="Tell us what you're looking for"></textarea>
+    <button onclick="toast('Request sent (demo)')" class="btn w-full">Send Request</button></div>
+</section>
+
+<!-- ABOUT -->
+<section id="p-about" class="page hidden space-y-6">
+  <div class="hero"><h2>About FQ MMA &amp; Team S.N.R.G. MMA</h2></div>
+  <div class="grid md:grid-cols-2 gap-6">
+    <div class="glass p-6"><h3 class="sec">FQ MMA</h3><p class="text-sm text-gray-400">[One short paragraph.]</p></div>
+    <div class="glass p-6"><h3 class="sec">Team S.N.R.G. MMA</h3><p class="text-sm text-gray-400">Home of Team Synergy. [One short paragraph.]</p></div>
+  </div>
+  <div class="glass p-6"><h3 class="sec">Our Mission</h3><p class="text-sm text-gray-300">To give amateur fighters a real stage, and to bring their fights to fans everywhere.</p></div>
+  <div class="grid md:grid-cols-2 gap-6">
+    <div class="glass p-6"><h3 class="sec">Coaches &amp; Staff</h3><p class="text-sm text-gray-400">[Name, role]</p></div>
+    <div class="glass p-6"><h3 class="sec">Visit Us</h3><p class="text-sm text-gray-400">Address: [gym address]<br>Hours: [days and times]<br>Email: [email]</p></div>
+  </div>
+</section>
+
+<!-- SUPPORT & POLICIES -->
+<section id="p-support" class="page hidden space-y-6">
+  <div class="hero"><h2>Support &amp; Policies</h2></div>
+  <div class="glass p-6 space-y-2"><h3 class="sec">Need Help?</h3>
+    <p class="text-sm text-gray-300">Email <span class="semail"></span> with the email you used to buy. Try this first:</p>
+    <ol class="list-decimal ml-6 text-sm text-gray-300"><li>Refresh the page.</li><li>Sign in with your purchase email.</li><li>Try another browser or device.</li><li>Check your internet connection.</li></ol></div>
+  <div class="glass p-6 space-y-3 text-sm text-gray-300"><h3 class="sec">Policies</h3>
+    <p><b class="text-white">Refunds.</b> Stream pass sales are final. If we cancel an event, you get a full refund. If an event is rescheduled, your pass is valid for the new date.</p>
+    <p><b class="text-white">Stream outages.</b> If the stream fails for much of the event because of a problem on our end, email us within 48 hours with your purchase email. We will offer a refund or a credit toward a future event. We cannot refund problems caused by your own internet or device.</p>
+    <p><b class="text-white">Photos and videos.</b> Files are delivered digitally, so all sales are final. If there is a problem with your files, contact us and we will fix it.</p>
+    <p><b class="text-white">Terms.</b> Passes and files are for personal use only. Do not record, rebroadcast, or share the stream or paid files.</p>
+    <p><b class="text-white">Privacy.</b> We use your name and email only to deliver your purchase and support you. We do not sell your information.</p>
+    <p class="text-xs text-gray-500">Drafts only. Have a lawyer or your payment platform review them.</p></div>
+</section>
+</main>
+
+<div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85" onclick="if(event.target===this)closeModal()">
+  <div class="glass max-w-md w-full p-6 border-red-600/50 relative"><button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400"><i class="fa-solid fa-xmark text-xl"></i></button><div id="mbody"></div></div>
+</div>
+
+<footer class="border-t border-gray-800 mt-12 py-6 text-center text-xs text-gray-500">
+  <img src="logo-combined-dark-bg.png" alt="" class="h-10 mx-auto mb-2">© 2026 FQ MMA / Team S.N.R.G. MMA. Sanctioned Amateur Combat Sports
+</footer>
+
+<script>
+/* ====== EDIT THESE (only place you need to change) ====== */
+const CONFIG={
+  passUrl:'',        // your stream pass purchase link (YoloCast / PayPal / Stripe)
+  embedHtml:'',      // paste your YoloCast player embed code between the quotes
+  supportEmail:'',   // e.g. support@yourdomain.com
+  mediaUrl:'',       // pay link for photos & videos
+  sponsorUrl:''      // pay link or contact link for sponsor packages
+};
+/* ========================================================= */
+const $=id=>document.getElementById(id);
+const PAGES=[['home','Home'],['watch','Watch Live'],['pass','Stream Pass'],['events','Events'],['media','Photos & Videos'],['ads','Advertising'],['about','About'],['support','Support']];
+const ID={home:'home',watch:'watch',pass:'pass',events:'events',media:'media',ads:'ads',about:'about',support:'support'};
+let unlocked=false;
+
+function toast(t){const e=document.createElement('div');e.className='fixed bottom-5 right-5 z-[60] bg-red1 text-white px-5 py-3 rounded-xl text-xs font-bold uppercase max-w-xs';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),3500)}
+function go(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+  $('p-'+id).classList.remove('hidden');
+  document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('on',b.dataset.p===id));
+  $('mnav').classList.add('hidden');window.scrollTo({top:0,behavior:'smooth'});
+}
+function showModal(h){$('mbody').innerHTML=h;$('modal').classList.replace('hidden','flex')}
+function closeModal(){$('modal').classList.replace('flex','hidden')}
+function access(on){unlocked=on;$('locked').classList.toggle('hidden',on);$('playing').classList.toggle('hidden',!on);$('playing').classList.toggle('flex',on)}
+function openPass(){
+  if(CONFIG.passUrl){window.open(CONFIG.passUrl,'_blank','noopener');return}
+  showModal(`<div class="text-center space-y-3"><i class="fa-solid fa-ticket text-5xl text-red1"></i>
+  <h3 class="font-head text-2xl font-bold uppercase text-white">Live Stream Pass</h3>
+  <p class="text-xs text-gray-400">Full HD broadcast with commentary on any device.</p>
+  <div class="font-head text-4xl font-bold text-red-500">$35</div>
+  <button onclick="closeModal();access(true);go('watch');toast('Demo purchase complete')" class="btn w-full">Buy Pass (Demo)</button>
+  <p class="text-[10px] text-gray-500">Demo checkout. On the real site, YoloCast takes payment and controls access.</p></div>`);
+}
+function buy(name){
+  const u=/Sponsor/.test(name)?CONFIG.sponsorUrl:CONFIG.mediaUrl;
+  if(u){window.open(u,'_blank','noopener');return}
+showModal(`<div class="text-center space-y-3"><h3 class="font-head text-xl font-bold uppercase text-white">${name}</h3><p class="text-xs text-gray-400">Demo. On the real site this button opens your pay link.</p><button onclick="closeModal()" class="btn w-full">Close</button></div>`)}
+
+// Build content
+$('nav').innerHTML=PAGES.map(p=>`<button class="nav" data-p="${p[0]}" onclick="go('${p[0]}')">${p[1]}</button>`).join('');
+$('mnav').innerHTML=PAGES.map(p=>`<button class="nav text-left" data-p="${p[0]}" onclick="go('${p[0]}')">${p[1]}</button>`).join('')+`<button onclick="openPass()" class="btn mt-2">Buy Stream Pass ($35)</button>`;
+$('why').innerHTML=[['tv','Watch live in HD from any device'],['hand-fist','Real amateur fighters, real stakes'],['camera','Buy fight videos and photos on our Photos & Videos page']]
+  .map(w=>`<div class="glass p-5 text-center space-y-2"><i class="fa-solid fa-${w[0]} text-3xl text-red1"></i><p class="font-head text-lg uppercase text-white">${w[1]}</p></div>`).join('');
+$('events').innerHTML=[
+ ['SAT, OCT 24, 2026','7:00 PM PT','Team S.N.R.G. Championship Night','S.N.R.G. Combat Arena','Jenkins vs. Rodriguez','MMA'],
+ ['SAT, NOV 14, 2026','6:30 PM PT','Striking Showdown: Vol. 8','Fitness Quest Performance Ring','Vance vs. Sterling','Kickboxing'],
+ ['SAT, DEC 05, 2026','8:00 PM PT','Synergy Boxing Invitational','S.N.R.G. Main Hall','Miller vs. Santana','Boxing']]
+ .map(e=>`<div class="glass p-5 space-y-2"><span class="text-xs bg-red-900/40 text-red-400 px-2.5 py-1 rounded-full font-bold uppercase">${e[5]}</span>
+ <p class="text-xs text-gray-400 font-bold uppercase">${e[0]} • ${e[1]}</p><h4 class="font-head text-2xl font-bold uppercase text-white">${e[2]}</h4>
+ <p class="text-xs text-gray-400"><i class="fa-solid fa-location-dot text-red-500 mr-1"></i>${e[3]}</p>
+ <p class="text-sm text-gray-300">Main event: ${e[4]}</p><button onclick="openPass()" class="btn w-full text-sm">Buy Stream Pass ($35)</button></div>`).join('');
+$('media').innerHTML=[['image','Single Photos'],['images','Photo Packs'],['film','Short Video Clips'],['video','Full Fight Videos']]
+ .map(m=>`<div class="glass p-5 text-center space-y-3"><i class="fa-solid fa-${m[0]} text-4xl text-red1"></i><h4 class="font-head text-lg font-bold uppercase text-white">${m[1]}</h4><p class="text-xs text-gray-400">Price: [price]</p><button onclick="buy('${m[1]}')" class="btn w-full text-sm">Buy</button></div>`).join('');
+$('tiers').innerHTML=['Bronze','Silver','Gold'].map(t=>`<div class="glass p-5 text-center space-y-3"><h4 class="font-head text-2xl font-bold uppercase text-white">${t}</h4><p class="text-xs text-gray-400">$[price] • [what's included]</p><button onclick="buy('${t} Sponsor Package')" class="btn w-full text-sm">Buy ${t}</button></div>`).join('');
+
+// Countdown
+const target=new Date('2026-10-24T19:00:00-07:00');
+setInterval(()=>{let s=Math.max(0,Math.floor((target-Date.now())/1000));
+$('cd').textContent=Math.floor(s/86400)+'d  '+Math.floor(s%86400/3600)+'h  '+Math.floor(s%3600/60)+'m  '+s%60+'s'},1000);
+// Apply config
+document.querySelectorAll('.semail').forEach(e=>{e.textContent=CONFIG.supportEmail||'[support email]';if(CONFIG.supportEmail){e.outerHTML=`<a class="text-red-500 underline" href="mailto:${CONFIG.supportEmail}">${CONFIG.supportEmail}</a>`}});
+if(CONFIG.embedHtml){
+  $('locked').remove();
+  $('playing').className='absolute inset-0';
+  $('playing').innerHTML=CONFIG.embedHtml;
+  document.querySelectorAll('.demo-box').forEach(e=>e.remove());
+}
+go('home');
+</script>
+</body>
+</html>
