@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FQ MMA Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark}body{background:#07080a;color:#e5e7eb;font-family:Inter,sans-serif}.head{font-family:Oswald,sans-serif}.panel{background:#111318;border:1px solid #292d35;border-radius:14px}.field{width:100%;padding:11px 12px;background:#08090c;border:1px solid #343945;border-radius:8px;color:#fff;margin-top:5px}.btn{background:#e50914;color:white;font-weight:700;padding:10px 14px;border-radius:8px}.btn2{border:1px solid #414653;padding:9px 12px;border-radius:8px}.tab{padding:9px 12px;border-radius:8px;color:#cbd5e1}.tab.active{background:#3b1015;color:#ff525b}.muted{color:#9ca3af}
+</style>
+</head>
+<body class="min-h-screen">
+<header class="border-b border-gray-800 bg-black px-4 py-4">
+  <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
+    <div><div class="head text-2xl font-bold uppercase"><span class="text-red-500">FQ MMA</span> Admin</div><div class="muted text-xs mt-1">Team S.N.R.G. MMA • Control panel</div></div>
+    <a href="./index.html" class="btn2 text-sm">View website ↗</a>
+  </div>
+</header>
+<main class="max-w-6xl mx-auto px-4 py-8">
+  <section id="setupNotice" class="panel p-5 mb-6 border-yellow-800">
+    <h2 class="font-bold text-yellow-300">One-time setup needed</h2>
+    <p class="text-sm muted mt-2">This dashboard uses Supabase. Add your project URL and publishable/anon key in the CONFIG section of this file, then run supabase-schema.sql in the Supabase SQL Editor and authorize your admin account. Never use a service_role key here.</p>
+  </section>
+  <section id="loginPanel" class="panel p-6 max-w-md mx-auto">
+    <div class="head text-3xl uppercase font-bold">Administrator sign in</div>
+    <p class="muted text-sm mt-2 mb-5">Only accounts explicitly approved as FQ MMA administrators can access the dashboard.</p>
+    <form id="loginForm" class="space-y-4">
+      <label class="block text-sm">Email<input id="email" class="field" type="email" autocomplete="username" required></label>
+      <label class="block text-sm">Password<input id="password" class="field" type="password" autocomplete="current-password" required></label>
+      <button class="btn w-full" type="submit">Sign in with email</button>
+    </form>
+    <button id="googleBtn" class="btn2 w-full mt-3">Continue with Google</button>
+    <p id="loginMessage" class="text-sm mt-4" role="status"></p>
+  </section>
+  <section id="dashboard" class="hidden">
+    <div class="panel p-4 flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div><div class="head text-2xl uppercase">Dashboard</div><p id="signedInAs" class="muted text-xs mt-1"></p></div>
+      <button id="logoutBtn" class="btn2">Sign out</button>
+    </div>
+    <div class="flex flex-wrap gap-2 mb-5">
+      <button class="tab active" data-tab="content">Website content</button>
+      <button class="tab" data-tab="fighters">Fighters</button>
+      <button class="tab" data-tab="events">Events</button>
+    </div>
+    <section id="tab-content" class="panel p-5">
+      <h2 class="head text-2xl uppercase mb-1">Website content</h2><p class="muted text-sm mb-4">Store editable text fields in Supabase. This does not automatically rewrite the existing homepage yet.</p>
+      <form id="contentForm" class="grid md:grid-cols-2 gap-4">
+        <label class="text-sm">Content key<input id="contentKey" class="field" placeholder="home_tagline" required pattern="[a-zA-Z0-9_-]+"></label>
+        <label class="text-sm">Text value<textarea id="contentValue" class="field" rows="2" required></textarea></label>
+        <div class="md:col-span-2"><button class="btn" type="submit">Save content</button></div>
+      </form>
+      <div id="contentList" class="mt-5 space-y-2"></div>
+    </section>
+    <section id="tab-fighters" class="panel p-5 hidden">
+      <h2 class="head text-2xl uppercase mb-1">Manage fighters</h2><p class="muted text-sm mb-4">Add fighters and update their public profile details.</p>
+      <form id="fighterForm" class="grid md:grid-cols-2 gap-4">
+        <input id="fighterId" type="hidden">
+        <label class="text-sm">Fighter name<input id="fighterName" class="field" required></label>
+        <label class="text-sm">Nickname<input id="fighterNickname" class="field"></label>
+        <label class="text-sm">Record<input id="fighterRecord" class="field" placeholder="e.g. 4-1"></label>
+        <label class="text-sm">Photo URL<input id="fighterImage" class="field" type="url" placeholder="https://..."></label>
+        <label class="text-sm md:col-span-2">Bio<textarea id="fighterBio" class="field" rows="3"></textarea></label>
+        <label class="text-sm flex items-center gap-2"><input id="fighterPublished" type="checkbox" checked class="w-auto"> Published on public site</label>
+        <div class="md:col-span-2 flex gap-2"><button class="btn" type="submit">Save fighter</button><button class="btn2" id="fighterCancel" type="button">Clear form</button></div>
+      </form>
+      <div id="fighterList" class="mt-6 space-y-3"></div>
+    </section>
+    <section id="tab-events" class="panel p-5 hidden">
+      <h2 class="head text-2xl uppercase mb-1">Manage events</h2><p class="muted text-sm mb-4">Create and maintain event listings.</p>
+      <form id="eventForm" class="grid md:grid-cols-2 gap-4">
+        <input id="eventId" type="hidden">
+        <label class="text-sm">Event title<input id="eventTitle" class="field" required></label>
+        <label class="text-sm">Date and time<input id="eventDate" class="field" type="datetime-local"></label>
+        <label class="text-sm">Venue<input id="eventVenue" class="field"></label>
+        <label class="text-sm">Main event / matchup<input id="eventMain" class="field"></label>
+        <label class="text-sm">Status<select id="eventStatus" class="field"><option value="draft">Draft</option><option value="upcoming" selected>Upcoming</option><option value="live">Live</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+        <label class="text-sm md:col-span-2">Description<textarea id="eventDescription" class="field" rows="3"></textarea></label>
+        <div class="md:col-span-2 flex gap-2"><button class="btn" type="submit">Save event</button><button class="btn2" id="eventCancel" type="button">Clear form</button></div>
+      </form>
+      <div id="eventList" class="mt-6 space-y-3"></div>
+    </section>
+    <p id="appMessage" class="text-sm mt-5" role="status"></p>
+  </section>
+</main>
+<script>
+/* CONFIG: use your Supabase Project URL and publishable/anon key only. Never paste a service_role key. */
+const CONFIG={supabaseUrl:'https://YOUR_PROJECT_REF.supabase.co',supabaseKey:'YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY'};
+const $=id=>document.getElementById(id);
+let client=null,currentUser=null;
+const say=(message,error=false)=>{const el=$('appMessage');el.textContent=message;el.className='text-sm mt-5 '+(error?'text-red-400':'text-green-400')};
+const loginSay=(message,error=false)=>{$('loginMessage').textContent=message;$('loginMessage').className='text-sm mt-4 '+(error?'text-red-400':'text-gray-300')};
+const configured=()=>CONFIG.supabaseUrl.startsWith('https://')&&!CONFIG.supabaseUrl.includes('YOUR_PROJECT_REF')&&CONFIG.supabaseKey.length>20&&!CONFIG.supabaseKey.includes('YOUR_SUPABASE');
+if(configured()&&window.supabase) client=window.supabase.createClient(CONFIG.supabaseUrl,CONFIG.supabaseKey);
+if(configured()) $('setupNotice').classList.add('hidden');
+async function requireAdmin(user){
+  const {data,error}=await client.from('admin_users').select('user_id').eq('user_id',user.id).maybeSingle();
+  if(error) throw new Error('Could not verify administrator access. Check that supabase-schema.sql was run. '+error.message);
+  if(!data) throw new Error('This account is not approved as an administrator. Add it to public.admin_users in Supabase after signing in once.');
+}
+async function showDashboard(user){
+  currentUser=user;
+  try{await requireAdmin(user);$('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('signedInAs').textContent=user.email||'Signed in';await refreshAll();}
+  catch(e){await client.auth.signOut();$('dashboard').classList.add('hidden');$('loginPanel').classList.remove('hidden');loginSay(e.message,true);}
+}
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();if(!client){loginSay('Add your Supabase URL and publishable/anon key in CONFIG first.',true);return}loginSay('Signing in…');const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){loginSay(error.message,true);return}try{await showDashboard(data.user)}catch(err){loginSay(err.message,true)}});
+$('googleBtn').addEventListener('click',async()=>{if(!client){loginSay('Add your Supabase URL and publishable/anon key in CONFIG first.',true);return}const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href.split('#')[0]}});if(error)loginSay(error.message,true)});
+$('logoutBtn').addEventListener('click',async()=>{if(client)await client.auth.signOut();$('dashboard').classList.add('hidden');$('loginPanel').classList.remove('hidden');loginSay('You have signed out.')});
+document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b===btn));['content','fighters','events'].forEach(t=>$('tab-'+t).classList.toggle('hidden',t!==btn.dataset.tab));}));
+function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function refreshAll(){await Promise.all([loadContent(),loadFighters(),loadEvents()])}
+async function loadContent(){const {data,error}=await client.from('site_content').select('*').order('content_key');if(error)throw error;$('contentList').innerHTML=(data||[]).map(r=>'<div class="rounded-lg border border-gray-800 p-3 flex flex-wrap items-start justify-between gap-3"><div class="min-w-0"><b>'+esc(r.content_key)+'</b><p class="muted text-sm whitespace-pre-wrap mt-1">'+esc(r.content_value)+'</p></div><div class="flex gap-2"><button class="btn2" data-edit-content="'+esc(r.content_key)+'" data-value="'+esc(r.content_value)+'">Edit</button><button class="btn2" data-delete-content="'+esc(r.content_key)+'">Delete</button></div></div>').join('')||'<p class="muted text-sm">No saved content yet.</p>';document.querySelectorAll('[data-edit-content]').forEach(b=>b.onclick=()=>{$('contentKey').value=b.dataset.editContent;$('contentValue').value=b.dataset.value});document.querySelectorAll('[data-delete-content]').forEach(b=>b.onclick=async()=>{if(confirm('Delete this content item?')){const {error}=await client.from('site_content').delete().eq('content_key',b.dataset.deleteContent);if(error)say(error.message,true);else{say('Content deleted.');await loadContent()}}})}
+$('contentForm').addEventListener('submit',async e=>{e.preventDefault();const row={content_key:$('contentKey').value.trim(),content_value:$('contentValue').value,updated_at:new Date().toISOString(),updated_by:currentUser.id};const {error}=await client.from('site_content').upsert(row);if(error)say(error.message,true);else{say('Content saved.');$('contentForm').reset();await loadContent()}});
+async function loadFighters(){const {data,error}=await client.from('fighters').select('*').order('created_at',{ascending:false});if(error)throw error;$('fighterList').innerHTML=(data||[]).map(r=>'<article class="border border-gray-800 rounded-lg p-4 flex flex-wrap items-start justify-between gap-3"><div><b>'+esc(r.name)+'</b> '+(r.nickname?'<span class="muted">“'+esc(r.nickname)+'”</span>':'')+'<p class="muted text-sm mt-1">Record: '+esc(r.record||'Not set')+' • '+(r.is_published?'Published':'Draft')+'</p><p class="text-sm mt-2">'+esc(r.bio||'')+'</p></div><div class="flex gap-2"><button class="btn2" data-edit-fighter="'+r.id+'">Edit</button><button class="btn2" data-delete-fighter="'+r.id+'">Delete</button></div></article>').join('')||'<p class="muted text-sm">No fighters yet. Add the first fighter above.</p>';document.querySelectorAll('[data-edit-fighter]').forEach(b=>b.onclick=()=>{const r=data.find(x=>x.id===b.dataset.editFighter);$('fighterId').value=r.id;$('fighterName').value=r.name;$('fighterNickname').value=r.nickname;$('fighterRecord').value=r.record;$('fighterImage').value=r.image_url;$('fighterBio').value=r.bio;$('fighterPublished').checked=r.is_published;window.scrollTo({top:0,behavior:'smooth'})});document.querySelectorAll('[data-delete-fighter]').forEach(b=>b.onclick=async()=>{if(confirm('Delete this fighter?')){const {error}=await client.from('fighters').delete().eq('id',b.dataset.deleteFighter);if(error)say(error.message,true);else{say('Fighter deleted.');await loadFighters()}}})}
+$('fighterForm').addEventListener('submit',async e=>{e.preventDefault();const id=$('fighterId').value;const row={name:$('fighterName').value.trim(),nickname:$('fighterNickname').value.trim(),record:$('fighterRecord').value.trim(),image_url:$('fighterImage').value.trim(),bio:$('fighterBio').value.trim(),is_published:$('fighterPublished').checked,updated_at:new Date().toISOString()};const result=id?await client.from('fighters').update(row).eq('id',id):await client.from('fighters').insert(row);if(result.error)say(result.error.message,true);else{say('Fighter saved.');$('fighterForm').reset();$('fighterId').value='';$('fighterPublished').checked=true;await loadFighters()}});
+$('fighterCancel').onclick=()=>{$('fighterForm').reset();$('fighterId').value='';$('fighterPublished').checked=true};
+async function loadEvents(){const {data,error}=await client.from('events').select('*').order('event_date',{ascending:true,nullsFirst:false});if(error)throw error;$('eventList').innerHTML=(data||[]).map(r=>'<article class="border border-gray-800 rounded-lg p-4 flex flex-wrap items-start justify-between gap-3"><div><b>'+esc(r.title)+'</b><p class="muted text-sm mt-1">'+esc(r.event_date?new Date(r.event_date).toLocaleString():'Date not set')+' • '+esc(r.status)+'</p><p class="text-sm mt-1">'+esc(r.venue)+' '+(r.main_event?'• '+esc(r.main_event):'')+'</p><p class="muted text-sm mt-1">'+esc(r.description)+'</p></div><div class="flex gap-2"><button class="btn2" data-edit-event="'+r.id+'">Edit</button><button class="btn2" data-delete-event="'+r.id+'">Delete</button></div></article>').join('')||'<p class="muted text-sm">No events yet. Add an event above.</p>';document.querySelectorAll('[data-edit-event]').forEach(b=>b.onclick=()=>{const r=data.find(x=>x.id===b.dataset.editEvent);$('eventId').value=r.id;$('eventTitle').value=r.title;$('eventDate').value=r.event_date?new Date(new Date(r.event_date).getTime()-new Date(r.event_date).getTimezoneOffset()*60000).toISOString().slice(0,16):'';$('eventVenue').value=r.venue;$('eventMain').value=r.main_event;$('eventStatus').value=r.status;$('eventDescription').value=r.description;window.scrollTo({top:0,behavior:'smooth'})});document.querySelectorAll('[data-delete-event]').forEach(b=>b.onclick=async()=>{if(confirm('Delete this event?')){const {error}=await client.from('events').delete().eq('id',b.dataset.deleteEvent);if(error)say(error.message,true);else{say('Event deleted.');await loadEvents()}}})}
+$('eventForm').addEventListener('submit',async e=>{e.preventDefault();const id=$('eventId').value;const date=$('eventDate').value;const row={title:$('eventTitle').value.trim(),event_date:date?new Date(date).toISOString():null,venue:$('eventVenue').value.trim(),main_event:$('eventMain').value.trim(),status:$('eventStatus').value,description:$('eventDescription').value.trim(),updated_at:new Date().toISOString()};const result=id?await client.from('events').update(row).eq('id',id):await client.from('events').insert(row);if(result.error)say(result.error.message,true);else{say('Event saved.');$('eventForm').reset();$('eventId').value='';await loadEvents()}});
+$('eventCancel').onclick=()=>{$('eventForm').reset();$('eventId').value=''};
+if(client){client.auth.getSession().then(async({data})=>{if(data.session){try{await showDashboard(data.session.user)}catch(e){loginSay(e.message,true)}}});client.auth.onAuthStateChange(async(_event,session)=>{if(session&&!currentUser){try{await showDashboard(session.user)}catch(e){loginSay(e.message,true)}}})}
+</script>
+</body>
+</html>
