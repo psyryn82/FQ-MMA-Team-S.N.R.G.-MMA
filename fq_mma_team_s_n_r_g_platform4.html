@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FQ MMA / Team S.N.R.G. MMA - Multi-Discipline Combat Sports Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            red: '#E50914',
+                            neon: '#FF2A2A',
+                            dark: '#07080A',
+                            card: '#111319',
+                            surface: '#181A22',
+                            accent: '#232733'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Oswald', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'neon-red': '0 0 18px rgba(229, 9, 20, 0.45), 0 0 35px rgba(229, 9, 20, 0.25)',
+                        'glow-lg': '0 0 30px rgba(255, 42, 42, 0.6)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #07080a;
+            color: #e2e8f0;
+            background-image: 
+                radial-gradient(rgba(229, 9, 20, 0.14) 1px, transparent 0),
+                radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+            background-size: 24px 24px;
+            background-position: 0 0, 12px 12px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-heading {
+            font-family: 'Oswald', sans-serif;
+            letter-spacing: 0.05em;
+        }
+
+        .glass-panel {
+            background: rgba(17, 19, 25, 0.88);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #07080A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #232733;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #E50914;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-red selection:text-white">
+
+    <div class="bg-gradient-to-r from-red-950 via-brand-red to-black text-white text-xs py-2 px-4 text-center font-bold tracking-widest uppercase flex items-center justify-center gap-3 shadow-md z-50">
+        <span class="flex h-2 w-2 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+        </span>
+        <span id="header-ticker-text">FQ MMA / TEAM S.N.R.G. • MULTI-DISCIPLINE CHAMPIONSHIPS LIVE</span>
+        <button onclick="scrollToPPV()" class="underline font-black hover:text-gray-200 transition-colors ml-2">
+            WATCH LIVE STREAM ($35)
+        </button>
+    </div>
+
+    <section class="bg-gray-950 border-b border-red-900/40 py-6 px-4">
+        <div class="max-w-4xl mx-auto text-center space-y-4">
+            <div class="inline-flex items-center gap-2 bg-red-950/80 border border-brand-red px-3 py-1 rounded-full text-brand-neon font-heading text-xs font-black tracking-widest uppercase shadow-neon-red">
+                <i class="fa-solid fa-clock"></i> NEXT MULTI-DISCIPLINE EVENT COUNTDOWN
+            </div>
+            
+            <h3 id="countdown-event-title" class="font-heading text-xl sm:text-2xl font-black text-white uppercase tracking-wider">
+                Team S.N.R.G. Combat Night #14 (MMA • Striking • BJJ) • Oct 24, 2026
+            </h3>
+
+            <div class="grid grid-cols-4 gap-3 max-w-lg mx-auto">
+                <div class="glass-panel p-3 rounded-xl border-2 border-brand-red shadow-neon-red text-center">
+                    <span id="countdown-days" class="font-heading text-3xl sm:text-4xl font-black text-white block">00</span>
+                    <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Days</span>
+                </div>
+                <div class="glass-panel p-3 rounded-xl border-2 border-brand-red shadow-neon-red text-center">
+                    <span id="countdown-hours" class="font-heading text-3xl sm:text-4xl font-black text-white block">00</span>
+                    <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Hours</span>
+                </div>
+                <div class="glass-panel p-3 rounded-xl border-2 border-brand-red shadow-neon-red text-center">
+                    <span id="countdown-minutes" class="font-heading text-3xl sm:text-4xl font-black text-white block">00</span>
+                    <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Mins</span>
+                </div>
+                <div class="glass-panel p-3 rounded-xl border-2 border-brand-red shadow-neon-red text-center">
+                    <span id="countdown-seconds" class="font-heading text-3xl sm:text-4xl font-black text-brand-neon block">00</span>
+                    <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Secs</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <header class="sticky top-0 z-40 glass-panel border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="#" class="flex items-center gap-3 group py-2">
+                    <div class="relative flex items-center justify-center bg-black/90 px-4 py-2 rounded-xl border border-red-600/60 group-hover:border-red-500 transition-all shadow-neon-red">
+                        <span class="font-heading text-xl sm:text-2xl font-black text-white tracking-wider">FQ MMA <span class="text-brand-red">/ Team S.N.R.G. MMA</span></span>
+                    </div>
+                </a>
+
+                <nav class="hidden lg:flex items-center space-x-1">
+                    <button onclick="setActiveTab('live')" id="nav-live" class="nav-btn active px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all flex items-center gap-2 text-brand-red bg-brand-red/10 border border-brand-red/30">
+                        <i class="fa-solid fa-circle text-xs text-brand-red animate-pulse"></i> Live PPV
+                    </button>
+                    <button onclick="setActiveTab('disciplines')" id="nav-disciplines" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                        Disciplines
+                    </button>
+                    <button onclick="setActiveTab('schedule')" id="nav-schedule" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                        Schedule
+                    </button>
+                    <button onclick="setActiveTab('fighters')" id="nav-fighters" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                        Roster
+                    </button>
+                    <button onclick="setActiveTab('store')" id="nav-store" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                        Media Store
+                    </button>
+                    <!-- Admin-only Portfolio Nav Button -->
+                    <button onclick="setActiveTab('portfolio')" id="nav-portfolio" class="nav-btn hidden px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                        Portfolio
+                    </button>
+                </nav>
+
+                <div class="flex items-center gap-3">
+                    <div id="user-status-pill" class="hidden sm:flex items-center gap-2 bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-full text-xs text-gray-400 font-bold">
+                        <i class="fa-solid fa-lock text-yellow-500" id="user-access-icon"></i>
+                        <span id="user-access-label">Stream is locked</span>
+                    </div>
+                    <button onclick="togglePaywallModal()" class="bg-gradient-to-r from-brand-red to-red-700 hover:from-red-600 hover:to-red-800 text-white font-heading tracking-wider px-4 py-2.5 rounded-lg text-sm font-black uppercase transition-all shadow-lg hover:shadow-neon-red">
+                        <i class="fa-solid fa-key mr-1.5 text-sm"></i> Unlock ($35)
+                    </button>
+                    
+                    <!-- Admin Trigger Button -->
+                    <button onclick="openAdminModal()" title="Admin Login" class="bg-gray-900/60 hover:bg-gray-800 text-gray-600 hover:text-gray-300 w-9 h-9 rounded-lg text-xs font-black uppercase border border-gray-900 transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-shield-halved text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- TAB 1: LIVE STREAM & CHAT -->
+        <div id="tab-live" class="tab-content space-y-8">
+            <div class="text-center space-y-3">
+                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">
+                    Multi-Discipline PPV Arena
+                </span>
+                <h1 class="font-heading text-4xl sm:text-6xl font-black uppercase text-white tracking-wider">
+                    LIVE STREAM <span class="text-brand-red">&</span> CHAT
+                </h1>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Stream Box with Red Glow -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="relative w-full aspect-video rounded-2xl overflow-hidden bg-black border-2 border-brand-red shadow-neon-red">
+                        <div id="embed-screen" class="absolute inset-0 bg-neutral-950 flex items-center justify-center overflow-hidden">
+                            <div id="embed-unlocked-state" class="hidden w-full h-full relative flex flex-col items-center justify-center text-center p-6 bg-gradient-to-b from-gray-950 to-black">
+                                <div class="relative z-10 space-y-3">
+                                    <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-green-600 text-white rounded font-heading tracking-widest text-xs font-black uppercase shadow-lg">
+                                        <i class="fa-solid fa-unlock"></i> UNLOCKED SUCCESSFULLY ($35 PASS ACTIVE)
+                                    </div>
+                                    <h2 class="font-heading text-3xl font-black text-white uppercase tracking-wider">
+                                        FQ / Team S.N.R.G • MMA, KICKBOXING & BJJ FEED 
+                                    </h2>
+                                    <p class="text-xs text-gray-300">Active Live Multi-Discipline Stream • Championship Bouts</p>
+                                </div>
+                            </div>
+
+                            <div id="embed-locked-overlay" class="absolute inset-0 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center text-center p-6 z-20">
+                                <div class="w-20 h-20 bg-brand-red/20 border-2 border-brand-red rounded-2xl flex items-center justify-center text-brand-neon text-3xl shadow-neon-red mb-4">
+                                    <i class="fa-solid fa-lock"></i>
+                                </div>
+                                <h3 class="font-heading text-3xl font-black text-white uppercase tracking-wider mb-2">
+                                    STREAM IS LOCKED
+                                </h3>
+                                <p class="text-gray-400 text-xs max-w-md mb-6 leading-relaxed">
+                                    Complete the $35 access pass payment on our secure paysite or enter your promo code to unlock instant multi-discipline viewing.
+                                </p>
+                                <div class="flex flex-wrap items-center justify-center gap-3">
+                                    <button onclick="redirectToPaysite()" class="bg-gradient-to-r from-brand-red to-red-600 hover:from-red-600 text-white font-heading text-lg font-black px-6 py-3 rounded-xl uppercase tracking-wider shadow-neon-red transition-transform transform hover:scale-105">
+                                        <i class="fa-solid fa-arrow-up-right-from-square mr-2"></i> GO TO PAYSITE ($35)
+                                    </button>
+                                    <button onclick="togglePaywallModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-200 font-heading text-lg font-bold px-5 py-3 rounded-xl uppercase tracking-wider border border-gray-700">
+                                        <i class="fa-solid fa-key mr-2 text-brand-red"></i> HAVE PROMO CODE?
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fully Functional Live Chat with Red Glow -->
+                <div class="glass-panel rounded-2xl border-2 border-brand-red shadow-neon-red flex flex-col h-[520px] overflow-hidden">
+                    <div class="p-4 border-b border-gray-800 bg-brand-surface flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-comments text-brand-red"></i>
+                            <h3 class="font-heading text-base font-black text-white uppercase tracking-wider">LIVE FAN CHAT</h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="online-count" class="text-xs bg-gray-800 text-gray-300 px-2.5 py-1 rounded-full font-mono font-bold">● 3,420 Online</span>
+                            <button onclick="clearChatFeed()" title="Clear Chat" class="text-gray-400 hover:text-white text-xs px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+
+                    <div id="chat-feed" class="flex-grow p-4 overflow-y-auto space-y-3 text-xs">
+                        <div class="text-center text-gray-500 text-[10px] uppercase tracking-widest">— SECURE MULTI-DISCIPLINE CHAT —</div>
+                        <div class="bg-gray-900/90 p-2.5 rounded-lg border border-gray-800">
+                            <span class="font-black text-red-400 font-heading">TeamSNRG_Fan:</span>
+                            <span class="text-gray-300 ml-1">Kickboxing card starting now! Let's go! 🥊🔥</span>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border-t border-gray-800 bg-brand-surface space-y-2">
+                        <div class="flex gap-1">
+                            <button onclick="sendQuickReaction('🔥 KO!')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded text-[10px] font-black uppercase flex-1">🔥 KO!</button>
+                            <button onclick="sendQuickReaction('🥊 STRIKING')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded text-[10px] font-black uppercase flex-1">🥊 STRIKING</button>
+                            <button onclick="sendQuickReaction('🥋 SUBMISSION')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded text-[10px] font-black uppercase flex-1">🥋 SUBMISSION</button>
+                        </div>
+                        <form onsubmit="handleSendChatMessage(event)" class="flex gap-2">
+                            <input type="text" id="chat-input-text" placeholder="Type message as fan..." class="flex-grow bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-red">
+                            <button type="submit" class="bg-brand-red hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-black uppercase">Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: DISCIPLINES -->
+        <div id="tab-disciplines" class="tab-content hidden space-y-6">
+            <div class="text-center space-y-2 mb-6">
+                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Combat Arts & Training</span>
+                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
+                    TRAINING <span class="text-brand-red">DISCIPLINES</span>
+                </h2>
+                <p class="text-sm text-gray-400 max-w-xl mx-auto">Explore our core disciplines. Training links and class portals can be managed via the admin dashboard.</p>
+            </div>
+
+            <div id="disciplines-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto"></div>
+        </div>
+
+        <!-- TAB 3: SCHEDULE -->
+        <div id="tab-schedule" class="tab-content hidden space-y-6">
+            <div class="text-center space-y-2 mb-6">
+                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Multi-Discipline Fight Cards</span>
+                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
+                    FIGHT SCHEDULE <span class="text-brand-red">&</span> TICKETS
+                </h2>
+                <p class="text-sm text-gray-400 max-w-xl mx-auto">Secure seats for MMA, Kickboxing, Boxing, and Jiu-Jitsu championship events.</p>
+            </div>
+
+            <div id="schedule-container" class="max-w-3xl mx-auto space-y-4"></div>
+        </div>
+
+        <!-- TAB 4: ROSTER -->
+        <div id="tab-fighters" class="tab-content hidden space-y-6">
+            <div class="text-center space-y-2 mb-6">
+                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Team S.N.R.G. Athletes</span>
+                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
+                    MULTI-DISCIPLINE <span class="text-brand-red">ROSTER</span>
+                </h2>
+                <p class="text-sm text-gray-400 max-w-xl mx-auto">Meet our elite competitors across MMA, Kickboxing, Boxing, and BJJ divisions.</p>
+            </div>
+
+            <div id="roster-container" class="max-w-3xl mx-auto space-y-4"></div>
+        </div>
+
+        <!-- TAB 5: STORE -->
+        <div id="tab-store" class="tab-content hidden space-y-6">
+            <div class="text-center space-y-2 mb-6">
+                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Digital Marketplace</span>
+                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
+                    MEDIA <span class="text-brand-red">STORE</span>
+                </h2>
+                <p class="text-sm text-gray-400 max-w-xl mx-auto">Purchase multi-discipline fight highlights, photo packs, and training archives.</p>
+            </div>
+
+            <div id="store-container" class="max-w-3xl mx-auto space-y-4"></div>
+        </div>
+
+        <!-- TAB 6: PORTFOLIO (ADMIN-ONLY) -->
+        <div id="tab-portfolio" class="tab-content hidden space-y-6">
+            <div class="text-center space-y-2 mb-6">
+                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Admin-Only Portfolio Management</span>
+                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
+                    MEDIA <span class="text-brand-red">PORTFOLIO</span>
+                </h2>
+                <p class="text-sm text-gray-400 max-w-xl mx-auto">Manage media items, pricing, and purchase links for the multi-discipline portfolio.</p>
+            </div>
+
+            <div class="max-w-3xl mx-auto bg-gray-900/95 p-6 sm:p-8 rounded-2xl border-2 border-brand-red shadow-neon-red space-y-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-brand-red/20 border border-brand-red rounded-lg flex items-center justify-center text-brand-neon">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-heading text-xl font-black text-white uppercase">Upload Media to Portfolio</h3>
+                        <p class="text-xs text-gray-400">Share MMA, Kickboxing, Boxing, or BJJ clips with custom pricing and payment links.</p>
+                    </div>
+                </div>
+
+                <form onsubmit="handlePortfolioUpload(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-heading font-black text-gray-400 uppercase">Title / Athlete Name</label>
+                            <input type="text" id="upload-title" placeholder="e.g. BJJ Submission Bundle" required class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-red">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-heading font-black text-gray-400 uppercase">Discipline / Category</label>
+                            <select id="upload-category" class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-red">
+                                <option value="MMA Bout">MMA Bout</option>
+                                <option value="Kickboxing Highlight">Kickboxing Highlight</option>
+                                <option value="Boxing Sparring">Boxing Sparring</option>
+                                <option value="Jiu-Jitsu Grappling">Jiu-Jitsu Grappling</option>
+                                <option value="Photo Gallery">Photo Gallery</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-heading font-black text-gray-400 uppercase">Price (e.g. $14.99 or Free)</label>
+                            <input type="text" id="upload-price" placeholder="$14.99" value="Free" required class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-red">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-heading font-black text-gray-400 uppercase">Checkout / Payment Link URL</label>
+                            <input type="text" id="upload-link" placeholder="https://buy.stripe.com/..." value="https://buy.stripe.com/test_placeholder" required class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-red">
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-heading font-black text-gray-400 uppercase">Media Image/Video URL</label>
+                        <input type="text" id="upload-url" placeholder="Paste image/video URL..." required class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-red">
+                    </div>
+                    <button type="submit" class="w-full bg-brand-red hover:bg-red-700 text-white font-heading font-black uppercase py-3 rounded-xl text-sm shadow-neon-red transition-all">
+                        SUBMIT TO PORTFOLIO FEED
+                    </button>
+                </form>
+            </div>
+
+            <div id="portfolio-grid" class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4"></div>
+        </div>
+
+    </main>
+
+    <!-- ADMIN PIN LOGIN MODAL -->
+    <div id="admin-login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
+        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-2 border-brand-red relative shadow-neon-red space-y-5 text-center">
+            <button onclick="closeAdminLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div class="w-14 h-14 mx-auto bg-brand-red/20 border border-brand-red rounded-xl flex items-center justify-center text-brand-neon text-xl shadow-neon-red">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+                <h3 class="font-heading text-2xl font-black text-white uppercase">ADMIN ACCESS</h3>
+                <p class="text-xs text-gray-400 mt-1">Enter admin PIN to unlock dashboard (Default PIN: <span class="text-brand-neon font-mono">1234</span>)</p>
+            </div>
+            <form onsubmit="verifyAdminPin(event)" class="space-y-3">
+                <input type="password" id="admin-pin-input" placeholder="Enter PIN..." required class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2.5 text-center text-sm text-white tracking-widest focus:outline-none focus:border-brand-red font-mono">
+                <button type="submit" class="w-full bg-brand-red hover:bg-red-700 text-white font-heading font-black uppercase py-3 rounded-xl text-xs shadow-neon-red transition-all">
+                    UNLOCK DASHBOARD
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FULL ADMIN DASHBOARD & EDIT MODAL -->
+    <div id="admin-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
+        <div class="glass-panel max-w-4xl w-full rounded-2xl p-6 border-2 border-brand-red relative shadow-neon-red space-y-6 max-h-[92vh] overflow-y-auto">
+            <button onclick="toggleAdminModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <div class="flex items-center justify-between border-b border-gray-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-brand-red/20 border border-brand-red flex items-center justify-center text-brand-neon text-xl shadow-neon-red">
+                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-heading text-2xl font-black text-white uppercase">FULL MASTER ADMIN DASHBOARD</h3>
+                        <p class="text-xs text-gray-400">Complete control over banners, countdowns, disciplines, schedule, fighters, store, portfolio, and promo codes.</p>
+                    </div>
+                </div>
+                <button onclick="lockAdminSession()" class="text-xs text-red-400 hover:text-red-300 font-bold border border-red-900 bg-red-950/40 px-3 py-1.5 rounded">
+                    <i class="fa-solid fa-lock mr-1"></i> Lock Admin
+                </button>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <button onclick="switchAdminTab('general')" id="adm-tab-general" class="admin-tab-btn bg-brand-red text-white text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Site & Banners</button>
+                <button onclick="switchAdminTab('disciplines')" id="adm-tab-disciplines" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Disciplines & Training</button>
+                <button onclick="switchAdminTab('schedule')" id="adm-tab-schedule" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Schedule & Tickets</button>
+                <button onclick="switchAdminTab('fighters')" id="adm-tab-fighters" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Roster</button>
+                <button onclick="switchAdminTab('store')" id="adm-tab-store" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Store</button>
+                <button onclick="switchAdminTab('portfolio')" id="adm-tab-portfolio" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Portfolio</button>
+                <button onclick="switchAdminTab('promos')" id="adm-tab-promos" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Promo Codes</button>
+            </div>
+
+            <!-- TAB 0: ADMIN GENERAL & BANNER EDITOR -->
+            <div id="admin-panel-general" class="admin-panel-section space-y-4">
+                <div class="bg-gray-900 p-5 rounded-xl border border-gray-800 space-y-4">
+                    <h4 class="font-heading text-sm font-black text-white uppercase tracking-wider text-brand-red">🌐 Global Site & Banner Settings</h4>
+                    <form onsubmit="adminSaveGeneralSettings(event)" class="space-y-3">
+                        <div class="space-y-1">
+                            <label class="text-xs font-heading font-black text-gray-400 uppercase">Top Ticker Alert Text</label>
+                            <input type="text" id="admin-gen-ticker" required class="w-full bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-heading font-black text-gray-400 uppercase">Countdown Championship Title</label>
+                            <input type="text" id="admin-gen-countdown-title" required class="w-full bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-heading font-black text-gray-400 uppercase">Global Default Paysite URL (Stripe/Checkout)</label>
+                            <input type="text" id="admin-gen-paysite" required class="w-full bg-black border border-gray-700 rounded p-2 text-xs text-white font-mono">
+                        </div>
+                        <button type="submit" class="bg-brand-red hover:bg-red-700 text-white font-heading text-xs font-black uppercase rounded py-2.5 px-6 shadow-neon-red">Save Global Settings</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB 0.5: ADMIN DISCIPLINES EDITOR -->
+            <div id="admin-panel-disciplines" class="admin-panel-section space-y-4 hidden">
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 space-y-3">
+                    <h4 id="disc-form-title" class="font-heading text-sm font-black text-white uppercase tracking-wider text-brand-red">➕ Add / Edit Discipline & Training Link</h4>
+                    <form onsubmit="adminSaveDiscipline(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                        <input type="hidden" id="edit-disc-id">
+                        <input type="text" id="admin-disc-name" placeholder="Discipline Name (e.g. Mixed Martial Arts)" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="text" id="admin-disc-desc" placeholder="Short Description" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="text" id="admin-disc-link" placeholder="Training / Class URL" value="https://buy.stripe.com/test_placeholder" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white font-mono">
+                        <button type="submit" id="disc-submit-btn" class="bg-brand-red hover:bg-red-700 text-white font-heading text-xs font-black uppercase rounded py-2">Save Discipline</button>
+                    </form>
+                </div>
+                <div class="space-y-2 max-h-60 overflow-y-auto" id="admin-list-disciplines"></div>
+            </div>
+
+            <!-- TAB 1: ADMIN SCHEDULE EDITOR -->
+            <div id="admin-panel-schedule" class="admin-panel-section space-y-4 hidden">
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 space-y-3">
+                    <h4 id="sch-form-title" class="font-heading text-sm font-black text-white uppercase tracking-wider text-brand-red">➕ Add / Edit Fight Schedule & Tickets</h4>
+                    <form onsubmit="adminSaveSchedule(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                        <input type="hidden" id="edit-sch-id">
+                        <input type="text" id="admin-sch-date" placeholder="Date (e.g. DEC 15)" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="text" id="admin-sch-title" placeholder="Event Title" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="text" id="admin-sch-link" placeholder="Ticket URL" value="https://buy.stripe.com/test_placeholder" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white font-mono">
+                        <button type="submit" id="sch-submit-btn" class="bg-brand-red hover:bg-red-700 text-white font-heading text-xs font-black uppercase rounded py-2">Save Event</button>
+                    </form>
+                </div>
+                <div class="space-y-2 max-h-60 overflow-y-auto" id="admin-list-schedule"></div>
+            </div>
+
+            <!-- TAB 2: ADMIN FIGHTERS EDITOR -->
+            <div id="admin-panel-fighters" class="admin-panel-section space-y-4 hidden">
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 space-y-3">
+                    <h4 id="fighter-form-title" class="font-heading text-sm font-black text-white uppercase tracking-wider text-brand-red">➕ Add / Edit Fighter Profile</h4>
+                    <form onsubmit="adminSaveFighter(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                        <input type="hidden" id="edit-fighter-id">
+                        <input type="text" id="admin-f-name" placeholder="Fighter Name" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="text" id="admin-f-record" placeholder="Discipline & Record" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="text" id="admin-f-desc" placeholder="Short Bio" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <button type="submit" id="fighter-submit-btn" class="bg-brand-red hover:bg-red-700 text-white font-heading text-xs font-black uppercase rounded py-2">Save Fighter</button>
+                    </form>
+                </div>
+                <div class="space-y-2 max-h-60 overflow-y-auto" id="admin-list-fighters"></div>
+            </div>
+
+            <!-- TAB 3: ADMIN STORE EDITOR -->
+            <div id="admin-panel-store" class="admin-panel-section space-y-4 hidden">
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 space-y-3">
+                    <h4 id="store-form-title" class="font-heading text-sm font-black text-white uppercase tracking-wider text-brand-red">➕ Add / Edit Store Product & Price</h4>
+                    <form onsubmit="adminSaveStore(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                        <input type="hidden" id="edit-store-id">
+                        <input type="text" id="admin-store-title" placeholder="Product Title" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="text" id="admin-store-price" placeholder="Price (e.g. $19.99)" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="text" id="admin-store-link" placeholder="Checkout URL" value="https://buy.stripe.com/test_placeholder" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white font-mono">
+                        <button type="submit" id="store-submit-btn" class="bg-brand-red hover:bg-red-700 text-white font-heading text-xs font-black uppercase rounded py-2">Save Product</button>
+                    </form>
+                </div>
+                <div class="space-y-2 max-h-60 overflow-y-auto" id="admin-list-store"></div>
+            </div>
+
+            <!-- TAB 4: ADMIN PORTFOLIO EDITOR -->
+            <div id="admin-panel-portfolio" class="admin-panel-section space-y-4 hidden">
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 space-y-3">
+                    <h4 id="port-form-title" class="font-heading text-sm font-black text-white uppercase tracking-wider text-brand-red">➕ Add / Edit Portfolio Item & Pricing</h4>
+                    <form onsubmit="adminSavePortfolio(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                        <input type="hidden" id="edit-port-id">
+                        <input type="text" id="admin-port-title" placeholder="Media Title" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="text" id="admin-port-price" placeholder="Price (e.g. $9.99)" value="Free" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="text" id="admin-port-url" placeholder="Image/Video URL" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white font-mono">
+                        <input type="text" id="admin-port-link" placeholder="Payment Link URL" value="https://buy.stripe.com/test_placeholder" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white font-mono sm:col-span-3">
+                        <button type="submit" id="port-submit-btn" class="bg-brand-red hover:bg-red-700 text-white font-heading text-xs font-black uppercase rounded py-2">Save Media</button>
+                    </form>
+                </div>
+                <div class="space-y-2 max-h-60 overflow-y-auto" id="admin-list-portfolio"></div>
+            </div>
+
+            <!-- TAB 5: ADMIN PROMO CODE GENERATOR -->
+            <div id="admin-panel-promos" class="admin-panel-section space-y-4 hidden">
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 space-y-3">
+                    <h4 id="promo-form-title" class="font-heading text-sm font-black text-white uppercase tracking-wider text-brand-red">🎟️ Generate & Edit Fight Promo Code</h4>
+                    <p class="text-xs text-gray-400">Creates or edits single-day access codes that automatically expire at midnight after the fight date.</p>
+                    <form onsubmit="adminSavePromoCode(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                        <input type="hidden" id="edit-promo-id">
+                        <input type="text" id="promo-code-text" placeholder="Promo Code (e.g. SNRG-VIP)" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white uppercase font-mono">
+                        <input type="text" id="promo-event-name" placeholder="Event Name (e.g. SNRG-14)" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="date" id="promo-expiry-date" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <button type="submit" id="promo-submit-btn" class="bg-brand-red hover:bg-red-700 text-white font-heading text-xs font-black uppercase rounded py-2 sm:col-span-4">Save Promo Code</button>
+                    </form>
+                </div>
+                <div class="space-y-2 max-h-60 overflow-y-auto" id="admin-list-promos"></div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t border-gray-800">
+                <button onclick="adminResetDefaults()" class="text-xs text-gray-400 hover:text-white underline font-bold">Reset Site Defaults</button>
+                <button onclick="toggleAdminModal()" class="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2 rounded-lg font-heading text-xs font-black uppercase">Close Admin</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAYWALL / PROMO MODAL -->
+    <div id="paywall-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 border border-brand-red/50 relative shadow-neon-red space-y-5">
+            <button onclick="togglePaywallModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 mx-auto rounded-full bg-brand-red/20 border-2 border-brand-red flex items-center justify-center text-brand-neon text-2xl shadow-neon-red">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h3 class="font-heading text-3xl font-black text-white uppercase">UNLOCK STREAM</h3>
+                <p class="text-xs text-gray-400">Have a promo code? Enter it below, or proceed to our secure paysite to purchase your $35 pass.</p>
+            </div>
+
+            <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 space-y-2">
+                <label class="text-xs uppercase font-heading font-black text-gray-400 block">Promo Code</label>
+                <div class="flex gap-2">
+                    <input type="text" id="promo-code-input" placeholder="e.g. SNRG2026" class="flex-grow bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white font-mono uppercase focus:outline-none focus:border-brand-red font-bold">
+                    <button onclick="verifyPromoCode()" class="bg-brand-red hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-heading font-black uppercase">Apply</button>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="redirectToPaysite()" class="w-full bg-gradient-to-r from-brand-red to-red-600 hover:from-red-600 text-white font-heading text-lg font-black py-3.5 rounded-xl uppercase tracking-wider shadow-neon-red transition-transform transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> GO TO SECURE PAYSITE ($35)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isEmbedUnlocked = false;
+        let isAdminLoggedIn = false;
+        let PAYSITE_URL = "https://buy.stripe.com/test_placeholder";
+
+        let siteData = {
+            general: {
+                tickerText: "FQ MMA / TEAM S.N.R.G. • MULTI-DISCIPLINE CHAMPIONSHIPS LIVE",
+                countdownTitle: "Team S.N.R.G. Combat Night #14 (MMA • Striking • BJJ) • Oct 24, 2026",
+                paysiteUrl: "https://buy.stripe.com/test_placeholder"
+            },
+            disciplines: [
+                { id: 1, name: "Mixed Martial Arts (MMA)", desc: "Comprehensive cage fighting integrating striking, wrestling, and submission grappling.", link: "https://buy.stripe.com/test_placeholder" },
+                { id: 2, name: "Brazilian Jiu-Jitsu (BJJ)", desc: "Elite ground combat, positional dominance, and submission holds in gi and no-gi.", link: "https://buy.stripe.com/test_placeholder" },
+                { id: 3, name: "Kickboxing & Striking", desc: "High-paced stand-up combat featuring devastating kicks, knees, and combination striking.", link: "https://buy.stripe.com/test_placeholder" },
+                { id: 4, name: "Championship Boxing", desc: "Sweet science fundamentals, head movement, footwork, and heavy-bag power development.", link: "https://buy.stripe.com/test_placeholder" }
+            ],
+            schedule: [
+                { id: 1, date: "OCT 24, 2026", title: "Team S.N.R.G. Combat Night #14", subtitle: "Fitness Quest Arena • MMA, Kickboxing & BJJ Championships", link: "https://buy.stripe.com/test_placeholder" },
+                { id: 2, date: "NOV 12, 2026", title: "Amateur Grappling & Striking Showcase #15", subtitle: "Fitness Quest Arena • Preliminary BJJ & Boxing Undercard", link: "https://buy.stripe.com/test_placeholder" }
+            ],
+            fighters: [
+                { id: 1, name: "Tyler Jenkins", record: "MMA RECORD: 8-1-0 • WELTERWEIGHT", desc: "Explosive striker with elite takedown defense and heavy hands.", initials: "TJ" },
+                { id: 2, name: "Eli Rodriguez", record: "BJJ BLACK BELT • 7-2-0 PRO RECORD", desc: "Submission specialist and relentless pressure grappler.", initials: "ER" },
+                { id: 3, name: "Marcus Vance", record: "KICKBOXING CHAMPION • 6-0-0", desc: "Unbeaten knockout artist representing S.N.R.G. striking division.", initials: "MV" },
+                { id: 4, name: "Sarah Lin", record: "BOXING CONTENDER • 5-1-0", desc: "Precise counter-puncher and Golden Gloves standout.", initials: "SL" }
+            ],
+            store: [
+                { id: 1, title: "Multi-Discipline Photo Pack #14", subtitle: "High-res unwatermarked cage-side & ring-side photo bundle.", price: "$19.99", link: "https://buy.stripe.com/test_placeholder" },
+                { id: 2, title: "Full HD Bout Archive (MMA & BJJ)", subtitle: "Complete uncompressed 1080p full fight stream download.", price: "$29.99", link: "https://buy.stripe.com/test_placeholder" }
+            ],
+            portfolio: [
+                { id: 1, title: "MMA Main Event Staredown", category: "MMA Bout", price: "Free", image: "https://placehold.co/600x400/111319/E50914?text=MMA+Staredown", link: "https://buy.stripe.com/test_placeholder" },
+                { id: 2, title: "Kickboxing Knockout Highlight", category: "Kickboxing Highlight", price: "$9.99", image: "https://placehold.co/600x400/111319/34d399?text=Kickboxing+KO", link: "https://buy.stripe.com/test_placeholder" },
+                { id: 3, title: "BJJ Submission Masterclass", category: "Jiu-Jitsu Grappling", price: "$14.99", image: "https://placehold.co/600x400/111319/60a5fa?text=BJJ+Grappling", link: "https://buy.stripe.com/test_placeholder" }
+            ],
+            promos: [
+                { id: 1, code: "SNRG2026", event: "Master Admin Code", expiry: "2026-12-31" }
+            ]
+        };
+
+        const fqSimulatedUsers = [
+            { name: "FightFan99", color: "text-emerald-400" },
+            { name: "GrappleMaster", color: "text-blue-400" },
+            { name: "CageSideCam", color: "text-pink-400" },
+            { name: "S_N_R_G_Ultra", color: "text-red-400" },
+            { name: "ApexStriker", color: "text-amber-400" }
+        ];
+
+        const fqSimulatedMessages = [
+            "What a round! Incredible striking speed.",
+            "That takedown defense was elite 🔥",
+            "Team S.N.R.G. fighters always come prepared.",
+            "Amazing jiu-jitsu transition on the ground!",
+            "Clean kickboxing combination in that exchange.",
+            "Unreal knockout power across all disciplines!"
+        ];
+
+        function redirectToPaysite() {
+            window.open(PAYSITE_URL, '_blank');
+        }
+
+        function openCustomLink(url) {
+            window.open(url || PAYSITE_URL, '_blank');
+        }
+
+        function simulateEmbedAccess(unlocked) {
+            isEmbedUnlocked = unlocked;
+            const overlay = document.getElementById('embed-locked-overlay');
+            const unlockedState = document.getElementById('embed-unlocked-state');
+            const statusPill = document.getElementById('user-access-label');
+            const statusIcon = document.getElementById('user-access-icon');
+
+            if (unlocked) {
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                unlockedState.classList.remove('hidden');
+                statusPill.innerText = "Embed Unlocked";
+                statusPill.classList.add('text-green-400');
+                statusIcon.className = "fa-solid fa-circle-check text-green-400";
+                showNotification("Temporary Embed Unlocked ($35 Active)!", "success");
+            } else {
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                unlockedState.classList.add('hidden');
+                statusPill.innerText = "Embed Locked";
+                statusPill.classList.remove('text-green-400');
+                statusIcon.className = "fa-solid fa-lock text-yellow-500";
+            }
+        }
+
+        function togglePaywallModal() {
+            document.getElementById('paywall-modal').classList.toggle('hidden');
+        }
+
+        function openAdminModal() {
+            if (isAdminLoggedIn) {
+                document.getElementById('admin-modal').classList.remove('hidden');
+                cleanupExpiredPromos();
+                renderAdminManagerLists();
+            } else {
+                document.getElementById('admin-login-modal').classList.remove('hidden');
+            }
+        }
+
+        function closeAdminLoginModal() {
+            document.getElementById('admin-login-modal').classList.add('hidden');
+        }
+
+        function verifyAdminPin(e) {
+            e.preventDefault();
+            const pin = document.getElementById('admin-pin-input').value.trim();
+            if (pin === '1234' || pin === 'SNRG') {
+                isAdminLoggedIn = true;
+                closeAdminLoginModal();
+                document.getElementById('nav-portfolio').classList.remove('hidden');
+                document.getElementById('admin-modal').classList.remove('hidden');
+                cleanupExpiredPromos();
+                renderAdminManagerLists();
+                showNotification("Admin Access Granted! Portfolio Unlocked.", "success");
+                document.getElementById('admin-pin-input').value = '';
+            } else {
+                showNotification("Incorrect PIN. Try '1234'", "error");
+            }
+        }
+
+        function lockAdminSession() {
+            isAdminLoggedIn = false;
+            document.getElementById('admin-modal').classList.add('hidden');
+            document.getElementById('nav-portfolio').classList.add('hidden');
+            setActiveTab('live');
+            showNotification("Admin Session Locked Securely.", "info");
+        }
+
+        function toggleAdminModal() {
+            document.getElementById('admin-modal').classList.toggle('hidden');
+        }
+
+        function switchAdminTab(tabName) {
+            document.querySelectorAll('.admin-panel-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+                btn.className = "admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase";
+            });
+
+            document.getElementById(`admin-panel-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`adm-tab-${tabName}`);
+            activeBtn.className = "admin-tab-btn bg-brand-red text-white text-xs font-heading font-black px-3.5 py-2 rounded uppercase";
+            
+            if (tabName === 'general') {
+                document.getElementById('admin-gen-ticker').value = siteData.general.tickerText;
+                document.getElementById('admin-gen-countdown-title').value = siteData.general.countdownTitle;
+                document.getElementById('admin-gen-paysite').value = siteData.general.paysiteUrl;
+            } else {
+                renderAdminManagerLists();
+            }
+        }
+
+        function adminSaveGeneralSettings(e) {
+            e.preventDefault();
+            siteData.general.tickerText = document.getElementById('admin-gen-ticker').value;
+            siteData.general.countdownTitle = document.getElementById('admin-gen-countdown-title').value;
+            siteData.general.paysiteUrl = document.getElementById('admin-gen-paysite').value;
+            PAYSITE_URL = siteData.general.paysiteUrl;
+
+            document.getElementById('header-ticker-text').innerText = siteData.general.tickerText;
+            document.getElementById('countdown-event-title').innerText = siteData.general.countdownTitle;
+
+            showNotification("Global site settings updated successfully!", "success");
+        }
+
+        function verifyPromoCode() {
+            cleanupExpiredPromos();
+            const inputCode = document.getElementById('promo-code-input').value.trim().toUpperCase();
+            const validPromo = siteData.promos.find(p => p.code.toUpperCase() === inputCode);
+
+            if (validPromo) {
+                togglePaywallModal();
+                simulateEmbedAccess(true);
+                showNotification(`Promo Code '${validPromo.code}' Accepted! Stream Unlocked.`, "success");
+            } else {
+                showNotification("Invalid or Expired Promo Code.", "error");
+            }
+        }
+
+        function cleanupExpiredPromos() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const initialCount = siteData.promos.length;
+            siteData.promos = siteData.promos.filter(p => p.code === 'SNRG2026' || p.expiry >= todayStr);
+            if (siteData.promos.length < initialCount) {
+                showNotification("Expired promo codes automatically removed.", "info");
+            }
+        }
+
+        function renderAllContent() {
+            // 0. Disciplines
+            const discContainer = document.getElementById('disciplines-container');
+            discContainer.innerHTML = siteData.disciplines.map((d, index) => {
+                const isRed = index % 2 === 0;
+                const borderColor = isRed ? 'border-brand-red' : 'border-white';
+                const tagColor = isRed ? 'text-brand-red bg-brand-red/20 border-red-900' : 'text-white bg-white/10 border-gray-700';
+                const btnStyle = isRed ? 'bg-brand-red hover:bg-red-700 text-white' : 'bg-white hover:bg-gray-200 text-black';
+
+                return `
+                    <div class="bg-gray-900/95 p-6 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col justify-between gap-4 shadow-lg">
+                        <div class="space-y-2">
+                            <span class="${tagColor} text-xs font-heading font-black px-2.5 py-1 rounded uppercase tracking-wider border inline-block">Combat Discipline</span>
+                            <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide">${d.name}</h3>
+                            <p class="text-xs text-gray-300 leading-relaxed">${d.desc}</p>
+                        </div>
+                        <div class="pt-2 border-t border-gray-800 flex items-center justify-between">
+                            <span class="text-[11px] text-gray-400 font-mono">Training Portal Active</span>
+                            <button onclick="openCustomLink('${d.link}')" class="${btnStyle} font-heading text-xs font-black uppercase px-4 py-2 rounded-lg shadow whitespace-nowrap">
+                                Access Training <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 1. Schedule
+            const schContainer = document.getElementById('schedule-container');
+            schContainer.innerHTML = siteData.schedule.map((item, index) => {
+                const isRed = index % 2 === 0;
+                const borderColor = isRed ? 'border-brand-red' : 'border-white';
+                const badgeStyle = isRed ? 'bg-brand-red/20 text-brand-red border-red-900' : 'bg-white/10 text-white border-gray-700';
+                const btnStyle = isRed ? 'bg-brand-red hover:bg-red-700 text-white' : 'bg-white hover:bg-gray-200 text-black';
+
+                return `
+                    <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg relative group">
+                        <div class="space-y-1">
+                            <span class="${badgeStyle} text-xs font-heading font-black px-2.5 py-1 rounded uppercase tracking-wider border">${item.date}</span>
+                            <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide mt-1">${item.title}</h3>
+                            <p class="text-xs text-gray-300">${item.subtitle}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="openCustomLink('${item.link}')" class="${btnStyle} font-heading text-sm font-black uppercase px-6 py-3 rounded-xl shadow-lg whitespace-nowrap">
+                                Get Tickets ($45)
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 2. Fighters
+            const rosterContainer = document.getElementById('roster-container');
+            rosterContainer.innerHTML = siteData.fighters.map((f, index) => {
+                const isRed = index % 2 === 0;
+                const borderColor = isRed ? 'border-brand-red' : 'border-white';
+                const accentColor = isRed ? 'text-brand-red bg-brand-red/20 border-brand-red text-brand-neon' : 'text-white bg-white/10 border-white text-white';
+                const badgeStyle = isRed ? 'text-brand-red bg-red-950/60 border-red-900' : 'text-white bg-white/10 border-gray-700';
+
+                return `
+                    <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-full ${accentColor} border-2 flex items-center justify-center font-heading font-black text-xl shrink-0">
+                                ${f.initials || f.name.substring(0,2).toUpperCase()}
+                            </div>
+                            <div class="space-y-1">
+                                <span class="${isRed ? 'text-brand-red' : 'text-white'} font-heading font-black text-xs tracking-widest uppercase">${f.record}</span>
+                                <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide">${f.name}</h3>
+                                <p class="text-xs text-gray-300">${f.desc}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="${badgeStyle} font-heading font-extrabold text-xs uppercase px-3 py-1.5 rounded border">Athlete</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 3. Store
+            const storeContainer = document.getElementById('store-container');
+            storeContainer.innerHTML = siteData.store.map((s, index) => {
+                const isRed = index % 2 === 0;
+                const borderColor = isRed ? 'border-brand-red' : 'border-white';
+                const tagColor = isRed ? 'text-brand-red' : 'text-white';
+                const btnStyle = isRed ? 'bg-brand-red hover:bg-red-700 text-white' : 'bg-white hover:bg-gray-200 text-black';
+
+                return `
+                    <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+                        <div class="space-y-1">
+                            <span class="${tagColor} font-heading font-black text-xs tracking-widest uppercase">DIGITAL PRODUCT</span>
+                            <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide">${s.title}</h3>
+                            <p class="text-xs text-gray-300">${s.subtitle}</p>
+                        </div>
+                        <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                            <span class="font-heading text-2xl font-black ${isRed ? 'text-brand-neon' : 'text-white'}">${s.price}</span>
+                            <button onclick="openCustomLink('${s.link}')" class="${btnStyle} text-xs font-black uppercase px-5 py-2.5 rounded-lg shadow-lg">Buy Now</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 4. Portfolio Grid
+            const portfolioGrid = document.getElementById('portfolio-grid');
+            portfolioGrid.innerHTML = siteData.portfolio.map((p, index) => {
+                const isRed = index % 2 === 0;
+                const btnStyle = isRed ? 'bg-brand-red hover:bg-red-700 text-white' : 'bg-white hover:bg-gray-200 text-black';
+
+                return `
+                    <div class="glass-panel rounded-2xl overflow-hidden border border-gray-800 flex flex-col shadow-lg group">
+                        <div class="relative w-full aspect-video bg-black overflow-hidden">
+                            <img src="${p.image}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/600x400/111319/E50914?text=Media+Item'">
+                            <span class="absolute top-3 left-3 bg-black/80 text-brand-neon font-heading font-black text-[10px] uppercase px-2.5 py-1 rounded border border-brand-red">
+                                ${p.category || 'Media'}
+                            </span>
+                        </div>
+                        <div class="p-4 flex items-center justify-between bg-gray-900/90 gap-2">
+                            <div>
+                                <h4 class="font-heading text-lg font-black text-white uppercase">${p.title}</h4>
+                                <span class="font-heading text-xs font-bold text-brand-neon">${p.price || 'Free'}</span>
+                            </div>
+                            <button onclick="openCustomLink('${p.link}')" class="${btnStyle} text-xs font-heading font-black uppercase px-3.5 py-2 rounded-lg shadow whitespace-nowrap">
+                                Get / Buy
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderAdminManagerLists() {
+            const admDisc = document.getElementById('admin-list-disciplines');
+            if(admDisc) {
+                admDisc.innerHTML = siteData.disciplines.map(item => `
+                    <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
+                        <div class="truncate">
+                            <span class="text-white font-bold">${item.name}</span> <span class="text-gray-500 text-[10px]">(${item.link})</span>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <button onclick="adminEditDiscipline(${item.id})" class="text-blue-400 hover:text-blue-300 px-2 py-1"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="adminDeleteItem('disciplines', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const admSch = document.getElementById('admin-list-schedule');
+            if(admSch) {
+                admSch.innerHTML = siteData.schedule.map(item => `
+                    <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
+                        <div class="truncate">
+                            <span class="text-brand-red font-bold">${item.date}</span> - <span class="text-white font-bold">${item.title}</span> <span class="text-gray-500 text-[10px]">(${item.link})</span>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <button onclick="adminEditSchedule(${item.id})" class="text-blue-400 hover:text-blue-300 px-2 py-1"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="adminDeleteItem('schedule', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const admF = document.getElementById('admin-list-fighters');
+            if(admF) {
+                admF.innerHTML = siteData.fighters.map(item => `
+                    <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
+                        <div class="truncate">
+                            <span class="text-white font-bold">${item.name}</span> (${item.record})
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <button onclick="adminEditFighter(${item.id})" class="text-blue-400 hover:text-blue-300 px-2 py-1"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="adminDeleteItem('fighters', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const admS = document.getElementById('admin-list-store');
+            if(admS) {
+                admS.innerHTML = siteData.store.map(item => `
+                    <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
+                        <div class="truncate">
+                            <span class="text-white font-bold">${item.title}</span> - <span class="text-brand-neon">${item.price}</span> <span class="text-gray-500 text-[10px]">(${item.link})</span>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <button onclick="adminEditStore(${item.id})" class="text-blue-400 hover:text-blue-300 px-2 py-1"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="adminDeleteItem('store', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const admP = document.getElementById('admin-list-portfolio');
+            if(admP) {
+                admP.innerHTML = siteData.portfolio.map(item => `
+                    <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
+                        <div class="truncate">
+                            <span class="text-white font-bold">${item.title}</span> - <span class="text-brand-neon">${item.price || 'Free'}</span> <span class="text-gray-500 text-[10px]">(${item.link})</span>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <button onclick="adminEditPortfolio(${item.id})" class="text-blue-400 hover:text-blue-300 px-2 py-1"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="adminDeleteItem('portfolio', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const admPromos = document.getElementById('admin-list-promos');
+            if(admPromos) {
+                admPromos.innerHTML = siteData.promos.map(item => `
+                    <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
+                        <div class="truncate">
+                            <span class="text-brand-neon font-mono font-bold">${item.code}</span> (${item.event}) — Expires: <span class="text-gray-300">${item.expiry}</span>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <button onclick="adminEditPromoCode(${item.id})" class="text-blue-400 hover:text-blue-300 px-2 py-1"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="adminDeleteItem('promos', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function adminSaveDiscipline(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-disc-id').value;
+            const name = document.getElementById('admin-disc-name').value;
+            const desc = document.getElementById('admin-disc-desc').value;
+            const link = document.getElementById('admin-disc-link').value;
+
+            if (id) {
+                const item = siteData.disciplines.find(d => d.id == id);
+                if (item) { item.name = name; item.desc = desc; item.link = link; }
+                showNotification("Discipline Updated Successfully!", "success");
+            } else {
+                siteData.disciplines.push({ id: Date.now(), name, desc, link });
+                showNotification("Discipline Added Successfully!", "success");
+            }
+            document.getElementById('edit-disc-id').value = '';
+            document.getElementById('disc-form-title').innerText = "➕ Add / Edit Discipline & Training Link";
+            document.getElementById('disc-submit-btn').innerText = "Save Discipline";
+            e.target.reset();
+            renderAllContent();
+            renderAdminManagerLists();
+        }
+
+        function adminEditDiscipline(id) {
+            const item = siteData.disciplines.find(d => d.id == id);
+            if (item) {
+                document.getElementById('edit-disc-id').value = item.id;
+                document.getElementById('admin-disc-name').value = item.name;
+                document.getElementById('admin-disc-desc').value = item.desc;
+                document.getElementById('admin-disc-link').value = item.link || PAYSITE_URL;
+                document.getElementById('disc-form-title').innerText = "✏️ Edit Discipline & Training Link";
+                document.getElementById('disc-submit-btn').innerText = "Update Discipline";
+            }
+        }
+
+        function adminSaveSchedule(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-sch-id').value;
+            const date = document.getElementById('admin-sch-date').value;
+            const title = document.getElementById('admin-sch-title').value;
+            const link = document.getElementById('admin-sch-link').value;
+
+            if (id) {
+                const item = siteData.schedule.find(s => s.id == id);
+                if (item) { item.date = date; item.title = title; item.link = link; }
+                showNotification("Schedule Event Updated!", "success");
+            } else {
+                siteData.schedule.push({ id: Date.now(), date, title, subtitle: "Fitness Quest Arena • Multi-Discipline Championships", link });
+                showNotification("Schedule Event Added!", "success");
+            }
+            document.getElementById('edit-sch-id').value = '';
+            document.getElementById('sch-form-title').innerText = "➕ Add / Edit Fight Schedule & Tickets";
+            document.getElementById('sch-submit-btn').innerText = "Save Event";
+            e.target.reset();
+            renderAllContent();
+            renderAdminManagerLists();
+        }
+
+        function adminEditSchedule(id) {
+            const item = siteData.schedule.find(s => s.id == id);
+            if (item) {
+                document.getElementById('edit-sch-id').value = item.id;
+                document.getElementById('admin-sch-date').value = item.date;
+                document.getElementById('admin-sch-title').value = item.title;
+                document.getElementById('admin-sch-link').value = item.link || PAYSITE_URL;
+                document.getElementById('sch-form-title').innerText = "✏️ Edit Fight Schedule Event";
+                document.getElementById('sch-submit-btn').innerText = "Update Event";
+            }
+        }
+
+        function adminSaveFighter(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-fighter-id').value;
+            const name = document.getElementById('admin-f-name').value;
+            const record = document.getElementById('admin-f-record').value;
+            const desc = document.getElementById('admin-f-desc').value;
+
+            if (id) {
+                const item = siteData.fighters.find(f => f.id == id);
+                if (item) { item.name = name; item.record = record; item.desc = desc; item.initials = name.substring(0,2).toUpperCase(); }
+                showNotification("Athlete Profile Updated!", "success");
+            } else {
+                siteData.fighters.push({ id: Date.now(), name, record, desc, initials: name.substring(0,2).toUpperCase() });
+                showNotification("Athlete Added!", "success");
+            }
+            document.getElementById('edit-fighter-id').value = '';
+            document.getElementById('fighter-form-title').innerText = "➕ Add / Edit Fighter Profile";
+            document.getElementById('fighter-submit-btn').innerText = "Save Fighter";
+            e.target.reset();
+            renderAllContent();
+            renderAdminManagerLists();
+        }
+
+        function adminEditFighter(id) {
+            const item = siteData.fighters.find(f => f.id == id);
+            if (item) {
+                document.getElementById('edit-fighter-id').value = item.id;
+                document.getElementById('admin-f-name').value = item.name;
+                document.getElementById('admin-f-record').value = item.record;
+                document.getElementById('admin-f-desc').value = item.desc;
+                document.getElementById('fighter-form-title').innerText = "✏️ Edit Fighter Profile";
+                document.getElementById('fighter-submit-btn').innerText = "Update Fighter";
+            }
+        }
+
+        function adminSaveStore(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-store-id').value;
+            const title = document.getElementById('admin-store-title').value;
+            const price = document.getElementById('admin-store-price').value;
+            const link = document.getElementById('admin-store-link').value;
+
+            if (id) {
+                const item = siteData.store.find(s => s.id == id);
+                if (item) { item.title = title; item.price = price; item.link = link; }
+                showNotification("Store Product Updated!", "success");
+            } else {
+                siteData.store.push({ id: Date.now(), title, subtitle: "Official S.N.R.G. digital package download.", price, link });
+                showNotification("Store Product Added!", "success");
+            }
+            document.getElementById('edit-store-id').value = '';
+            document.getElementById('store-form-title').innerText = "➕ Add / Edit Store Product & Price";
+            document.getElementById('store-submit-btn').innerText = "Save Product";
+            e.target.reset();
+            renderAllContent();
+            renderAdminManagerLists();
+        }
+
+        function adminEditStore(id) {
+            const item = siteData.store.find(s => s.id == id);
+            if (item) {
+                document.getElementById('edit-store-id').value = item.id;
+                document.getElementById('admin-store-title').value = item.title;
+                document.getElementById('admin-store-price').value = item.price;
+                document.getElementById('admin-store-link').value = item.link || PAYSITE_URL;
+                document.getElementById('store-form-title').innerText = "✏️ Edit Store Product";
+                document.getElementById('store-submit-btn').innerText = "Update Product";
+            }
+        }
+
+        function adminSavePortfolio(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-port-id').value;
+            const title = document.getElementById('admin-port-title').value;
+            const price = document.getElementById('admin-port-price').value;
+            const image = document.getElementById('admin-port-url').value;
+            const link = document.getElementById('admin-port-link').value;
+
+            if (id) {
+                const item = siteData.portfolio.find(p => p.id == id);
+                if (item) { item.title = title; item.price = price; item.image = image; item.link = link; }
+                showNotification("Portfolio Item Updated!", "success");
+            } else {
+                siteData.portfolio.unshift({ id: Date.now(), title, category: "MMA Bout", price, image, link });
+                showNotification("Portfolio Item Added!", "success");
+            }
+            document.getElementById('edit-port-id').value = '';
+            document.getElementById('port-form-title').innerText = "➕ Add / Edit Portfolio Item & Pricing";
+            document.getElementById('port-submit-btn').innerText = "Save Media";
+            e.target.reset();
+            renderAllContent();
+            renderAdminManagerLists();
+        }
+
+        function adminEditPortfolio(id) {
+            const item = siteData.portfolio.find(p => p.id == id);
+            if (item) {
+                document.getElementById('edit-port-id').value = item.id;
+                document.getElementById('admin-port-title').value = item.title;
+                document.getElementById('admin-port-price').value = item.price || "Free";
+                document.getElementById('admin-port-url').value = item.image;
+                document.getElementById('admin-port-link').value = item.link || PAYSITE_URL;
+                document.getElementById('port-form-title').innerText = "✏️ Edit Portfolio Item & Pricing";
+                document.getElementById('port-submit-btn').innerText = "Update Media";
+            }
+        }
+
+        function adminSavePromoCode(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-promo-id').value;
+            const codeInput = document.getElementById('promo-code-text').value.trim().toUpperCase();
+            const eventName = document.getElementById('promo-event-name').value.trim();
+            const expiryDate = document.getElementById('promo-expiry-date').value;
+
+            if(!expiryDate) {
+                showNotification("Please select an expiry date.", "error");
+                return;
+            }
+
+            if (id) {
+                const item = siteData.promos.find(p => p.id == id);
+                if (item) {
+                    item.code = codeInput;
+                    item.event = eventName;
+                    item.expiry = expiryDate;
+                }
+                showNotification("Promo Code Updated Successfully!", "success");
+            } else {
+                siteData.promos.push({
+                    id: Date.now(),
+                    code: codeInput || `SNRG-${Math.floor(1000 + Math.random() * 9000)}`,
+                    event: eventName,
+                    expiry: expiryDate
+                });
+                showNotification("New Promo Code Created Successfully!", "success");
+            }
+
+            document.getElementById('edit-promo-id').value = '';
+            document.getElementById('promo-code-text').value = '';
+            document.getElementById('promo-form-title').innerText = "🎟️ Generate & Edit Fight Promo Code";
+            document.getElementById('promo-submit-btn').innerText = "Save Promo Code";
+            e.target.reset();
+            renderAdminManagerLists();
+        }
+
+        function adminEditPromoCode(id) {
+            const item = siteData.promos.find(p => p.id == id);
+            if (item) {
+                document.getElementById('edit-promo-id').value = item.id;
+                document.getElementById('promo-code-text').value = item.code;
+                document.getElementById('promo-event-name').value = item.event;
+                document.getElementById('promo-expiry-date').value = item.expiry;
+                document.getElementById('promo-form-title').innerText = "✏️ Edit Promo Code";
+                document.getElementById('promo-submit-btn').innerText = "Update Promo Code";
+            }
+        }
+
+        function adminDeleteItem(category, id) {
+            siteData[category] = siteData[category].filter(item => item.id !== id);
+            renderAllContent();
+            renderAdminManagerLists();
+            showNotification("Item removed successfully.", "info");
+        }
+
+        function adminResetDefaults() {
+            window.location.reload();
+        }
+
+        function handlePortfolioUpload(e) {
+            e.preventDefault();
+            const title = document.getElementById('upload-title').value;
+            const category = document.getElementById('upload-category').value;
+            const price = document.getElementById('upload-price').value;
+            const link = document.getElementById('upload-link').value;
+            const url = document.getElementById('upload-url').value;
+
+            siteData.portfolio.unshift({
+                id: Date.now(),
+                title,
+                category,
+                price,
+                link,
+                image: url.startsWith('http') ? url : `https://placehold.co/600x400/111319/E50914?text=${encodeURIComponent(title)}`
+            });
+
+            renderAllContent();
+            renderAdminManagerLists();
+            setActiveTab('portfolio');
+            showNotification("Media successfully uploaded to Portfolio with pricing!", "success");
+            e.target.reset();
+        }
+
+        function setActiveTab(tabId) {
+            if (tabId === 'portfolio' && !isAdminLoggedIn) {
+                showNotification("Portfolio is restricted to administrators.", "error");
+                return;
+            }
+
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-brand-red', 'bg-brand-red/10', 'border', 'border-brand-red/30');
+                btn.classList.add('text-gray-300');
+            });
+
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-gray-300');
+                activeBtn.classList.add('text-brand-red', 'bg-brand-red/10', 'border', 'border-brand-red/30');
+            }
+        }
+
+        function scrollToPPV() {
+            setActiveTab('live');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function handleSendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input-text');
+            const val = input.value.trim();
+            if (val !== '') {
+                appendChatMessage("You (Live Fan)", val, "text-brand-neon font-black font-heading");
+                input.value = '';
+            }
+        }
+
+        function sendQuickReaction(text) {
+            appendChatMessage("You (Live Fan)", text, "text-yellow-400 font-black font-heading");
+        }
+
+        function appendChatMessage(user, message, colorClass) {
+            const chatFeed = document.getElementById('chat-feed');
+            const msgEl = document.createElement('div');
+            msgEl.className = "bg-gray-900/90 p-2.5 rounded-lg border border-gray-800 animate-fadeIn";
+            msgEl.innerHTML = `<span class="${colorClass}">${user}:</span> <span class="text-gray-300 ml-1">${escapeHtml(message)}</span>`;
+            chatFeed.appendChild(msgEl);
+            chatFeed.scrollTop = chatFeed.scrollHeight;
+        }
+
+        function clearChatFeed() {
+            const chatFeed = document.getElementById('chat-feed');
+            chatFeed.innerHTML = `<div class="text-center text-gray-500 text-[10px] uppercase tracking-widest">— CHAT CLEARED —</div>`;
+            showNotification("Live chat feed cleared.", "info");
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        function startSimulatedChat() {
+            setInterval(() => {
+                const randomUser = fqSimulatedUsers[Math.floor(Math.random() * fqSimulatedUsers.length)];
+                const randomMsg = fqSimulatedMessages[Math.floor(Math.random() * fqSimulatedMessages.length)];
+                appendChatMessage(randomUser.name, randomMsg, randomUser.color);
+                
+                const currentCount = 3420 + Math.floor(Math.random() * 50) - 20;
+                const onlineEl = document.getElementById('online-count');
+                if(onlineEl) onlineEl.innerText = `● ${currentCount.toLocaleString()} Online`;
+            }, 8000);
+        }
+
+        function updateCountdown() {
+            const eventDate = new Date('October 24, 2026 18:00:00 GMT-07:00').getTime();
+            const now = new Date().getTime();
+            const distance = eventDate - now;
+
+            if (distance < 0) {
+                document.getElementById('countdown-days').innerText = "00";
+                document.getElementById('countdown-hours').innerText = "00";
+                document.getElementById('countdown-minutes').innerText = "00";
+                document.getElementById('countdown-seconds').innerText = "00";
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById('countdown-days').innerText = String(days).padStart(2, '0');
+            document.getElementById('countdown-hours').innerText = String(hours).padStart(2, '0');
+            document.getElementById('countdown-minutes').innerText = String(minutes).padStart(2, '0');
+            document.getElementById('countdown-seconds').innerText = String(seconds).padStart(2, '0');
+        }
+
+        function showNotification(text, type = "info") {
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-brand-red';
+            toast.className = `fixed bottom-5 right-5 z-50 ${bg} text-white px-5 py-3 rounded-xl shadow-2xl font-heading font-black text-xs uppercase tracking-wider transition-all transform flex items-center gap-2`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${text}`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderAllContent();
+            cleanupExpiredPromos();
+            startSimulatedChat();
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+
+            // Secret keyboard shortcut to open admin login (Ctrl + Shift + A)
+            window.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'A') {
+                    e.preventDefault();
+                    openAdminModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

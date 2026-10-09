@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FQ MMA / Team S.N.R.G. - Master Admin Control Center</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        snrg: {
+                            50: '#fdf4f4',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            900: '#7f1d1d',
+                            dark: '#0a0a0c',
+                            card: '#141417',
+                            border: '#27272a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #141417; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-snrg-dark text-gray-100 min-h-screen flex flex-col antialiased selection:bg-red-600 selection:text-white">
+
+    <header class="bg-snrg-card border-b border-snrg-border sticky top-0 z-50 px-4 lg:px-8 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="bg-red-600 text-white font-black px-3.5 py-2 rounded-lg text-sm tracking-wider flex items-center shadow-lg shadow-red-900/50">
+                <i class="fa-solid fa-shield-halved mr-2 text-base"></i> S.N.R.G. MASTER ADMIN
+            </div>
+            <span class="hidden sm:inline-block text-[11px] font-bold bg-red-950 text-red-400 border border-red-800/60 px-3 py-1 rounded-full uppercase tracking-widest">
+                Full Site Control (CRUD Active)
+            </span>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+            <button onclick="togglePublicSitePreview()" class="bg-snrg-dark hover:bg-snrg-border text-xs px-3.5 py-2 rounded-lg font-semibold transition-colors flex items-center border border-snrg-border">
+                <i class="fa-solid fa-eye mr-2 text-red-400"></i> <span id="preview-btn-text">Toggle Public Site View</span>
+            </button>
+            <div class="flex items-center space-x-2 pl-3 border-l border-snrg-border">
+                <img src="https://placehold.co/36x36/dc2626/ffffff?text=ROOT" alt="Admin" class="w-9 h-9 rounded-full border-2 border-red-600 object-cover">
+                <div class="hidden lg:block text-left">
+                    <p class="text-xs font-bold leading-tight">Superuser Root</p>
+                    <p class="text-[10px] text-emerald-400 font-mono">Full Permissions</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex flex-col lg:flex-row">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full lg:w-64 bg-snrg-card border-r border-snrg-border p-4 flex flex-row lg:flex-col justify-between overflow-x-auto lg:overflow-y-auto">
+            <nav class="flex lg:flex-col space-x-2 lg:space-x-0 lg:space-y-1.5 w-full">
+                <button onclick="switchTab('overview')" id="nav-overview" class="admin-nav-btn active-nav w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center bg-red-600 text-white shadow-md shadow-red-900/30">
+                    <i class="fa-solid fa-gauge-high w-5 mr-2"></i> Dashboard Overview
+                </button>
+                <button onclick="switchTab('fighters')" id="nav-fighters" class="admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center text-gray-300 hover:bg-gray-800 hover:text-white">
+                    <i class="fa-solid fa-user-ninja w-5 mr-2"></i> Fighter Roster
+                </button>
+                <button onclick="switchTab('schedule')" id="nav-schedule" class="admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center text-gray-300 hover:bg-gray-800 hover:text-white">
+                    <i class="fa-solid fa-calendar-days w-5 mr-2"></i> Schedule & Events
+                </button>
+                <button onclick="switchTab('disciplines')" id="nav-disciplines" class="admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center text-gray-300 hover:bg-gray-800 hover:text-white">
+                    <i class="fa-solid fa-hand-fist w-5 mr-2"></i> Training Disciplines
+                </button>
+                <button onclick="switchTab('store')" id="nav-store" class="admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center text-gray-300 hover:bg-gray-800 hover:text-white">
+                    <i class="fa-solid fa-store w-5 mr-2"></i> Store & Products
+                </button>
+                <button onclick="switchTab('portfolio')" id="nav-portfolio" class="admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center text-gray-300 hover:bg-gray-800 hover:text-white">
+                    <i class="fa-solid fa-photo-film w-5 mr-2"></i> Portfolio & Media
+                </button>
+                <button onclick="switchTab('promos')" id="nav-promos" class="admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center text-gray-300 hover:bg-gray-800 hover:text-white">
+                    <i class="fa-solid fa-ticket w-5 mr-2"></i> Promo Codes
+                </button>
+                <button onclick="switchTab('settings')" id="nav-settings" class="admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center text-gray-300 hover:bg-gray-800 hover:text-white">
+                    <i class="fa-solid fa-sliders w-5 mr-2"></i> Site Config & Banners
+                </button>
+            </nav>
+            <div class="hidden lg:block pt-6 border-t border-snrg-border mt-6">
+                <div class="bg-snrg-dark p-3 rounded-lg border border-snrg-border text-xs">
+                    <p class="font-bold text-gray-200 mb-1"><i class="fa-solid fa-terminal text-emerald-400 mr-1"></i> Live Database</p>
+                    <p class="text-[11px] text-gray-400">All creates, edits, and deletions are saved directly to browser local storage & runtime state.</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-4 lg:p-8 overflow-y-auto custom-scrollbar">
+
+            <!-- TAB 1: OVERVIEW -->
+            <div id="tab-overview" class="admin-tab space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-red-950/60 via-snrg-card to-snrg-card p-6 rounded-2xl border border-red-900/40 shadow-xl">
+                    <div>
+                        <h1 class="text-2xl font-black tracking-tight text-white">Master Site Administration</h1>
+                        <p class="text-xs text-gray-400 mt-1">You have full, unrestricted editing privileges over every single module of FQ MMA / Team S.N.R.G.</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="showToast('Master Database Synchronized & Published!')" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-red-900/40 transition-all flex items-center">
+                            <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Push Changes Live
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-snrg-card border border-snrg-border p-5 rounded-2xl">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase text-gray-400">Fighters in Roster</span>
+                            <div class="w-8 h-8 rounded-xl bg-red-950 text-red-500 flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid fa-user-ninja"></i>
+                            </div>
+                        </div>
+                        <h3 id="stat-fighters-count" class="text-3xl font-black mt-3 text-white">4</h3>
+                        <p class="text-[11px] text-emerald-400 mt-1">Fully editable records</p>
+                    </div>
+
+                    <div class="bg-snrg-card border border-snrg-border p-5 rounded-2xl">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase text-gray-400">Scheduled Events</span>
+                            <div class="w-8 h-8 rounded-xl bg-amber-950 text-amber-500 flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid fa-calendar"></i>
+                            </div>
+                        </div>
+                        <h3 id="stat-events-count" class="text-3xl font-black mt-3 text-white">3</h3>
+                        <p class="text-[11px] text-gray-400 mt-1">Includes live countdowns</p>
+                    </div>
+
+                    <div class="bg-snrg-card border border-snrg-border p-5 rounded-2xl">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase text-gray-400">Store Items</span>
+                            <div class="w-8 h-8 rounded-xl bg-blue-950 text-blue-500 flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid fa-store"></i>
+                            </div>
+                        </div>
+                        <h3 id="stat-store-count" class="text-3xl font-black mt-3 text-white">3</h3>
+                        <p class="text-[11px] text-blue-400 mt-1">Prices & payment links editable</p>
+                    </div>
+
+                    <div class="bg-snrg-card border border-snrg-border p-5 rounded-2xl">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase text-gray-400">Promo Codes</span>
+                            <div class="w-8 h-8 rounded-xl bg-emerald-950 text-emerald-500 flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid fa-ticket"></i>
+                            </div>
+                        </div>
+                        <h3 id="stat-promos-count" class="text-3xl font-black mt-3 text-emerald-400">2</h3>
+                        <p class="text-[11px] text-gray-400 mt-1">Expiring daily codes active</p>
+                    </div>
+                </div>
+
+                <!-- Global Quick Editor -->
+                <div class="bg-snrg-card border border-snrg-border p-6 rounded-2xl space-y-4">
+                    <h2 class="text-sm font-bold text-white flex items-center">
+                        <i class="fa-solid fa-globe text-red-500 mr-2"></i> Global Site Title & Banners Master Override
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1">Main Site Title / Header</label>
+                            <input type="text" id="global-site-title" value="FQ MMA / TEAM S.N.R.G." class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3.5 py-2.5 text-xs text-gray-200 focus:outline-none focus:border-red-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1">Top Announcement Ticker</label>
+                            <input type="text" id="global-announcement" value="🔥 S.N.R.G. WORLD CHAMPIONSHIP TICKETS ON SALE NOW! USE CODE: SNRG2026" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3.5 py-2.5 text-xs text-gray-200 focus:outline-none focus:border-red-500">
+                        </div>
+                    </div>
+                    <button onclick="saveGlobalSettings()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition-all">
+                        Update Global Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: FIGHTERS -->
+            <div id="tab-fighters" class="admin-tab hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-black tracking-tight text-white">Fighter Roster Management</h1>
+                        <p class="text-xs text-gray-400 mt-1">Add new fighters, edit their records, weight classes, bios, and headshots, or delete profiles.</p>
+                    </div>
+                    <button onclick="openFighterModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-red-900/40 transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-user-plus mr-2"></i> Add New Fighter
+                    </button>
+                </div>
+
+                <div class="bg-snrg-card border border-snrg-border rounded-2xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-snrg-dark border-b border-snrg-border text-gray-400 uppercase tracking-wider text-[11px]">
+                                    <th class="p-4">Fighter</th>
+                                    <th class="p-4">Discipline</th>
+                                    <th class="p-4">Weight Class</th>
+                                    <th class="p-4">Record (W-L-D)</th>
+                                    <th class="p-4 text-right">Full CRUD Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fighters-table-body" class="divide-y divide-snrg-border">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: SCHEDULE & EVENTS -->
+            <div id="tab-schedule" class="admin-tab hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-black tracking-tight text-white">Fight Card & Event Schedule Control</h1>
+                        <p class="text-xs text-gray-400 mt-1">Create upcoming events, adjust fight dates, venues, countdown timers, and ticket checkout links.</p>
+                    </div>
+                    <button onclick="openScheduleModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-red-900/40 transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-calendar-plus mr-2"></i> Add New Event
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="schedule-admin-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- TAB 4: TRAINING DISCIPLINES -->
+            <div id="tab-disciplines" class="admin-tab hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-black tracking-tight text-white">Training Disciplines & Programs</h1>
+                        <p class="text-xs text-gray-400 mt-1">Manage all martial arts programs, descriptions, and custom training sign-up / booking links.</p>
+                    </div>
+                    <button onclick="openDisciplineModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-red-900/40 transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-plus mr-2"></i> Add Discipline
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="disciplines-admin-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- TAB 5: STORE & PRODUCTS -->
+            <div id="tab-store" class="admin-tab hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-black tracking-tight text-white">Store & Merchandise Control</h1>
+                        <p class="text-xs text-gray-400 mt-1">Edit product titles, prices, descriptions, and direct payment / checkout gateway links.</p>
+                    </div>
+                    <button onclick="openStoreModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-red-900/40 transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-cart-plus mr-2"></i> Add Product
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="store-admin-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- TAB 6: PORTFOLIO & MEDIA -->
+            <div id="tab-portfolio" class="admin-tab hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-black tracking-tight text-white">Portfolio & Media Gallery</h1>
+                        <p class="text-xs text-gray-400 mt-1">Upload and manage training photos, fight highlights, media tags, and gallery items.</p>
+                    </div>
+                    <button onclick="openPortfolioModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-red-900/40 transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-upload mr-2"></i> Add Media Item
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="portfolio-admin-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- TAB 7: PROMO CODES -->
+            <div id="tab-promos" class="admin-tab hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-black tracking-tight text-white">Promo Code Generator & Manager</h1>
+                        <p class="text-xs text-gray-400 mt-1">Generate random promotional codes for fights with automatic daily expiration.</p>
+                    </div>
+                    <button onclick="generateRandomPromo()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-900/40 transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Generate Random Promo Code
+                    </button>
+                </div>
+
+                <div class="bg-snrg-card border border-snrg-border rounded-2xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-snrg-dark border-b border-snrg-border text-gray-400 uppercase tracking-wider text-[11px]">
+                                    <th class="p-4">Promo Code</th>
+                                    <th class="p-4">Associated Event</th>
+                                    <th class="p-4">Discount</th>
+                                    <th class="p-4">Expiry Date</th>
+                                    <th class="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="promos-table-body" class="divide-y divide-snrg-border">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 8: SITE SETTINGS -->
+            <div id="tab-settings" class="admin-tab hidden space-y-6">
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight text-white">System Settings & Data Management</h1>
+                    <p class="text-xs text-gray-400 mt-1">Export, import, reset database, or configure root administrative parameters.</p>
+                </div>
+
+                <div class="bg-snrg-card border border-snrg-border p-6 rounded-2xl space-y-4">
+                    <h3 class="text-sm font-bold text-white border-b border-snrg-border pb-2"><i class="fa-solid fa-database mr-2 text-red-500"></i> Database Maintenance</h3>
+                    <div class="flex flex-wrap gap-4">
+                        <button onclick="exportDatabase()" class="bg-snrg-dark hover:bg-gray-800 text-gray-200 border border-snrg-border text-xs font-semibold px-4 py-2.5 rounded-xl transition-all">
+                            <i class="fa-solid fa-download mr-2 text-emerald-400"></i> Export JSON Database
+                        </button>
+                        <button onclick="resetDatabase()" class="bg-red-950 hover:bg-red-900 text-red-400 border border-red-800/60 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all">
+                            <i class="fa-solid fa-rotate-right mr-2"></i> Reset to Factory Default Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Generic Modal Dialog for CRUD Operations -->
+    <div id="crud-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-snrg-card border border-snrg-border w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <h3 id="modal-title" class="text-lg font-black text-white">Modal Title</h3>
+            <div id="modal-form-fields" class="space-y-3">
+                <!-- Form fields injected dynamically -->
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-snrg-border">
+                <button onclick="closeModal()" class="bg-snrg-dark hover:bg-gray-800 text-gray-300 text-xs px-4 py-2.5 rounded-xl font-semibold border border-snrg-border">Cancel</button>
+                <button id="modal-submit-btn" onclick="submitModalForm()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-snrg-card border border-red-600 text-white px-5 py-3 rounded-2xl shadow-2xl transform translate-y-24 opacity-0 transition-all duration-300 z-50 flex items-center space-x-3 text-xs font-bold">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toast-msg">Action completed successfully.</span>
+    </div>
+
+    <script>
+        // Default Master State
+        let siteData = {
+            settings: {
+                title: "FQ MMA / TEAM S.N.R.G.",
+                announcement: "🔥 S.N.R.G. WORLD CHAMPIONSHIP TICKETS ON SALE NOW! USE CODE: SNRG2026"
+            },
+            fighters: [
+                { id: 1, name: "Marcus 'The Juggernaut' Vance", discipline: "MMA", weight: "Welterweight (170 lbs)", record: "14 - 2 - 0", image: "https://placehold.co/100x100/333333/ffffff?text=MV" },
+                { id: 2, name: "Elena 'The Viper' Rostova", discipline: "Kickboxing", weight: "Strawweight (115 lbs)", record: "9 - 1 - 0", image: "https://placehold.co/100x100/333333/ffffff?text=ER" },
+                { id: 3, name: "Daisuke Sato", discipline: "Judo & Jiu-Jitsu", weight: "Lightweight (155 lbs)", record: "18 - 3 - 0", image: "https://placehold.co/100x100/333333/ffffff?text=DS" },
+                { id: 4, name: "Jaxson Steel", discipline: "Boxing", weight: "Heavyweight (220+ lbs)", record: "12 - 0 - 0", image: "https://placehold.co/100x100/333333/ffffff?text=JS" }
+            ],
+            schedule: [
+                { id: 1, title: "S.N.R.G. Championship 42: Vance vs. Sterling", date: "2026-10-28 20:00", venue: "Apex Arena, Las Vegas, NV", ticketLink: "https://checkout.stripe.com/pay/snrg42" },
+                { id: 2, title: "S.N.R.G. Contenders Series 14", date: "2026-11-15 18:00", venue: "S.N.R.G. Training HQ, Miami, FL", ticketLink: "https://checkout.stripe.com/pay/contenders14" },
+                { id: 3, title: "International Grappling Showcase", date: "2026-12-05 14:00", venue: "Tokyo Dome City, Tokyo", ticketLink: "https://checkout.stripe.com/pay/grapple2026" }
+            ],
+            disciplines: [
+                { id: 1, name: "Traditional Karate & Shotokan", desc: "Master traditional forms, kata, and devastating linear striking.", link: "https://train.team-snrg.com/karate" },
+                { id: 2, name: "Kickboxing & Muay Thai", desc: "Clinch work, knees, elbows, and high-octane striking combinations.", link: "https://train.team-snrg.com/muaythai" },
+                { id: 3, name: "Boxing & Kids Boxing", desc: "Footwork, head movement, combinations, and discipline for all ages.", link: "https://train.team-snrg.com/boxing" },
+                { id: 4, name: "Judo & Brazilian Jiu-Jitsu", desc: "Throws, sweeps, joint locks, and elite ground submission grappling.", link: "https://train.team-snrg.com/bjj" },
+                { id: 5, name: "Wrestling & Kids Kickboxing", desc: "Takedowns, chain wrestling, and junior martial arts fundamentals.", link: "https://train.team-snrg.com/wrestling" }
+            ],
+            store: [
+                { id: 1, name: "S.N.R.G. Pro Competition Gloves", price: "$79.99", link: "https://buy.stripe.com/gloves" },
+                { id: 2, name: "Team S.N.R.G. Walkout Hoodie", price: "$65.00", link: "https://buy.stripe.com/hoodie" },
+                { id: 3, name: "Official Fight Shorts (Red/Black)", price: "$49.99", link: "https://buy.stripe.com/shorts" }
+            ],
+            portfolio: [
+                { id: 1, title: "World Championship Training Camp", url: "https://placehold.co/300x200/222222/ef4444?text=Training+Camp" },
+                { id: 2, title: "Weigh-In Staredown 42", url: "https://placehold.co/300x200/222222/ef4444?text=Weigh-In" },
+                { id: 3, title: "Junior Karate Demo Day", url: "https://placehold.co/300x200/222222/ef4444?text=Junior+Karate" },
+                { id: 4, title: "Submission Grappling Masterclass", url: "https://placehold.co/300x200/222222/ef4444?text=Grappling" }
+            ],
+            promos: [
+                { id: 1, code: "SNRG-VANCE42", event: "S.N.R.G. Championship 42", discount: "20% OFF", expiry: "2026-10-28" },
+                { id: 2, code: "KICKBOX-ELENA", event: "Contenders Series 14", discount: "$15 OFF", expiry: "2026-11-15" }
+            ]
+        };
+
+        // Load saved state from localStorage if available
+        if(localStorage.getItem('snrg_admin_db')) {
+            try {
+                siteData = JSON.parse(localStorage.getItem('snrg_admin_db'));
+            } catch(e) { console.error('Failed to parse local state', e); }
+        }
+
+        function saveState() {
+            localStorage.setItem('snrg_admin_db', JSON.stringify(siteData));
+            renderAll();
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = message;
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+                btn.classList.remove('bg-red-600', 'text-white', 'shadow-md', 'shadow-red-900/30');
+                btn.classList.add('text-gray-300', 'hover:bg-gray-800', 'hover:text-white');
+            });
+            
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById('nav-' + tabId);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-red-600', 'text-white', 'shadow-md', 'shadow-red-900/30');
+                activeBtn.classList.remove('text-gray-300', 'hover:bg-gray-800', 'hover:text-white');
+            }
+        }
+
+        function renderAll() {
+            // Stats counts
+            document.getElementById('stat-fighters-count').innerText = siteData.fighters.length;
+            document.getElementById('stat-events-count').innerText = siteData.schedule.length;
+            document.getElementById('stat-store-count').innerText = siteData.store.length;
+            document.getElementById('stat-promos-count').innerText = siteData.promos.length;
+
+            // Render Fighters
+            const fBody = document.getElementById('fighters-table-body');
+            fBody.innerHTML = siteData.fighters.map(f => `
+                <tr class="hover:bg-gray-800/40 transition-colors">
+                    <td class="p-4 font-bold text-white flex items-center space-x-3">
+                        <img src="${f.image}" class="w-8 h-8 rounded-full object-cover border border-red-600">
+                        <span>${f.name}</span>
+                    </td>
+                    <td class="p-4 text-gray-300">${f.discipline}</td>
+                    <td class="p-4 text-gray-300">${f.weight}</td>
+                    <td class="p-4 font-mono text-emerald-400 font-bold">${f.record}</td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="openFighterModal(${f.id})" class="bg-snrg-dark hover:bg-gray-700 text-gray-200 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border border-snrg-border">
+                            <i class="fa-solid fa-pen"></i> Edit
+                        </button>
+                        <button onclick="deleteItem('fighters', ${f.id})" class="bg-red-950 hover:bg-red-900 text-red-400 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border border-red-800/60">
+                            <i class="fa-solid fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Render Schedule
+            const sGrid = document.getElementById('schedule-admin-grid');
+            sGrid.innerHTML = siteData.schedule.map(e => `
+                <div class="bg-snrg-card border border-snrg-border p-5 rounded-2xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="bg-red-950 text-red-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-widest border border-red-800/60">Live Event</span>
+                        <span class="text-xs text-gray-400 font-mono"><i class="fa-regular fa-clock mr-1"></i> ${e.date}</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">${e.title}</h3>
+                    <p class="text-xs text-gray-400">Location: ${e.venue}</p>
+                    <p class="text-[11px] text-blue-400 truncate">Ticket/Pay Link: ${e.ticketLink}</p>
+                    <div class="flex items-center space-x-2 pt-2 border-t border-snrg-border">
+                        <button onclick="openScheduleModal(${e.id})" class="bg-snrg-dark hover:bg-gray-700 text-gray-200 text-xs px-3 py-1.5 rounded-xl font-semibold border border-snrg-border">
+                            <i class="fa-solid fa-pen mr-1"></i> Edit
+                        </button>
+                        <button onclick="deleteItem('schedule', ${e.id})" class="bg-red-950 hover:bg-red-900 text-red-400 text-xs px-3 py-1.5 rounded-xl font-semibold border border-red-800/60">
+                            <i class="fa-solid fa-trash mr-1"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render Disciplines
+            const dGrid = document.getElementById('disciplines-admin-grid');
+            dGrid.innerHTML = siteData.disciplines.map(d => `
+                <div class="bg-snrg-card border border-snrg-border p-5 rounded-2xl space-y-3">
+                    <h3 class="text-base font-bold text-white">${d.name}</h3>
+                    <p class="text-xs text-gray-400">${d.desc}</p>
+                    <p class="text-[11px] font-mono text-emerald-400 truncate">Training Link: ${d.link}</p>
+                    <div class="flex items-center space-x-2 pt-2 border-t border-snrg-border">
+                        <button onclick="openDisciplineModal(${d.id})" class="bg-snrg-dark hover:bg-gray-700 text-gray-200 text-xs px-3 py-1.5 rounded-xl font-semibold border border-snrg-border">
+                            <i class="fa-solid fa-pen mr-1"></i> Edit
+                        </button>
+                        <button onclick="deleteItem('disciplines', ${d.id})" class="bg-red-950 hover:bg-red-900 text-red-400 text-xs px-3 py-1.5 rounded-xl font-semibold border border-red-800/60">
+                            <i class="fa-solid fa-trash mr-1"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render Store
+            const stGrid = document.getElementById('store-admin-grid');
+            stGrid.innerHTML = siteData.store.map(st => `
+                <div class="bg-snrg-card border border-snrg-border p-5 rounded-2xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-lg font-black text-emerald-400">${st.price}</span>
+                        <span class="text-[10px] bg-blue-950 text-blue-400 px-2 py-0.5 rounded-full border border-blue-800/60">Store Item</span>
+                    </div>
+                    <h3 class="text-base font-bold text-white">${st.name}</h3>
+                    <p class="text-[11px] font-mono text-gray-400 truncate">Payment Link: ${st.link}</p>
+                    <div class="flex items-center space-x-2 pt-2 border-t border-snrg-border">
+                        <button onclick="openStoreModal(${st.id})" class="bg-snrg-dark hover:bg-gray-700 text-gray-200 text-xs px-3 py-1.5 rounded-xl font-semibold border border-snrg-border">
+                            <i class="fa-solid fa-pen mr-1"></i> Edit
+                        </button>
+                        <button onclick="deleteItem('store', ${st.id})" class="bg-red-950 hover:bg-red-900 text-red-400 text-xs px-3 py-1.5 rounded-xl font-semibold border border-red-800/60">
+                            <i class="fa-solid fa-trash mr-1"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render Portfolio
+            const pGrid = document.getElementById('portfolio-admin-grid');
+            pGrid.innerHTML = siteData.portfolio.map(p => `
+                <div class="bg-snrg-card border border-snrg-border rounded-2xl overflow-hidden group">
+                    <div class="h-32 bg-gray-900 relative">
+                        <img src="${p.url}" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-3 space-y-2">
+                        <p class="text-xs font-bold truncate">${p.title}</p>
+                        <div class="flex items-center justify-between">
+                            <button onclick="openPortfolioModal(${p.id})" class="bg-snrg-dark hover:bg-gray-700 text-gray-200 text-[10px] px-2 py-1 rounded border border-snrg-border">Edit</button>
+                            <button onclick="deleteItem('portfolio', ${p.id})" class="text-red-400 hover:text-red-300 text-[10px]"><i class="fa-solid fa-trash"></i> Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render Promos
+            const prBody = document.getElementById('promos-table-body');
+            prBody.innerHTML = siteData.promos.map(pr => `
+                <tr class="hover:bg-gray-800/40 transition-colors">
+                    <td class="p-4 font-mono font-bold text-emerald-400 text-sm">${pr.code}</td>
+                    <td class="p-4 text-white">${pr.event}</td>
+                    <td class="p-4 text-gray-300">${pr.discount}</td>
+                    <td class="p-4 text-amber-400 font-mono">${pr.expiry} <span class="text-[10px] text-gray-500">(Auto-expire)</span></td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="openPromoModal(${pr.id})" class="bg-snrg-dark hover:bg-gray-700 text-gray-200 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border border-snrg-border">
+                            <i class="fa-solid fa-pen"></i> Edit
+                        </button>
+                        <button onclick="deleteItem('promos', ${pr.id})" class="bg-red-950 hover:bg-red-900 text-red-400 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border border-red-800/60">
+                            <i class="fa-solid fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Generic Delete Handler
+        function deleteItem(collection, id) {
+            if(confirm('Are you sure you want to delete this record? This cannot be undone.')) {
+                siteData[collection] = siteData[collection].filter(item => item.id !== id);
+                saveState();
+                showToast('Record deleted successfully.');
+            }
+        }
+
+        // Modal Form Handling
+        let activeModalCallback = null;
+
+        function openModal(title, htmlFields, onSubmit) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-form-fields').innerHTML = htmlFields;
+            activeModalCallback = onSubmit;
+            document.getElementById('crud-modal').classList.remove('hidden');
+            document.getElementById('crud-modal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('crud-modal').classList.remove('flex');
+            document.getElementById('crud-modal').classList.add('hidden');
+        }
+
+        function submitModalForm() {
+            if(activeModalCallback) activeModalCallback();
+            closeModal();
+        }
+
+        // 1. Fighter Modal (Create/Edit)
+        function openFighterModal(id = null) {
+            const fighter = id ? siteData.fighters.find(f => f.id === id) : { name: '', discipline: 'MMA', weight: '', record: '0 - 0 - 0', image: 'https://placehold.co/100x100/333333/ffffff?text=NEW' };
+            openModal(id ? 'Edit Fighter Profile' : 'Add New Fighter', `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Fighter Name</label>
+                    <input type="text" id="m-name" value="${fighter.name}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Discipline</label>
+                    <input type="text" id="m-discipline" value="${fighter.discipline}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Weight Class</label>
+                    <input type="text" id="m-weight" value="${fighter.weight}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Record (W-L-D)</label>
+                    <input type="text" id="m-record" value="${fighter.record}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+            `, () => {
+                fighter.name = document.getElementById('m-name').value;
+                fighter.discipline = document.getElementById('m-discipline').value;
+                fighter.weight = document.getElementById('m-weight').value;
+                fighter.record = document.getElementById('m-record').value;
+                if(!id) {
+                    fighter.id = Date.now();
+                    siteData.fighters.push(fighter);
+                }
+                saveState();
+                showToast('Fighter roster updated.');
+            });
+        }
+
+        // 2. Schedule Modal
+        function openScheduleModal(id = null) {
+            const event = id ? siteData.schedule.find(e => e.id === id) : { title: '', date: '2026-11-01 20:00', venue: '', ticketLink: '' };
+            openModal(id ? 'Edit Fight Event' : 'Schedule New Event', `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Event Title</label>
+                    <input type="text" id="m-title" value="${event.title}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Date & Time</label>
+                    <input type="text" id="m-date" value="${event.date}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Venue Location</label>
+                    <input type="text" id="m-venue" value="${event.venue}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Ticket / Pay Gateway URL</label>
+                    <input type="text" id="m-link" value="${event.ticketLink}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+            `, () => {
+                event.title = document.getElementById('m-title').value;
+                event.date = document.getElementById('m-date').value;
+                event.venue = document.getElementById('m-venue').value;
+                event.ticketLink = document.getElementById('m-link').value;
+                if(!id) {
+                    event.id = Date.now();
+                    siteData.schedule.push(event);
+                }
+                saveState();
+                showToast('Fight event schedule updated.');
+            });
+        }
+
+        // 3. Discipline Modal
+        function openDisciplineModal(id = null) {
+            const d = id ? siteData.disciplines.find(x => x.id === id) : { name: '', desc: '', link: '' };
+            openModal(id ? 'Edit Training Discipline' : 'Add Discipline Program', `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Discipline Name</label>
+                    <input type="text" id="m-dname" value="${d.name}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Description</label>
+                    <textarea id="m-ddesc" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white h-20">${d.desc}</textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Training Link URL</label>
+                    <input type="text" id="m-dlink" value="${d.link}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+            `, () => {
+                d.name = document.getElementById('m-dname').value;
+                d.desc = document.getElementById('m-ddesc').value;
+                d.link = document.getElementById('m-dlink').value;
+                if(!id) {
+                    d.id = Date.now();
+                    siteData.disciplines.push(d);
+                }
+                saveState();
+                showToast('Training discipline updated.');
+            });
+        }
+
+        // 4. Store Modal
+        function openStoreModal(id = null) {
+            const st = id ? siteData.store.find(x => x.id === id) : { name: '', price: '$', link: '' };
+            openModal(id ? 'Edit Store Product' : 'Add Store Product', `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Product Title</label>
+                    <input type="text" id="m-stname" value="${st.name}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Price</label>
+                    <input type="text" id="m-stprice" value="${st.price}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Payment / Checkout Link URL</label>
+                    <input type="text" id="m-stlink" value="${st.link}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+            `, () => {
+                st.name = document.getElementById('m-stname').value;
+                st.price = document.getElementById('m-stprice').value;
+                st.link = document.getElementById('m-stlink').value;
+                if(!id) {
+                    st.id = Date.now();
+                    siteData.store.push(st);
+                }
+                saveState();
+                showToast('Store product updated.');
+            });
+        }
+
+        // 5. Portfolio Modal
+        function openPortfolioModal(id = null) {
+            const p = id ? siteData.portfolio.find(x => x.id === id) : { title: '', url: 'https://placehold.co/300x200/222222/ef4444?text=New+Media' };
+            openModal(id ? 'Edit Media Asset' : 'Upload Media Asset', `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Media Title</label>
+                    <input type="text" id="m-ptitle" value="${p.title}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Image / Video URL</label>
+                    <input type="text" id="m-purl" value="${p.url}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+            `, () => {
+                p.title = document.getElementById('m-ptitle').value;
+                p.url = document.getElementById('m-purl').value;
+                if(!id) {
+                    p.id = Date.now();
+                    siteData.portfolio.push(p);
+                }
+                saveState();
+                showToast('Portfolio media updated.');
+            });
+        }
+
+        // 6. Promo Code Generator & Modal
+        function generateRandomPromo() {
+            const randomCode = 'SNRG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            const today = new Date().toISOString().split('T')[0];
+            const newPromo = {
+                id: Date.now(),
+                code: randomCode,
+                event: "S.N.R.G. Live PPV Event",
+                discount: "25% OFF",
+                expiry: today
+            };
+            siteData.promos.push(newPromo);
+            saveState();
+            showToast('Random promo code generated & added: ' + randomCode);
+        }
+
+        function openPromoModal(id) {
+            const pr = siteData.promos.find(x => x.id === id);
+            openModal('Edit Promo Code', `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Promo Code</label>
+                    <input type="text" id="m-prcode" value="${pr.code}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Associated Event</label>
+                    <input type="text" id="m-prevent" value="${pr.event}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Expiry Date (Auto-remove after)</label>
+                    <input type="date" id="m-prexpiry" value="${pr.expiry}" class="w-full bg-snrg-dark border border-snrg-border rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+            `, () => {
+                pr.code = document.getElementById('m-prcode').value;
+                pr.event = document.getElementById('m-prevent').value;
+                pr.expiry = document.getElementById('m-prexpiry').value;
+                saveState();
+                showToast('Promo code updated.');
+            });
+        }
+
+        function saveGlobalSettings() {
+            siteData.settings.title = document.getElementById('global-site-title').value;
+            siteData.settings.announcement = document.getElementById('global-announcement').value;
+            saveState();
+            showToast('Global site configuration updated.');
+        }
+
+        function exportDatabase() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(siteData, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", "snrg_admin_backup.json");
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast('Database exported successfully.');
+        }
+
+        function resetDatabase() {
+            if(confirm('Reset all site data to default? All custom edits will be cleared.')) {
+                localStorage.removeItem('snrg_admin_db');
+                location.reload();
+            }
+        }
+
+        let isPreviewMode = false;
+        function togglePublicSitePreview() {
+            isPreviewMode = !isPreviewMode;
+            document.getElementById('preview-btn-text').innerText = isPreviewMode ? 'Exit Public View (Return to Admin)' : 'Toggle Public Site View';
+            showToast(isPreviewMode ? 'Switched to Public User View (Admin options hidden)' : 'Restored Master Admin Dashboard View');
+        }
+
+        // Initialize render on load
+        window.onload = function() {
+            renderAll();
+        };
+    </script>
+</body>
+</html>
