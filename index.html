@@ -25,8 +25,8 @@
     <!-- Optional backend: leave blank for static public mode. Use only a publishable/anon key, never a service_role key. -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-      window.SUPABASE_URL = "";
-      window.SUPABASE_ANON_KEY = "";
+      window.SUPABASE_URL = "https://dmcbbavsxyxrxuuzraiu.supabase.co";
+      window.SUPABASE_ANON_KEY = "sb_publishable_vJAptJ41TpicuxtMspB8tA_AaMFlGEC";
       window.supabaseReady = false;
       window.sb = null;
       if (window.supabase && window.SUPABASE_URL.startsWith("https://") && !window.SUPABASE_URL.includes("YOUR_") && !window.SUPABASE_ANON_KEY.includes("YOUR_")) {
@@ -652,6 +652,7 @@
                     <i class="fa-solid fa-arrow-up-right-from-square"></i> STREAM INFORMATION
                 </button>
             </div>
+            <a href="./membership.html" class="block w-full text-center border border-gray-700 hover:border-brand-red text-white font-heading font-black uppercase tracking-wider py-3 rounded-xl">MEMBERSHIP OPTIONS / JOIN FQ MMA</a>
         </div>
     </div>
 
@@ -892,8 +893,8 @@
                 return `
                     <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 rounded-full ${accentColor} border-2 flex items-center justify-center font-heading font-black text-xl shrink-0">
-                                ${f.initials || f.name.substring(0,2).toUpperCase()}
+                            <div class="w-14 h-14 rounded-full ${accentColor} border-2 flex items-center justify-center font-heading font-black text-xl shrink-0 overflow-hidden">
+                                ${f.image && /^https:\/\/[a-z0-9.-]+(?:\/[^\s"'<>]*)?$/i.test(f.image) ? '<img src="' + f.image + '" alt="' + f.name + '" class="w-full h-full object-cover rounded-full">' : (f.initials || f.name.substring(0,2).toUpperCase())}
                             </div>
                             <div class="space-y-1">
                                 <span class="${isRed ? 'text-brand-red' : 'text-white'} font-heading font-black text-xs tracking-widest uppercase">${f.record}</span>
@@ -921,7 +922,8 @@
                 return `
                     <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
                         <div class="space-y-1">
-                            <span class="${tagColor} font-heading font-black text-xs tracking-widest uppercase">DIGITAL PRODUCT</span>
+                            ${s.image && /^https:\/\/[a-z0-9.-]+(?:\/[^\s"'<>]*)?$/i.test(s.image) ? '<img src="' + s.image + '" alt="' + s.title + '" loading="lazy" class="w-full max-h-48 object-cover rounded-lg mb-3">' : ''}
+                            <span class="${tagColor} font-heading font-black text-xs tracking-widest uppercase">FQ MMA PRODUCT</span>
                             <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide">${s.title}</h3>
                             <p class="text-xs text-gray-300">${s.subtitle}</p>
                         </div>
@@ -1402,9 +1404,28 @@
         async function loadSiteContentFromSupabase() {
             if (!window.supabaseReady) return;
             const { data, error } = await window.sb.from('site_content').select('content_value').eq('content_key', 'public').maybeSingle();
-            if (error) { console.warn('Supabase content read failed; using bundled defaults.', error); return; }
-            if (!data?.content_value) return;
-            if (applySiteContent(data.content_value)) { renderAllContent(); renderAdminManagerLists(); }
+            if (error) console.warn('Supabase content read failed; using bundled defaults.', error);
+            if (data?.content_value) applySiteContent(data.content_value);
+            // Keep the public roster, event schedule, and product list connected to their structured tables.
+            try {
+                const [fightersResult, eventsResult, scheduleResult, productsResult] = await Promise.all([
+                    window.sb.from('fighters').select('id,name,nickname,record,bio,image_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
+                    window.sb.from('events').select('id,title,event_date,venue,main_event,description,status').in('status', ['upcoming','live','completed']).order('event_date', {ascending:true}),
+                    window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
+                    window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false})
+                ]);
+                if (fightersResult.error) console.warn('Could not load published fighters from Supabase.', fightersResult.error);
+                else if (fightersResult.data?.length) siteData.fighters = fightersResult.data.map(f => ({id:f.id,name:f.name,record:f.record||'',desc:f.bio||f.nickname||'',initials:(f.name||'').substring(0,2).toUpperCase(),image:f.image_url||''}));
+                if (eventsResult.error) console.warn('Could not load events from Supabase.', eventsResult.error);
+                if (scheduleResult.error) console.warn('Could not load training schedule from Supabase.', scheduleResult.error);
+                const eventItems = (eventsResult.data||[]).map(e => ({id:e.id,date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),link:''}));
+                const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
+                if (eventItems.length || classItems.length) siteData.schedule = [...eventItems,...classItems];
+                if (productsResult.error) console.warn('Could not load products from Supabase.', productsResult.error);
+                else if (productsResult.data?.length) siteData.store = productsResult.data.map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA merchandise',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
+            } catch (e) { console.warn('Supabase structured content could not be loaded; retaining homepage defaults.', e); }
+            renderAllContent();
+            if (window.__snrgAdminUser) renderAdminManagerLists();
         }
 
         function applySiteContent(value) {
