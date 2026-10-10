@@ -168,11 +168,11 @@ async function requireAdmin(user){
 async function showDashboard(user){
   currentUser=user;
   try{await requireAdmin(user);$('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('signedInAs').textContent=user.email||'Signed in';await refreshAll();}
-  catch(e){await client.auth.signOut();$('dashboard').classList.add('hidden');$('loginPanel').classList.remove('hidden');loginSay(e.message,true);}
+  catch(e){currentUser=null;await client.auth.signOut();$('dashboard').classList.add('hidden');$('loginPanel').classList.remove('hidden');loginSay(e.message,true);}
 }
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();if(!client){loginSay('Add your Supabase URL and publishable/anon key in CONFIG first.',true);return}loginSay('Signing in…');const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){loginSay(error.message,true);return}try{await showDashboard(data.user)}catch(err){loginSay(err.message,true)}});
 $('googleBtn').addEventListener('click',async()=>{if(!client){loginSay('Add your Supabase URL and publishable/anon key in CONFIG first.',true);return}const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href.split('#')[0]}});if(error)loginSay(error.message,true)});
-$('logoutBtn').addEventListener('click',async()=>{if(client)await client.auth.signOut();$('dashboard').classList.add('hidden');$('loginPanel').classList.remove('hidden');loginSay('You have signed out.')});
+$('logoutBtn').addEventListener('click',async()=>{if(client)await client.auth.signOut();currentUser=null;$('dashboard').classList.add('hidden');$('loginPanel').classList.remove('hidden');loginSay('You have signed out.')});
 document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b===btn));['content','fighters','events','schedule','products','media','memberships','chat'].forEach(t=>$('tab-'+t).classList.toggle('hidden',t!==btn.dataset.tab)); if(btn.dataset.tab==='schedule')loadSchedule(); if(btn.dataset.tab==='products')loadProducts(); if(btn.dataset.tab==='media')loadMedia(); if(btn.dataset.tab==='memberships')loadMemberships(); if(btn.dataset.tab==='chat')loadChat();}));
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function refreshAll(){await Promise.all([loadContent(),loadFighters(),loadEvents()])}
