@@ -123,7 +123,7 @@ alter table public.chat_messages enable row level security;
 drop policy if exists "Admins can read their own admin record" on public.admin_users;
 create policy "Admins can read their own admin record" on public.admin_users for select to authenticated using (user_id = (select auth.uid()));
 drop policy if exists "Public can read site content" on public.site_content;
-create policy "Public can read site content" on public.site_content for select to anon, authenticated using (true);
+create policy "Public can read homepage content only" on public.site_content for select to anon, authenticated using (content_key = 'public');
 drop policy if exists "Admins manage site content" on public.site_content;
 create policy "Admins manage site content" on public.site_content for all to authenticated using (public.is_fqmma_admin()) with check (public.is_fqmma_admin());
 
