@@ -87,6 +87,13 @@ create table if not exists public.memberships (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+-- Stripe checkout/webhook references. Existing rows remain valid.
+alter table public.memberships add column if not exists stripe_customer_id text not null default '';
+alter table public.memberships add column if not exists stripe_subscription_id text not null default '';
+alter table public.memberships add column if not exists stripe_checkout_session_id text not null default '';
+create index if not exists memberships_stripe_subscription_idx on public.memberships (stripe_subscription_id);
+create index if not exists memberships_stripe_checkout_session_idx on public.memberships (stripe_checkout_session_id);
+
 create table if not exists public.chat_messages (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete set null,
