@@ -893,8 +893,8 @@
                 return `
                     <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 rounded-full ${accentColor} border-2 flex items-center justify-center font-heading font-black text-xl shrink-0">
-                                ${f.initials || f.name.substring(0,2).toUpperCase()}
+                            <div class="w-14 h-14 rounded-full ${accentColor} border-2 flex items-center justify-center font-heading font-black text-xl shrink-0 overflow-hidden">
+                                ${f.image && /^https:\/\/[a-z0-9.-]+(?:\/[^\s"'<>]*)?$/i.test(f.image) ? '<img src="' + f.image + '" alt="' + f.name + '" class="w-full h-full object-cover rounded-full">' : (f.initials || f.name.substring(0,2).toUpperCase())}
                             </div>
                             <div class="space-y-1">
                                 <span class="${isRed ? 'text-brand-red' : 'text-white'} font-heading font-black text-xs tracking-widest uppercase">${f.record}</span>
@@ -922,7 +922,8 @@
                 return `
                     <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
                         <div class="space-y-1">
-                            <span class="${tagColor} font-heading font-black text-xs tracking-widest uppercase">DIGITAL PRODUCT</span>
+                            ${s.image && /^https:\/\/[a-z0-9.-]+(?:\/[^\s"'<>]*)?$/i.test(s.image) ? '<img src="' + s.image + '" alt="' + s.title + '" loading="lazy" class="w-full max-h-48 object-cover rounded-lg mb-3">' : ''}
+                            <span class="${tagColor} font-heading font-black text-xs tracking-widest uppercase">FQ MMA PRODUCT</span>
                             <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide">${s.title}</h3>
                             <p class="text-xs text-gray-300">${s.subtitle}</p>
                         </div>
@@ -1421,7 +1422,7 @@
                 const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
                 if (eventItems.length || classItems.length) siteData.schedule = [...eventItems,...classItems];
                 if (productsResult.error) console.warn('Could not load products from Supabase.', productsResult.error);
-                else if (productsResult.data?.length) siteData.store = productsResult.data.map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA merchandise',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||''}));
+                else if (productsResult.data?.length) siteData.store = productsResult.data.map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA merchandise',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
             } catch (e) { console.warn('Supabase structured content could not be loaded; retaining homepage defaults.', e); }
             renderAllContent();
             if (window.__snrgAdminUser) renderAdminManagerLists();
