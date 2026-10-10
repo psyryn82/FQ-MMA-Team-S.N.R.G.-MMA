@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="index,follow">
+<title>FQ MMA Memberships</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark}body{background:#07080a;color:#e5e7eb;font-family:Inter,sans-serif}.head{font-family:Oswald,sans-serif}.panel{background:#111318;border:1px solid #292d35;border-radius:16px}.field{width:100%;padding:11px 12px;background:#08090c;border:1px solid #343945;border-radius:8px;color:#fff;margin-top:5px}.btn{background:#e50914;color:white;font-weight:700;padding:11px 14px;border-radius:8px}.btn2{border:1px solid #414653;padding:10px 14px;border-radius:8px}.muted{color:#9ca3af}
+</style>
+</head>
+<body class="min-h-screen">
+<header class="border-b border-gray-800 bg-black px-4 py-4"><div class="max-w-5xl mx-auto flex items-center justify-between gap-4"><div><div class="head text-2xl font-bold uppercase"><span class="text-red-500">FQ MMA</span> Memberships</div><div class="muted text-xs mt-1">Team S.N.R.G. MMA</div></div><a href="./index.html" class="btn2 text-sm">← Back to website</a></div></header>
+<main class="max-w-5xl mx-auto px-4 py-8">
+<section class="panel p-5 mb-6"><h1 class="head text-3xl uppercase">Membership options</h1><p class="muted text-sm mt-2">Create an account or sign in to purchase a published membership plan. Checkout is processed by Stripe; access changes only after the verified payment webhook is configured and receives the event.</p></section>
+<section class="grid lg:grid-cols-2 gap-5">
+<div class="panel p-5">
+<h2 class="head text-2xl uppercase mb-3">Member sign in</h2>
+<div class="flex gap-2 mb-4"><button id="modeSignIn" class="btn text-sm" type="button">Sign in</button><button id="modeSignUp" class="btn2 text-sm" type="button">Create account</button></div>
+<form id="authForm" class="space-y-3">
+<label class="block text-sm">Email<input id="email" class="field" type="email" autocomplete="email" required></label>
+<label class="block text-sm">Password<input id="password" class="field" type="password" minlength="8" autocomplete="current-password" required></label>
+<button id="authSubmit" class="btn w-full" type="submit">Sign in</button>
+</form>
+<button id="googleBtn" class="btn2 w-full mt-3" type="button">Continue with Google</button>
+<button id="signOutBtn" class="btn2 w-full mt-3 hidden" type="button">Sign out</button>
+<p id="authMessage" class="text-sm mt-4" role="status"></p>
+</div>
+<div class="panel p-5">
+<h2 class="head text-2xl uppercase mb-2">Your account</h2>
+<p id="sessionInfo" class="muted text-sm">Sign in to purchase a membership. Your account email will be used for the membership record.</p>
+<div id="membershipInfo" class="mt-4 space-y-2"></div>
+</div>
+</section>
+<section class="mt-8">
+<div class="flex items-end justify-between gap-3 mb-4"><div><h2 class="head text-3xl uppercase">Available plans</h2><p class="muted text-sm mt-1">Only plans published by FQ MMA appear here.</p></div><button id="refreshPlans" class="btn2 text-sm" type="button">Refresh</button></div>
+<div id="plans" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"><div class="panel p-5 muted text-sm">Loading membership plans…</div></div>
+</section>
+<p class="muted text-xs mt-8">Payments and subscription status are verified server-side. Do not send card details by message. If checkout is unavailable, the payment backend may not have been configured yet.</p>
+</main>
+<script>
+const SUPABASE_URL="https://dmcbbavsxyxrxuuzraiu.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_vJAptJ41TpicuxtMspB8tA_AaMFlGEC";
+const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id);
+let mode="signin",currentSession=null;
+function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function msg(s,error=false){$("authMessage").textContent=s;$("authMessage").className="text-sm mt-4 "+(error?"text-red-400":"text-gray-300")}
+function setMode(next){mode=next;$("modeSignIn").className=next==="signin"?"btn text-sm":"btn2 text-sm";$("modeSignUp").className=next==="signup"?"btn text-sm":"btn2 text-sm";$("authSubmit").textContent=next==="signin"?"Sign in":"Create account";$("password").autocomplete=next==="signin"?"current-password":"new-password";msg("")}
+$("modeSignIn").onclick=()=>setMode("signin");$("modeSignUp").onclick=()=>setMode("signup");
+function money(cents,currency){try{return new Intl.NumberFormat("en-US",{style:"currency",currency:currency||"USD"}).format((cents||0)/100)}catch{return "$"+((cents||0)/100).toFixed(2)}}
+async function loadPlans(){const {data,error}=await client.from("membership_plans").select("id,name,description,price_cents,currency,billing_interval").eq("is_published",true).order("price_cents");if(error){$("plans").innerHTML='<div class="panel p-5 text-red-400">Could not load plans. Run the updated Supabase schema first. '+esc(error.message)+'</div>';return}const rows=data||[];$("plans").innerHTML=rows.map(p=>'<article class="panel p-5 flex flex-col"><h3 class="head text-2xl uppercase">'+esc(p.name)+'</h3><div class="text-3xl font-bold mt-3">'+money(p.price_cents,p.currency)+'<span class="muted text-sm font-normal"> / '+esc(p.billing_interval==="month"?"month":p.billing_interval==="year"?"year":"one-time")+'</span></div><p class="muted text-sm mt-3 flex-1">'+esc(p.description||"FQ MMA membership")+'</p><button class="btn w-full mt-5" data-buy="'+p.id+'">Continue to checkout</button></article>').join("")||'<div class="panel p-5 muted">No published membership plans yet. Check back soon.</div>';document.querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>checkout(b.dataset.buy))}
+async function loadMembershipInfo(){if(!currentSession){$("membershipInfo").innerHTML="";return}const {data,error}=await client.from("memberships").select("status,current_period_end,created_at,membership_plans(name)").order("created_at",{ascending:false}).limit(10);if(error){$("membershipInfo").innerHTML='<p class="muted text-sm">Membership status could not be loaded.</p>';return}const own=(data||[]);$("membershipInfo").innerHTML=own.map(m=>'<div class="border border-gray-800 rounded-lg p-3"><b>'+esc(m.membership_plans?.name||"Membership")+'</b><p class="muted text-sm mt-1">Status: '+esc(m.status)+' '+(m.current_period_end?'• Until '+esc(new Date(m.current_period_end).toLocaleDateString()):'')+'</p></div>').join("")||'<p class="muted text-sm">No membership records yet.</p>'}
+async function checkout(planId){if(!currentSession){msg("Please sign in or create an account before checkout.",true);$("email").focus();return}msg("Creating secure checkout…");const {data,error}=await client.functions.invoke("create-checkout-session",{body:{plan_id:planId}});if(error){msg("Checkout is not ready yet. Confirm the Edge Function and Stripe secrets are configured. "+error.message,true);return}if(!data?.url){msg(data?.error||"Checkout did not return a payment URL.",true);return}window.location.assign(data.url)}
+$("authForm").addEventListener("submit",async e=>{e.preventDefault();msg("Please wait…");const email=$("email").value.trim(),password=$("password").value;if(mode==="signin"){const {data,error}=await client.auth.signInWithPassword({email,password});if(error){msg(error.message,true);return}currentSession={user:data.user};await refreshSession(data.session);msg("Signed in successfully.")}else{const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:window.location.href.split("?")[0]}});if(error){msg(error.message,true);return}if(data.session){await refreshSession(data.session);msg("Account created and signed in.")}else{msg("Account created. Check your email to confirm it, then return here to sign in.")}}});
+$("googleBtn").onclick=async()=>{const {error}=await client.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.href.split("?")[0]}});if(error)msg(error.message,true)};
+$("signOutBtn").onclick=async()=>{await client.auth.signOut();await refreshSession(null);msg("Signed out.")};
+$("refreshPlans").onclick=loadPlans;
+async function refreshSession(session){currentSession=session;$("sessionInfo").textContent=session?"Signed in as "+(session.user.email||"member"):"Sign in to purchase a membership. Your account email will be used for the membership record.";$("signOutBtn").classList.toggle("hidden",!session);$("authSubmit").classList.toggle("hidden",!!session);$("googleBtn").classList.toggle("hidden",!!session);$("email").disabled=!!session;$("password").disabled=!!session;await loadMembershipInfo()}
+client.auth.getSession().then(({data})=>refreshSession(data.session));
+client.auth.onAuthStateChange((_event,session)=>{refreshSession(session)});
+loadPlans();
+const params=new URLSearchParams(window.location.search);if(params.get("membership")==="success")msg("Checkout returned successfully. Membership status will update after Stripe sends a verified webhook.");else if(params.get("membership")==="cancelled")msg("Checkout was cancelled. No membership was activated.");
+</script>
+</body></html>
