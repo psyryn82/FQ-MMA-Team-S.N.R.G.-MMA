@@ -1402,9 +1402,28 @@
         async function loadSiteContentFromSupabase() {
             if (!window.supabaseReady) return;
             const { data, error } = await window.sb.from('site_content').select('content_value').eq('content_key', 'public').maybeSingle();
-            if (error) { console.warn('Supabase content read failed; using bundled defaults.', error); return; }
-            if (!data?.content_value) return;
-            if (applySiteContent(data.content_value)) { renderAllContent(); renderAdminManagerLists(); }
+            if (error) console.warn('Supabase content read failed; using bundled defaults.', error);
+            if (data?.content_value) applySiteContent(data.content_value);
+            // Keep the public roster, event schedule, and product list connected to their structured tables.
+            try {
+                const [fightersResult, eventsResult, scheduleResult, productsResult] = await Promise.all([
+                    window.sb.from('fighters').select('id,name,nickname,record,bio,image_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
+                    window.sb.from('events').select('id,title,event_date,venue,main_event,description,status').in('status', ['upcoming','live','completed']).order('event_date', {ascending:true}),
+                    window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
+                    window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false})
+                ]);
+                if (fightersResult.error) console.warn('Could not load published fighters from Supabase.', fightersResult.error);
+                else if (fightersResult.data?.length) siteData.fighters = fightersResult.data.map(f => ({id:f.id,name:f.name,record:f.record||'',desc:f.bio||f.nickname||'',initials:(f.name||'').substring(0,2).toUpperCase(),image:f.image_url||''}));
+                if (eventsResult.error) console.warn('Could not load events from Supabase.', eventsResult.error);
+                if (scheduleResult.error) console.warn('Could not load training schedule from Supabase.', scheduleResult.error);
+                const eventItems = (eventsResult.data||[]).map(e => ({id:e.id,date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),link:''}));
+                const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
+                if (eventItems.length || classItems.length) siteData.schedule = [...eventItems,...classItems];
+                if (productsResult.error) console.warn('Could not load products from Supabase.', productsResult.error);
+                else if (productsResult.data?.length) siteData.store = productsResult.data.map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA merchandise',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||''}));
+            } catch (e) { console.warn('Supabase structured content could not be loaded; retaining homepage defaults.', e); }
+            renderAllContent();
+            if (window.__snrgAdminUser) renderAdminManagerLists();
         }
 
         function applySiteContent(value) {
