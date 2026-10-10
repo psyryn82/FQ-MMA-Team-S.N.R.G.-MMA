@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
 <title>FQ MMA Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -86,7 +87,7 @@
 </main>
 <script>
 /* CONFIG: use your Supabase Project URL and publishable/anon key only. Never paste a service_role key. */
-const CONFIG={supabaseUrl:'https://dmcbbavsxyxrxuuzraiu.supabase.co',supabaseKey:'sb_publishable_vJAptJ41TpicuxtMspB8tA_AaMFlGEC'};
+const CONFIG={supabaseUrl:'',supabaseKey:''};
 const $=id=>document.getElementById(id);
 let client=null,currentUser=null;
 const say=(message,error=false)=>{const el=$('appMessage');el.textContent=message;el.className='text-sm mt-5 '+(error?'text-red-400':'text-green-400')};
