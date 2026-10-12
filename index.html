@@ -1373,10 +1373,6 @@
         }
 
         function setActiveTab(tabId) {
-            if (tabId === 'portfolio' && !isAdminLoggedIn) {
-                showNotification("Portfolio is restricted to administrators.", "error");
-                return;
-            }
 
             const activeTab = document.getElementById(`tab-${tabId}`);
             if (!activeTab) return;
@@ -1392,7 +1388,31 @@
                     btn.classList.add('text-brand-red', 'bg-brand-red/10', 'border', 'border-brand-red/30');
                     btn.setAttribute('aria-current', 'page');
                 }
+
             });
+        }
+
+        function submitSupportInquiry(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('contact-name').value.trim();
+            const email = document.getElementById('contact-email').value.trim();
+            const category = document.getElementById('contact-category').value;
+            const message = document.getElementById('contact-message').value.trim();
+
+            const subject = `FQ MMA Website Inquiry: ${category}`;
+            const body = [
+                `Name: ${name}`,
+                `Reply email: ${email}`,
+                `Inquiry type: ${category}`,
+                '',
+                'Message:',
+                message
+            ].join('\n');
+
+            const mailto = `mailto:fqsnrgmma.info@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+            window.location.href = mailto;
         }
 
         function scrollToPPV() {
