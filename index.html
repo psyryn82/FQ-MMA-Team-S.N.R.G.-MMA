@@ -57,6 +57,7 @@
                     },
                     boxShadow: {
                         'neon-red': '0 0 18px rgba(229, 9, 20, 0.45), 0 0 35px rgba(229, 9, 20, 0.25)',
+                        'neon-white': '0 0 18px rgba(255, 255, 255, 0.35), 0 0 35px rgba(255, 255, 255, 0.16)',
                         'glow-lg': '0 0 30px rgba(255, 42, 42, 0.6)',
                     }
                 }
@@ -173,34 +174,14 @@
 
     <header class="sticky top-0 z-40 glass-panel border-b border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20">
-                <a href="#" class="flex items-center gap-3 group py-2">
+            <div class="relative flex flex-col items-center lg:block">
+                <a href="#" class="flex items-center justify-center group py-3 lg:min-h-20 lg:py-2">
                     <div class="relative flex items-center justify-center bg-black/90 px-2 sm:px-4 py-2 rounded-xl border border-red-600/60 group-hover:border-red-500 transition-all shadow-neon-red">
                         <span class="font-heading text-sm sm:text-2xl font-black text-white tracking-wider">FQ MMA <span class="text-brand-red">/ Team S.N.R.G. MMA</span></span>
                     </div>
                 </a>
 
-                <nav class="hidden lg:flex items-center space-x-1" aria-label="Main navigation">
-                    <button onclick="setActiveTab('live')" id="nav-live" aria-current="page" class="nav-btn active px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all flex items-center gap-2 text-brand-red bg-brand-red/10 border border-brand-red/30">
-                        <i class="fa-solid fa-circle text-xs text-brand-red animate-pulse"></i> Live stream
-                    </button>
-                    <button onclick="setActiveTab('disciplines')" id="nav-disciplines" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                        Disciplines
-                    </button>
-                    <button onclick="setActiveTab('schedule')" id="nav-schedule" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                        Schedule
-                    </button>
-                    <button onclick="setActiveTab('fighters')" id="nav-fighters" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                        Roster
-                    </button>
-                    <button onclick="setActiveTab('store')" id="nav-store" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                        Media Store
-                    </button>
-                    <button onclick="setActiveTab('contact')" id="nav-contact" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                        Contact
-                    </button>
-
-                <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center gap-3 pb-3 lg:absolute lg:right-0 lg:top-1/2 lg:-translate-y-1/2 lg:pb-0">
                     <div id="user-status-pill" class="hidden sm:flex items-center gap-2 bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-full text-xs text-gray-400 font-bold">
                         <i class="fa-solid fa-lock text-yellow-500" id="user-access-icon"></i>
                         <span id="user-access-label">Stream not available</span>
@@ -215,11 +196,33 @@
                     </button>
                 </div>
             </div>
+
+            <nav class="hidden lg:flex items-center justify-center space-x-1 pb-3" aria-label="Main navigation">
+                <button onclick="setActiveTab('live')" id="nav-live" aria-current="page" class="nav-btn active px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all flex items-center gap-2 text-brand-red bg-brand-red/10 border border-brand-red/30">
+                    <i class="fa-solid fa-circle text-xs text-brand-red animate-pulse"></i> Live Stream
+                </button>
+                <button onclick="setActiveTab('schedule')" id="nav-schedule" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                    Events
+                </button>
+                <button onclick="setActiveTab('fighters')" id="nav-fighters" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                    Roster
+                </button>
+                <button onclick="setActiveTab('disciplines')" id="nav-disciplines" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                    Disciplines
+                </button>
+                <button onclick="setActiveTab('store')" id="nav-store" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                    Media
+                </button>
+                <button onclick="setActiveTab('contact')" id="nav-contact" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                    Contact
+                </button>
+            </nav>
+
             <nav class="lg:hidden flex items-center gap-2 overflow-x-auto pb-3" aria-label="Mobile navigation">
                 <button onclick="setActiveTab('live')" data-tab="live" class="nav-btn shrink-0 rounded-md border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-bold uppercase text-brand-red">LIVE STREAM PPV</button>
-                <button onclick="setActiveTab('disciplines')" data-tab="disciplines" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Disciplines</button>
                 <button onclick="setActiveTab('schedule')" data-tab="schedule" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Events</button>
                 <button onclick="setActiveTab('fighters')" data-tab="fighters" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Roster</button>
+                <button onclick="setActiveTab('disciplines')" data-tab="disciplines" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Disciplines</button>
                 <button onclick="setActiveTab('store')" data-tab="store" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Media</button>
                 <button onclick="setActiveTab('contact')" data-tab="contact" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Contact</button>
             </nav>
@@ -821,9 +824,10 @@
                 const borderColor = isRed ? 'border-brand-red' : 'border-white';
                 const tagColor = isRed ? 'text-brand-red bg-brand-red/20 border-red-900' : 'text-white bg-white/10 border-gray-700';
                 const btnStyle = isRed ? 'bg-brand-red hover:bg-red-700 text-white' : 'bg-white hover:bg-gray-200 text-black';
+                const glowStyle = isRed ? 'shadow-neon-red' : 'shadow-neon-white';
 
                 return `
-                    <div class="bg-gray-900/95 p-6 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col justify-between gap-4 shadow-lg">
+                    <div class="bg-gray-900/95 p-6 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col justify-between gap-4 ${glowStyle}">
                         <div class="space-y-2">
                             <span class="${tagColor} text-xs font-heading font-black px-2.5 py-1 rounded uppercase tracking-wider border inline-block">Combat Discipline</span>
                             <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide">${d.name}</h3>
