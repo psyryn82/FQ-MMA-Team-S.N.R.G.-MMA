@@ -226,6 +226,8 @@
                 <button onclick="setActiveTab('schedule')" data-tab="schedule" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Events</button>
                 <button onclick="setActiveTab('fighters')" data-tab="fighters" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Roster</button>
                 <button onclick="setActiveTab('store')" data-tab="store" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Media</button>
+                <button onclick="setActiveTab('portfolio')" data-tab="portfolio" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Portfolio</button>
+                <button onclick="setActiveTab('contact')" data-tab="contact" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Contact</button>
             </nav>
         </div>
     </header>
@@ -425,7 +427,55 @@
                 </form>
             </div>
 
+
             <div id="portfolio-grid" class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4"></div>
+        </div>
+
+        <!-- TAB 7: CONTACT -->
+        <div id="tab-contact" class="tab-content hidden space-y-6">
+            <div class="text-center space-y-3">
+                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase">GET IN TOUCH</span>
+                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white">
+                    CONTACT <span class="text-brand-red">FQ MMA</span>
+                </h2>
+                <p class="text-sm text-gray-400 max-w-xl mx-auto">
+                    Questions about media purchases, photography, fighters, memberships, or website support? Contact our team.
+                </p>
+                <p class="text-sm text-gray-300">
+                    Email: <a href="mailto:fqsnrgmma.info@gmail.com" class="text-red-400 hover:text-red-300 underline">fqsnrgmma.info@gmail.com</a>
+                </p>
+            </div>
+            <div class="max-w-2xl mx-auto rounded-2xl border border-gray-800 bg-gray-900/80 p-6 sm:p-8">
+                <form onsubmit="submitSupportInquiry(event)" class="space-y-4">
+                    <div>
+                        <label for="contact-name" class="mb-1 block text-xs font-bold uppercase text-gray-400">Your name</label>
+                        <input id="contact-name" type="text" required class="w-full rounded-lg border border-gray-700 bg-black p-3 text-sm text-white" placeholder="Your name">
+                    </div>
+                    <div>
+                        <label for="contact-email" class="mb-1 block text-xs font-bold uppercase text-gray-400">Your email</label>
+                        <input id="contact-email" type="email" required class="w-full rounded-lg border border-gray-700 bg-black p-3 text-sm text-white" placeholder="you@example.com">
+                    </div>
+                    <div>
+                        <label for="contact-category" class="mb-1 block text-xs font-bold uppercase text-gray-400">What is your inquiry about?</label>
+                        <select id="contact-category" required class="w-full rounded-lg border border-gray-700 bg-black p-3 text-sm text-white">
+                            <option value="General Inquiry">General inquiry</option>
+                            <option value="Media Purchase Inquiry">Media purchase</option>
+                            <option value="Portfolio / Photography Inquiry">Portfolio / photography</option>
+                            <option value="Fighter / Athlete Inquiry">Fighter / athlete</option>
+                            <option value="Membership / Stream Access Inquiry">Membership / stream access</option>
+                            <option value="Website Support">Website support</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="contact-message" class="mb-1 block text-xs font-bold uppercase text-gray-400">Message</label>
+                        <textarea id="contact-message" required rows="5" class="w-full rounded-lg border border-gray-700 bg-black p-3 text-sm text-white" placeholder="How can we help?"></textarea>
+                    </div>
+                    <button type="submit" class="w-full rounded-xl bg-brand-red px-5 py-3 font-heading text-sm font-black uppercase text-white hover:bg-red-700">
+                        Prepare Email
+                    </button>
+                    <p class="text-xs text-gray-500">Your email app will open with your inquiry prepared for our team.</p>
+                </form>
+            </div>
         </div>
 
     </main>
