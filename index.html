@@ -1410,9 +1410,10 @@
                 message
             ].join('\n');
 
-            const mailto = `mailto:fqsnrgmma.info@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-            window.location.href = mailto;
+           window.open(
+    `https://mail.google.com/mail/?view=cm&fs=1&to=fqsnrgmma.info@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+    '_blank'
+);
         }
 
         function scrollToPPV() {
