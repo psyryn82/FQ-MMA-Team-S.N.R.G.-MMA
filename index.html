@@ -196,11 +196,6 @@
                     <button onclick="setActiveTab('store')" id="nav-store" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
                         Media Store
                     </button>
-                    <!-- Portfolio Nav Button -->
-                    <!-- Public Portfolio Navigation -->
-                    <button onclick="setActiveTab('portfolio')" id="nav-portfolio" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                        Portfolio
-                    </button>
                     <button onclick="setActiveTab('contact')" id="nav-contact" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
                         Contact
                     </button>
@@ -221,12 +216,11 @@
                 </div>
             </div>
             <nav class="lg:hidden flex items-center gap-2 overflow-x-auto pb-3" aria-label="Mobile navigation">
-                <button onclick="setActiveTab('live')" data-tab="live" class="nav-btn shrink-0 rounded-md border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-bold uppercase text-brand-red">Stream</button>
+                <button onclick="setActiveTab('live')" data-tab="live" class="nav-btn shrink-0 rounded-md border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-bold uppercase text-brand-red">LIVE STREAM PPV</button>
                 <button onclick="setActiveTab('disciplines')" data-tab="disciplines" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Disciplines</button>
                 <button onclick="setActiveTab('schedule')" data-tab="schedule" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Events</button>
                 <button onclick="setActiveTab('fighters')" data-tab="fighters" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Roster</button>
                 <button onclick="setActiveTab('store')" data-tab="store" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Media</button>
-                <button onclick="setActiveTab('portfolio')" data-tab="portfolio" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Portfolio</button>
                 <button onclick="setActiveTab('contact')" data-tab="contact" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Contact</button>
             </nav>
         </div>
@@ -267,14 +261,14 @@
                                     <i class="fa-solid fa-lock"></i>
                                 </div>
                                 <h3 class="font-heading text-3xl font-black text-white uppercase tracking-wider mb-2">
-                                    STREAM NOT AVAILABLE
+                                    LIVE STREAM NOT AVAILABLE
                                 </h3>
                                 <p class="text-gray-400 text-xs max-w-md mb-6 leading-relaxed">
-                                    Stream access and purchase details will be posted here when available.
+                                    To watch the live event click one of the buttons below
                                 </p>
                                 <div class="flex flex-wrap items-center justify-center gap-3">
-                                    <button onclick="redirectToPaysite()" class="bg-gradient-to-r from-brand-red to-red-600 hover:from-red-600 text-white font-heading text-lg font-black px-6 py-3 rounded-xl uppercase tracking-wider shadow-neon-red transition-transform transform hover:scale-105">
-                                        <i class="fa-solid fa-arrow-up-right-from-square mr-2"></i> STREAM DETAILS
+                                    <button onclick="redirectToPaysite()" class="bg-gradient-to-r from-brand-red to-red-600 hover:from-red-600 text-white font-heading text-lg font-black px-6 py-3 rounded-xl tracking-wider shadow-neon-red transition-transform transform hover:scale-105">
+                                        <i class="fa-solid fa-arrow-up-right-from-square mr-2"></i> Click here for access
                                     </button>
                                     <button onclick="togglePaywallModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-200 font-heading text-lg font-bold px-5 py-3 rounded-xl uppercase tracking-wider border border-gray-700">
                                         <i class="fa-solid fa-key mr-2 text-brand-red"></i> HAVE PROMO CODE?
@@ -367,68 +361,6 @@
             </div>
 
             <div id="store-container" class="max-w-3xl mx-auto space-y-4"></div>
-        </div>
-
-        <!-- TAB 6: PORTFOLIO (ADMIN-ONLY) -->
-        <div id="tab-portfolio" class="tab-content hidden space-y-6">
-            <div class="text-center space-y-2 mb-6">
-                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Admin-Only Portfolio Management</span>
-                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
-                    MEDIA <span class="text-brand-red">PORTFOLIO</span>
-                </h2>
-                <p class="text-sm text-gray-400 max-w-xl mx-auto">Manage media items, pricing, and purchase links for the multi-discipline portfolio.</p>
-            </div>
-
-            <div class="max-w-3xl mx-auto bg-gray-900/95 p-6 sm:p-8 rounded-2xl border-2 border-brand-red shadow-neon-red space-y-5">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-brand-red/20 border border-brand-red rounded-lg flex items-center justify-center text-brand-neon">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-heading text-xl font-black text-white uppercase">Upload Media to Portfolio</h3>
-                        <p class="text-xs text-gray-400">Share MMA, Kickboxing, Boxing, or BJJ clips with custom pricing and payment links.</p>
-                    </div>
-                </div>
-
-                <form onsubmit="handlePortfolioUpload(event)" class="space-y-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="space-y-1">
-                            <label class="text-xs font-heading font-black text-gray-400 uppercase">Title / Athlete Name</label>
-                            <input type="text" id="upload-title" placeholder="e.g. BJJ Submission Bundle" required class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-red">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-xs font-heading font-black text-gray-400 uppercase">Discipline / Category</label>
-                            <select id="upload-category" class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-red">
-                                <option value="MMA Bout">MMA Bout</option>
-                                <option value="Kickboxing Highlight">Kickboxing Highlight</option>
-                                <option value="Boxing Sparring">Boxing Sparring</option>
-                                <option value="Jiu-Jitsu Grappling">Jiu-Jitsu Grappling</option>
-                                <option value="Photo Gallery">Photo Gallery</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="space-y-1">
-                            <label class="text-xs font-heading font-black text-gray-400 uppercase">Price (e.g. $14.99 or Free)</label>
-                            <input type="text" id="upload-price" placeholder="$14.99" value="Free" required class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-red">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-xs font-heading font-black text-gray-400 uppercase">Checkout / Payment Link URL</label>
-                            <input type="url" id="upload-link" placeholder="Optional official checkout URL" class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-red">
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-xs font-heading font-black text-gray-400 uppercase">Media Image/Video URL</label>
-                        <input type="text" id="upload-url" placeholder="Paste image/video URL..." required class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-red">
-                    </div>
-                    <button type="submit" class="w-full bg-brand-red hover:bg-red-700 text-white font-heading font-black uppercase py-3 rounded-xl text-sm shadow-neon-red transition-all">
-                        SUBMIT TO PORTFOLIO FEED
-                    </button>
-                </form>
-            </div>
-
-
-            <div id="portfolio-grid" class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4"></div>
         </div>
 
         <!-- TAB 7: CONTACT -->
@@ -701,8 +633,8 @@
             <p class="text-center text-xs text-gray-500">Promo-code redemption is not configured.</p>
 
             <div class="space-y-3">
-                <button onclick="redirectToPaysite()" class="w-full bg-gradient-to-r from-brand-red to-red-600 hover:from-red-600 text-white font-heading text-lg font-black py-3.5 rounded-xl uppercase tracking-wider shadow-neon-red transition-transform transform hover:scale-[1.02] flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> STREAM INFORMATION
+                <button onclick="redirectToPaysite()" class="w-full bg-gradient-to-r from-brand-red to-red-600 hover:from-red-600 text-white font-heading text-lg font-black py-3.5 rounded-xl tracking-wider shadow-neon-red transition-transform transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Click here for access
                 </button>
             </div>
             <a href="./membership.html" class="block w-full text-center border border-gray-700 hover:border-brand-red text-white font-heading font-black uppercase tracking-wider py-3 rounded-xl">MEMBERSHIP OPTIONS / JOIN FQ MMA</a>
@@ -787,7 +719,6 @@
             }
             isAdminLoggedIn = true;
             window.__snrgAdminUser = user;
-            document.getElementById('nav-portfolio').classList.remove('hidden');
             document.getElementById('admin-login-modal').classList.add('hidden');
             document.getElementById('admin-modal').classList.remove('hidden');
             cleanupExpiredPromos(); renderAdminManagerLists();
@@ -822,7 +753,6 @@
             isAdminLoggedIn = false; window.__snrgAdminUser = null;
             if (window.supabaseReady) await window.sb.auth.signOut().catch(console.error);
             document.getElementById('admin-modal').classList.add('hidden');
-            document.getElementById('nav-portfolio').classList.add('hidden');
             setActiveTab('live'); showNotification('Admin session signed out.', 'info');
         }
 
@@ -990,32 +920,6 @@
 
             if (!siteData.store.length) storeContainer.innerHTML = '<p class="text-center text-sm text-gray-400">Official media and purchase links will be posted here when available.</p>';
 
-            // 4. Portfolio Grid
-            const portfolioGrid = document.getElementById('portfolio-grid');
-            portfolioGrid.innerHTML = siteData.portfolio.map((p, index) => {
-                const isRed = index % 2 === 0;
-                const btnStyle = isRed ? 'bg-brand-red hover:bg-red-700 text-white' : 'bg-white hover:bg-gray-200 text-black';
-
-                return `
-                    <div class="glass-panel rounded-2xl overflow-hidden border border-gray-800 flex flex-col shadow-lg group">
-                        <div class="relative w-full aspect-video bg-black overflow-hidden">
-                            ${(String(p.category || '').toLowerCase().includes('video') || /\.(mp4|webm|ogg)(\?|$)/i.test(p.image || '')) ? `<video src="${p.image}" class="w-full h-full object-cover" controls playsinline preload="metadata"></video>` : `<img src="${p.image}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='./logo-combined-dark-bg.png'">`}
-                            <span class="absolute top-3 left-3 bg-black/80 text-brand-neon font-heading font-black text-[10px] uppercase px-2.5 py-1 rounded border border-brand-red">
-                                ${p.category || 'Media'}
-                            </span>
-                        </div>
-                        <div class="p-4 flex items-center justify-between bg-gray-900/90 gap-2">
-                            <div>
-                                <h4 class="font-heading text-lg font-black text-white uppercase">${p.title}</h4>
-                                <span class="font-heading text-xs font-bold text-brand-neon">${p.price || 'Free'}</span>
-                            </div>
-                            <button onclick="openCustomLink('${p.link}')" class="${btnStyle} text-xs font-heading font-black uppercase px-3.5 py-2 rounded-lg shadow whitespace-nowrap">
-                                Get / Buy
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
         }
 
         function renderAdminManagerLists() {
@@ -1346,30 +1250,6 @@
 
         function adminResetDefaults() {
             window.location.reload();
-        }
-
-        function handlePortfolioUpload(e) {
-            e.preventDefault();
-            const title = document.getElementById('upload-title').value;
-            const category = document.getElementById('upload-category').value;
-            const price = document.getElementById('upload-price').value;
-            const link = document.getElementById('upload-link').value;
-            const url = document.getElementById('upload-url').value;
-
-            siteData.portfolio.unshift({
-                id: Date.now(),
-                title,
-                category,
-                price,
-                link,
-                image: url.startsWith('http') ? url : './logo-combined-dark-bg.png'
-            });
-
-            window.renderAllContent();
-            renderAdminManagerLists();
-            setActiveTab('portfolio');
-            showNotification("Media successfully uploaded to Portfolio with pricing!", "success");
-            e.target.reset();
         }
 
         function setActiveTab(tabId) {
