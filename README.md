@@ -52,7 +52,7 @@ The current membership records are not, by themselves, a protected stream paywal
 ## Storage, chat, and content notes
 
 - The SQL creates a public-read `fqmma-media` storage bucket with admin-only uploads/updates/deletes. Public files should never contain private member information.
-- The chat inbox currently supports authenticated users. Anonymous visitor chat is intentionally not enabled until a rate-limited server-side endpoint is added.
+- The fan chat is shared by signed-in users; chat input is disabled until sign-in. Fan-chat rows are isolated from private support conversations with a channel field and RLS. The admin inbox can still review both kinds of messages.
 - Homepage JSON is stored in `site_content` under `content_key='public'`. The admin editor includes a starter template; keep the expected fields: `general`, `disciplines`, `schedule`, `fighters`, `store`, `portfolio`, and `promos`.
 - The website still needs real verified team details, event information, product links, privacy/terms content, and a protected stream provider before public launch.
 - Never put service-role keys, Stripe keys, webhook secrets, or passwords into `index.html`, `admin.html`, `membership.html`, or any public repository file.
