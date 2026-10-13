@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
   if (!Number.isInteger(plan.price_cents) || plan.price_cents < 0 || !/^[A-Z]{3}$/i.test(plan.currency || "")) return response({ error: "The selected plan has invalid pricing configuration." }, 400, origin);
 
   try {
-    const stripe = new Stripe(stripeKey, { httpClient: Stripe.createFetchHttpClient() });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2026-03-25.dahlia; custom_checkout_payment_form_preview=v1" as Stripe.LatestApiVersion, httpClient: Stripe.createFetchHttpClient() });
     const isSubscription = plan.billing_interval === "month" || plan.billing_interval === "year";
     const lineItem: Record<string, unknown> = {
       quantity: 1,
@@ -65,14 +65,17 @@ Deno.serve(async (req) => {
       },
     };
     const session = await stripe.checkout.sessions.create({
+      ui_mode: "custom",
       mode: isSubscription ? "subscription" : "payment",
-      customer_email: userData.user.email,
-      client_reference_id: userData.user.id,
+      billing_address_collection: "auto",
+      phone_number_collection: { enabled: false },
+      automatic_tax: { enabled: false },
+      ...(isSubscription ? { payment_method_collection: "always" as const } : {}),
+      submit_type: "pay",
+      name_collection: { individual: { enabled: true, optional: true } },
+      saved_payment_method_options: { payment_method_save: "enabled" },
+      integration_identifier: "custom_embedded_web_0001",
       line_items: [lineItem as Stripe.Checkout.SessionCreateParams.LineItem],
-      metadata: { user_id: userData.user.id, plan_id: plan.id },
-      ...(isSubscription ? { subscription_data: { metadata: { user_id: userData.user.id, plan_id: plan.id } } } : {}),
-      success_url: `${siteUrl}/?membership=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/?membership=cancelled`,
     });
 
     const { error: saveError } = await adminDb.from("memberships").insert({
@@ -91,7 +94,8 @@ Deno.serve(async (req) => {
       console.error("Could not create pending membership record", saveError.message);
       return response({ error: "Could not start the ticket purchase. Please try again." }, 500, origin);
     }
-    return response({ url: session.url }, 200, origin);
+    if (!session.client_secret) return response({ error: "Stripe did not return a Checkout Form client secret." }, 502, origin);
+    return response({ client_secret: session.client_secret }, 200, origin);
   } catch (error) {
     console.error("Stripe checkout creation failed", error instanceof Error ? error.message : "unknown error");
     return response({ error: "Could not create checkout. Please try again later." }, 502, origin);
