@@ -75,6 +75,17 @@ Deno.serve(async (req) => {
       name_collection: { individual: { enabled: true, optional: true } },
       saved_payment_method_options: { payment_method_save: "enabled" },
       integration_identifier: "custom_embedded_web_0001",
+      // Bind the Stripe session to the verified Supabase user and the server-selected plan.
+      // The webhook uses these values for fulfillment; never accept them from the browser.
+      client_reference_id: userData.user.id,
+      customer_email: userData.user.email,
+      metadata: {
+        user_id: userData.user.id,
+        plan_id: plan.id,
+      },
+      ...(isSubscription
+        ? { subscription_data: { metadata: { user_id: userData.user.id, plan_id: plan.id } } }
+        : { payment_intent_data: { metadata: { user_id: userData.user.id, plan_id: plan.id } } }),
       line_items: [lineItem as Stripe.Checkout.SessionCreateParams.LineItem],
     });
 
