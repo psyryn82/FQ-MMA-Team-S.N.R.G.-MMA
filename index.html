@@ -115,9 +115,6 @@
             object-fit: contain;
             object-position: center;
         }
-        #countdown-event-title + .grid {
-            display: none;
-        }
         :focus-visible {
             outline: 3px solid #ff2a2a;
             outline-offset: 3px;
@@ -151,7 +148,7 @@
                 Event announcements coming soon.
             </h3>
 
-            <div class="grid grid-cols-4 gap-3 max-w-lg mx-auto">
+            <div id="event-countdown" class="hidden grid grid-cols-4 gap-3 max-w-lg mx-auto" aria-label="Time remaining until the event">
                 <div class="glass-panel p-3 rounded-xl border-2 border-brand-red shadow-neon-red text-center">
                     <span id="countdown-days" class="font-heading text-3xl sm:text-4xl font-black text-white block">00</span>
                     <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Days</span>
@@ -187,7 +184,7 @@
                         <span id="user-access-label">Stream not available</span>
                     </div>
                     <button onclick="togglePaywallModal()" class="bg-gradient-to-r from-brand-red to-red-700 hover:from-red-600 hover:to-red-800 text-white font-heading tracking-wider px-2 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-black uppercase transition-all shadow-lg hover:shadow-neon-red">
-                        <i class="fa-solid fa-key mr-1.5 text-sm"></i> Stream info
+                        <i class="fa-solid fa-key mr-1.5 text-sm"></i> Unlock live stream
                     </button>
                     
                     <!-- Admin Trigger Button -->
@@ -216,6 +213,9 @@
                 <button onclick="setActiveTab('contact')" id="nav-contact" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
                     Contact
                 </button>
+                <button onclick="setActiveTab('portfolio')" id="nav-portfolio" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                    Portfolio
+                </button>
             </nav>
 
             <nav class="lg:hidden flex items-center gap-2 overflow-x-auto pb-3" aria-label="Mobile navigation">
@@ -225,6 +225,7 @@
                 <button onclick="setActiveTab('disciplines')" data-tab="disciplines" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Disciplines</button>
                 <button onclick="setActiveTab('store')" data-tab="store" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Media</button>
                 <button onclick="setActiveTab('contact')" data-tab="contact" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Contact</button>
+                <button onclick="setActiveTab('portfolio')" data-tab="portfolio" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Portfolio</button>
             </nav>
         </div>
     </header>
@@ -343,7 +344,7 @@
         <!-- TAB 4: ROSTER -->
         <div id="tab-fighters" class="tab-content hidden space-y-6">
             <div class="text-center space-y-2 mb-6">
-                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Team S.N.R.G. Athletes</span>
+                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Athletes</span>
                 <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
                     MULTI-DISCIPLINE <span class="text-brand-red">ROSTER</span>
                 </h2>
@@ -413,11 +414,22 @@
             </div>
         </div>
 
+        <!-- TAB 8: PORTFOLIO -->
+        <div id="tab-portfolio" class="tab-content hidden space-y-6">
+            <div class="text-center space-y-2 mb-6">
+                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">FQ MMA Media</span>
+                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">PORTFOLIO</h2>
+                <p class="text-sm text-gray-400 max-w-xl mx-auto">Official fight photos and videos from FQ MMA and Team S.N.R.G.</p>
+            </div>
+            <div id="portfolio-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto"></div>
+        </div>
+
     </main>
 
     <footer class="border-t border-gray-800 bg-black/70 px-4 py-6 text-center text-xs text-gray-400">
         <p class="font-heading font-bold uppercase tracking-wider text-white">FQ MMA / Team S.N.R.G. MMA</p>
         <p class="mt-2">Official updates will be posted on this site.</p>
+        <a href="#tab-contact" onclick="setActiveTab('contact')" class="mt-2 inline-block text-red-400 underline hover:text-red-300">Contact Us</a>
     </footer>
 
     <!-- Supabase administrator sign-in -->
@@ -479,15 +491,20 @@
                     <form onsubmit="adminSaveGeneralSettings(event)" class="space-y-3">
                         <div class="space-y-1">
                             <label class="text-xs font-heading font-black text-gray-400 uppercase">Top Ticker Alert Text</label>
-                            <input type="text" id="admin-gen-ticker" required class="w-full bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                            <input type="text" id="admin-gen-ticker" class="w-full bg-black border border-gray-700 rounded p-2 text-xs text-white">
                         </div>
                         <div class="space-y-1">
                             <label class="text-xs font-heading font-black text-gray-400 uppercase">Countdown Championship Title</label>
-                            <input type="text" id="admin-gen-countdown-title" required class="w-full bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                            <input type="text" id="admin-gen-countdown-title" class="w-full bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        </div>
+                        <div class="space-y-1">
+                            <label for="admin-gen-countdown-date" class="text-xs font-heading font-black text-gray-400 uppercase">Event Date &amp; Time (your local time zone, optional)</label>
+                            <input type="datetime-local" id="admin-gen-countdown-date" class="w-full bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                            <p class="text-[11px] text-gray-500">Leave blank to show Coming soon without a countdown.</p>
                         </div>
                         <div class="space-y-1">
                             <label class="text-xs font-heading font-black text-gray-400 uppercase">Global Default Paysite URL (Stripe/Checkout)</label>
-                            <input type="text" id="admin-gen-paysite" required class="w-full bg-black border border-gray-700 rounded p-2 text-xs text-white font-mono">
+                            <input type="text" id="admin-gen-paysite" class="w-full bg-black border border-gray-700 rounded p-2 text-xs text-white font-mono">
                         </div>
                         <button type="submit" class="bg-brand-red hover:bg-red-700 text-white font-heading text-xs font-black uppercase rounded py-2.5 px-6 shadow-neon-red">Save Global Settings</button>
                     </form>
@@ -513,10 +530,11 @@
             <div id="admin-panel-schedule" class="admin-panel-section space-y-4 hidden">
                 <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 space-y-3">
                     <h4 id="sch-form-title" class="font-heading text-sm font-black text-white uppercase tracking-wider text-brand-red">➕ Add / Edit Fight Schedule & Tickets</h4>
-                    <form onsubmit="adminSaveSchedule(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                    <form onsubmit="adminSaveSchedule(event)" class="grid grid-cols-1 sm:grid-cols-5 gap-2">
                         <input type="hidden" id="edit-sch-id">
                         <input type="text" id="admin-sch-date" placeholder="Date (e.g. DEC 15)" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
                         <input type="text" id="admin-sch-title" placeholder="Event Title" required class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
+                        <input type="text" id="admin-sch-ticket-price" placeholder="Ticket price (e.g. $25)" class="bg-black border border-gray-700 rounded p-2 text-xs text-white">
                         <input type="url" id="admin-sch-link" placeholder="Optional official event URL" class="bg-black border border-gray-700 rounded p-2 text-xs text-white font-mono">
                         <button type="submit" id="sch-submit-btn" class="bg-brand-red hover:bg-red-700 text-white font-heading text-xs font-black uppercase rounded py-2">Save Event</button>
                     </form>
@@ -652,6 +670,7 @@
             general: {
                 tickerText: "FQ MMA / TEAM S.N.R.G. MMA • OFFICIAL SITE",
                 countdownTitle: "Event announcements coming soon.",
+                countdownDate: "",
                 paysiteUrl: ""
             },
             disciplines: [
@@ -778,6 +797,7 @@
             if (tabName === 'general') {
                 document.getElementById('admin-gen-ticker').value = siteData.general.tickerText;
                 document.getElementById('admin-gen-countdown-title').value = siteData.general.countdownTitle;
+                document.getElementById('admin-gen-countdown-date').value = formatDateTimeLocal(siteData.general.countdownDate);
                 document.getElementById('admin-gen-paysite').value = siteData.general.paysiteUrl;
             } else {
                 renderAdminManagerLists();
@@ -790,14 +810,83 @@
             e.preventDefault();
             siteData.general.tickerText = document.getElementById('admin-gen-ticker').value;
             siteData.general.countdownTitle = document.getElementById('admin-gen-countdown-title').value;
+            const countdownDateInput = document.getElementById('admin-gen-countdown-date').value;
+            const countdownDate = countdownDateInput ? new Date(countdownDateInput) : null;
+            if (countdownDateInput && !Number.isFinite(countdownDate.getTime())) {
+                showNotification("Enter a valid event date and time.", "error");
+                return;
+            }
+            siteData.general.countdownDate = countdownDate ? countdownDate.toISOString() : '';
             siteData.general.paysiteUrl = document.getElementById('admin-gen-paysite').value;
             PAYSITE_URL = siteData.general.paysiteUrl;
 
             document.getElementById('header-ticker-text').innerText = siteData.general.tickerText;
-            document.getElementById('countdown-event-title').innerText = siteData.general.countdownTitle;
 
             showNotification("Global site settings updated successfully!", "success");
             window.renderAllContent(); // triggers cloud persistence for authorized administrators
+        }
+
+        let countdownInterval = null;
+
+        function formatDateTimeLocal(value) {
+            if (!value) return '';
+            const date = new Date(value);
+            if (!Number.isFinite(date.getTime())) return '';
+            const pad = part => String(part).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
+        }
+
+        function getSafeHttpUrl(value, httpsOnly = false) {
+            const rawUrl = String(value || '').trim();
+            if (!rawUrl) return '';
+            try {
+                const url = new URL(rawUrl, window.location.href);
+                return url.protocol === 'https:' || (!httpsOnly && url.protocol === 'http:') ? url.href : '';
+            } catch {
+                return '';
+            }
+        }
+
+        function updateEventCountdown() {
+            const title = document.getElementById('countdown-event-title');
+            const timer = document.getElementById('event-countdown');
+            const countdownDate = siteData.general.countdownDate;
+            const eventTime = countdownDate ? new Date(countdownDate).getTime() : NaN;
+
+            if (countdownInterval !== null) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+
+            if (!Number.isFinite(eventTime)) {
+                title.textContent = 'Coming soon';
+                timer.classList.add('hidden');
+                return;
+            }
+
+            title.textContent = siteData.general.countdownTitle || 'Coming soon';
+            timer.classList.remove('hidden');
+
+            const update = () => {
+                const remaining = Math.max(0, eventTime - Date.now());
+                document.getElementById('countdown-days').textContent = String(Math.floor(remaining / 86400000)).padStart(2, '0');
+                document.getElementById('countdown-hours').textContent = String(Math.floor((remaining % 86400000) / 3600000)).padStart(2, '0');
+                document.getElementById('countdown-minutes').textContent = String(Math.floor((remaining % 3600000) / 60000)).padStart(2, '0');
+                document.getElementById('countdown-seconds').textContent = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
+                if (remaining === 0 && countdownInterval !== null) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                }
+            };
+
+            update();
+            if (eventTime > Date.now()) countdownInterval = setInterval(update, 1000);
         }
 
         function verifyPromoCode() {
@@ -815,7 +904,7 @@
 
         function renderAllContent() {
             document.getElementById('header-ticker-text').textContent = siteData.general.tickerText || 'FQ MMA / TEAM S.N.R.G. MMA • OFFICIAL SITE';
-            document.getElementById('countdown-event-title').textContent = siteData.general.countdownTitle || 'Event announcements coming soon.';
+            updateEventCountdown();
 
             // 0. Disciplines
             const discContainer = document.getElementById('disciplines-container');
@@ -830,7 +919,7 @@
                     <div class="bg-gray-900/95 p-6 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col justify-between gap-4 ${glowStyle}">
                         <div class="space-y-2">
                             <span class="${tagColor} text-xs font-heading font-black px-2.5 py-1 rounded uppercase tracking-wider border inline-block">Combat Discipline</span>
-                            <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide">${d.name}</h3>
+                            <h3 class="font-heading text-2xl font-black ${isRed ? 'text-brand-red' : 'text-white'} uppercase tracking-wide">${d.name}</h3>
                             <p class="text-xs text-gray-300 leading-relaxed">${d.desc}</p>
                         </div>
                         <div class="pt-2 border-t border-gray-800 flex items-center justify-between">
@@ -850,18 +939,18 @@
                 const borderColor = isRed ? 'border-brand-red' : 'border-white';
                 const badgeStyle = isRed ? 'bg-brand-red/20 text-brand-red border-red-900' : 'bg-white/10 text-white border-gray-700';
                 const btnStyle = isRed ? 'bg-brand-red hover:bg-red-700 text-white' : 'bg-white hover:bg-gray-200 text-black';
+                const isEvent = item.type !== 'class';
 
                 return `
                     <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg relative group">
                         <div class="space-y-1">
-                            <span class="${badgeStyle} text-xs font-heading font-black px-2.5 py-1 rounded uppercase tracking-wider border">${item.date}</span>
-                            <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide mt-1">${item.title}</h3>
-                            <p class="text-xs text-gray-300">${item.subtitle}</p>
+                            <span class="${badgeStyle} text-xs font-heading font-black px-2.5 py-1 rounded uppercase tracking-wider border">${escapeHtml(item.date)}</span>
+                            <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide mt-1">${escapeHtml(item.title)}</h3>
+                            <p class="text-xs text-gray-300">${escapeHtml(item.subtitle)}</p>
+                            ${isEvent ? `<p class="font-heading text-lg font-bold text-brand-neon">Tickets: ${escapeHtml(item.ticketPrice || 'Price TBA')}</p>` : ''}
                         </div>
                         <div class="flex items-center gap-2">
-                            <button onclick="openCustomLink('${item.link}')" class="${btnStyle} font-heading text-sm font-black uppercase px-6 py-3 rounded-xl shadow-lg whitespace-nowrap">
-                                Event details
-                            </button>
+                            ${getSafeHttpUrl(item.link) ? `<a href="${escapeHtml(getSafeHttpUrl(item.link))}" target="_blank" rel="noopener noreferrer" class="${btnStyle} font-heading text-sm font-black uppercase px-6 py-3 rounded-xl shadow-lg whitespace-nowrap">Event details</a>` : `<button onclick="openCustomLink('')" class="${btnStyle} font-heading text-sm font-black uppercase px-6 py-3 rounded-xl shadow-lg whitespace-nowrap">Event details</button>`}
                         </div>
                     </div>
                 `;
@@ -924,6 +1013,39 @@
 
             if (!siteData.store.length) storeContainer.innerHTML = '<p class="text-center text-sm text-gray-400">Official media and purchase links will be posted here when available.</p>';
 
+            // 4. Public portfolio, managed through the authenticated admin panel.
+            const portfolioContainer = document.getElementById('portfolio-container');
+            portfolioContainer.innerHTML = siteData.portfolio.map((item, index) => {
+                const isRed = index % 2 === 0;
+                const borderColor = isRed ? 'border-brand-red' : 'border-white';
+                const glowStyle = isRed ? 'shadow-neon-red' : 'shadow-neon-white';
+                const mediaUrl = getSafeHttpUrl(item.image, true);
+                const itemUrl = getSafeHttpUrl(item.link, true);
+                const isVideo = String(item.category || '').toLowerCase() === 'video';
+                const media = mediaUrl
+                    ? (isVideo
+                        ? `<video controls preload="metadata" src="${escapeHtml(mediaUrl)}" class="w-full max-h-72 rounded-lg bg-black">Your browser does not support video playback.</video>`
+                        : `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'FQ MMA portfolio media')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`)
+                    : '';
+                const action = itemUrl
+                    ? `<a href="${escapeHtml(itemUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">${item.price && item.price !== 'Free' ? 'Purchase' : 'View media'}</a>`
+                    : '';
+                return `
+                    <article class="bg-gray-900/95 p-5 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 space-y-3 ${glowStyle}">
+                        ${media}
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs font-black uppercase tracking-widest ${isRed ? 'text-brand-red' : 'text-white'}">${escapeHtml(item.category || 'Portfolio')}</p>
+                                <h3 class="font-heading text-xl font-black text-white uppercase">${escapeHtml(item.title || 'Untitled media')}</h3>
+                            </div>
+                            <span class="shrink-0 font-heading font-bold ${isRed ? 'text-brand-neon' : 'text-white'}">${escapeHtml(item.price || 'Free')}</span>
+                        </div>
+                        ${action}
+                    </article>
+                `;
+            }).join('');
+            if (!siteData.portfolio.length) portfolioContainer.innerHTML = '<p class="text-center text-sm text-gray-400 md:col-span-2">Portfolio photos and videos will be posted here when available.</p>';
+
         }
 
         function renderAdminManagerLists() {
@@ -947,7 +1069,7 @@
                 admSch.innerHTML = siteData.schedule.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
-                            <span class="text-brand-red font-bold">${item.date}</span> - <span class="text-white font-bold">${item.title}</span> <span class="text-gray-500 text-[10px]">(${item.link})</span>
+                            <span class="text-brand-red font-bold">${escapeHtml(item.date)}</span> - <span class="text-white font-bold">${escapeHtml(item.title)}</span> <span class="text-brand-neon">${escapeHtml(item.ticketPrice || 'Price TBA')}</span> <span class="text-gray-500 text-[10px]">(${escapeHtml(item.link)})</span>
                         </div>
                         <div class="flex gap-2 shrink-0">
                             <button onclick="adminEditSchedule(${item.id})" class="text-blue-400 hover:text-blue-300 px-2 py-1"><i class="fa-solid fa-pen"></i></button>
@@ -1058,14 +1180,15 @@
             const id = document.getElementById('edit-sch-id').value;
             const date = document.getElementById('admin-sch-date').value;
             const title = document.getElementById('admin-sch-title').value;
+            const ticketPrice = document.getElementById('admin-sch-ticket-price').value.trim();
             const link = document.getElementById('admin-sch-link').value;
 
             if (id) {
                 const item = siteData.schedule.find(s => s.id == id);
-                if (item) { item.date = date; item.title = title; item.link = link; }
+                if (item) { item.date = date; item.title = title; item.ticketPrice = ticketPrice; item.link = link; }
                 showNotification("Schedule Event Updated!", "success");
             } else {
-                siteData.schedule.push({ id: Date.now(), date, title, subtitle: "Fitness Quest Arena • Multi-Discipline Championships", link });
+                siteData.schedule.push({ id: Date.now(), type: 'event', date, title, subtitle: "Fitness Quest Arena • Multi-Discipline Championships", ticketPrice, link });
                 showNotification("Schedule Event Added!", "success");
             }
             document.getElementById('edit-sch-id').value = '';
@@ -1082,6 +1205,7 @@
                 document.getElementById('edit-sch-id').value = item.id;
                 document.getElementById('admin-sch-date').value = item.date;
                 document.getElementById('admin-sch-title').value = item.title;
+                document.getElementById('admin-sch-ticket-price').value = item.ticketPrice || '';
                 document.getElementById('admin-sch-link').value = item.link || PAYSITE_URL;
                 document.getElementById('sch-form-title').innerText = "✏️ Edit Fight Schedule Event";
                 document.getElementById('sch-submit-btn').innerText = "Update Event";
@@ -1379,8 +1503,9 @@
                 else if (fightersResult.data?.length) siteData.fighters = fightersResult.data.map(f => ({id:f.id,name:f.name,record:f.record||'',desc:f.bio||f.nickname||'',initials:(f.name||'').substring(0,2).toUpperCase(),image:f.image_url||''}));
                 if (eventsResult.error) console.warn('Could not load events from Supabase.', eventsResult.error);
                 if (scheduleResult.error) console.warn('Could not load training schedule from Supabase.', scheduleResult.error);
-                const eventItems = (eventsResult.data||[]).map(e => ({id:e.id,date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),link:''}));
-                const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
+                const savedEvents = new Map(siteData.schedule.map(item => [String(item.id), item]));
+                const eventItems = (eventsResult.data||[]).map(e => ({id:e.id,type:'event',date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:savedEvents.get(String(e.id))?.ticketPrice || '',link:savedEvents.get(String(e.id))?.link || ''}));
+                const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,type:'class',date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
                 if (eventItems.length || classItems.length) siteData.schedule = [...eventItems,...classItems];
                 if (productsResult.error) console.warn('Could not load products from Supabase.', productsResult.error);
                 else if (productsResult.data?.length) siteData.store = productsResult.data.map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA merchandise',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
