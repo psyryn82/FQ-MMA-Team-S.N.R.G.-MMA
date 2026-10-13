@@ -63,11 +63,11 @@ async function loadMedia(){
     client.storage.from('fqmma-private').list('',{limit:100,sortBy:{column:'created_at',order:'desc'}})
   ]);
   if(pub.error){$('mediaMessage').textContent='Public storage not ready: '+pub.error.message;return}
-  if(priv.error){$('mediaMessage').textContent='Private storage is not ready. Apply the launch-readiness migration first: '+priv.error.message;return}
+  if(priv.error){$('mediaMessage').textContent='Public media is available. Private media requires the launch-readiness migration: '+priv.error.message}
   const items=[];
   for(const f of (pub.data||[])){if(!f.name)continue;const u=client.storage.from('fqmma-media').getPublicUrl(f.name).data.publicUrl;items.push({bucket:'fqmma-media',path:f.name,url:u,label:'PUBLIC · '+f.name})}
   const privateFiles=[];
-  for(const entry of (priv.data||[])){
+  for(const entry of (priv.error?[]:(priv.data||[]))){
     if(!entry.name)continue;
     if(entry.id===null){
       const nested=await client.storage.from('fqmma-private').list(entry.name,{limit:100,sortBy:{column:'created_at',order:'desc'}});
