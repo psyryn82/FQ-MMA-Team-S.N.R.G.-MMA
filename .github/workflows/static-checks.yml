@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - fix/supabase-admin-complete
+      - fix/launch-readiness-security-payments
 jobs:
   syntax:
     runs-on: ubuntu-latest
