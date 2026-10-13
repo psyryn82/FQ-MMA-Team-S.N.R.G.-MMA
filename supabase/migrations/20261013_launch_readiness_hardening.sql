@@ -76,6 +76,11 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+drop policy if exists "Admins read private FQ MMA media" on storage.objects;
+create policy "Admins read private FQ MMA media"
+  on storage.objects for select to authenticated
+  using (bucket_id = 'fqmma-private' and public.is_fqmma_admin());
+
 drop policy if exists "Admins upload private FQ MMA media" on storage.objects;
 create policy "Admins upload private FQ MMA media"
   on storage.objects for insert to authenticated
