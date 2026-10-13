@@ -66,7 +66,16 @@ async function loadMedia(){
   if(priv.error){$('mediaMessage').textContent='Private storage is not ready. Apply the launch-readiness migration first: '+priv.error.message;return}
   const items=[];
   for(const f of (pub.data||[])){if(!f.name)continue;const u=client.storage.from('fqmma-media').getPublicUrl(f.name).data.publicUrl;items.push({bucket:'fqmma-media',path:f.name,url:u,label:'PUBLIC · '+f.name})}
-  for(const f of (priv.data||[])){if(!f.name)continue;const signed=await client.storage.from('fqmma-private').createSignedUrl(f.name,300);items.push({bucket:'fqmma-private',path:f.name,url:signed.data?.signedUrl||'',label:'PRIVATE · '+f.name})}
+  const privateFiles=[];
+  for(const entry of (priv.data||[])){
+    if(!entry.name)continue;
+    if(entry.id===null){
+      const nested=await client.storage.from('fqmma-private').list(entry.name,{limit:100,sortBy:{column:'created_at',order:'desc'}});
+      if(nested.error){$('mediaMessage').textContent='Could not list private media: '+nested.error.message;return}
+      for(const file of (nested.data||[])){if(file.name&&file.id!==null)privateFiles.push({...file,name:entry.name+'/'+file.name})}
+    }else privateFiles.push(entry);
+  }
+  for(const f of privateFiles){const signed=await client.storage.from('fqmma-private').createSignedUrl(f.name,300);items.push({bucket:'fqmma-private',path:f.name,url:signed.data?.signedUrl||'',label:'PRIVATE · '+f.name})}
   $('mediaList').innerHTML=items.map(i=>'<div class="border border-gray-800 rounded-lg p-3 flex items-center justify-between gap-3"><div class="min-w-0"><p class="text-sm break-all">'+esc(i.label)+'</p>'+(i.url?'<a class="text-red-400 underline break-all text-xs" target="_blank" rel="noopener" href="'+esc(i.url)+'">Open preview</a>':'<p class="muted text-xs">Preview unavailable</p>')+'</div><button class="btn2" data-media-bucket="'+i.bucket+'" data-media-del="'+esc(i.path)+'">Delete</button></div>').join('')||'<p class="muted text-sm">No uploads yet.</p>';
   document.querySelectorAll('[data-media-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this file?'))return;const {error}=await client.storage.from(b.dataset.mediaBucket).remove([b.dataset.mediaDel]);if(error)$('mediaMessage').textContent=error.message;else loadMedia()})
 }
