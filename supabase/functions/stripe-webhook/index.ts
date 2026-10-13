@@ -117,9 +117,18 @@ Deno.serve(async (req) => {
         ? invoice.subscription
         : invoice.subscription?.id;
       if (subscriptionId) {
+        // Invoice events can arrive late/out of order; confirm current subscription state
+        // before granting access from a paid invoice.
+        const subscription = event.type === "invoice.paid"
+          ? await stripe.subscriptions.retrieve(subscriptionId)
+          : null;
+        const status = event.type === "invoice.payment_failed" ? "pending"
+          : subscription?.status === "active" || subscription?.status === "trialing" ? "active"
+          : subscription?.status === "canceled" ? "cancelled" : "pending";
         const { error } = await db.from("memberships").update({
-          status: event.type === "invoice.paid" ? "active" : "pending",
+          status,
           stripe_subscription_id: subscriptionId,
+          ...(subscription?.current_period_end ? { current_period_end: new Date(subscription.current_period_end * 1000).toISOString() } : {}),
           updated_at: new Date().toISOString(),
         }).eq("stripe_subscription_id", subscriptionId);
         if (error) throw error;
