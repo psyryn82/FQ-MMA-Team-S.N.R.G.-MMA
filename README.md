@@ -32,12 +32,18 @@ Static website hosted from the repository root. The Supabase client uses only th
 
 ## Stripe membership setup
 
-The checkout and webhook function code is in the repository, but **paid checkout is not active until you configure and deploy it**.
+Paid checkout is **not launch-ready** until the database migration, Edge Function secrets, webhook registration, and end-to-end tests below are complete. Start in Stripe test mode.
 
-1. Create a Stripe account and set up a test-mode product/payment setup as appropriate. First test with Stripe test keys.
-2. Deploy `create-checkout-session` as a Supabase Edge Function with JWT verification enabled.
-3. Apply `supabase/migrations/20261013_launch_readiness_hardening.sql` after reviewing the diff and confirming a recoverable backup exists. It removes browser-role privileges from legacy `stripe_purchases`, adds webhook event deduplication, and creates a private bucket. It expects the current `memberships` table and Stripe checkout columns from `supabase-schema.sql`.
-4. Deploy `stripe-webhook` as an Edge Function with JWT verification disabled, because Stripe calls it directly. The repo's `supabase/config.toml` documents the intended per-function setting. In Stripe's webhook configuration, use the deployed function URL and subscribe to:
+1. Create/configure a Stripe account in test mode. Do not use live credentials during initial verification.
+2. Confirm a recoverable Supabase backup exists, then review and apply `supabase/migrations/20261013_launch_readiness_hardening.sql`. It hardens legacy payment-record privileges, adds webhook idempotency, and creates the private media bucket. It expects the current `memberships` table and Stripe checkout columns from `supabase-schema.sql`.
+3. Configure Edge Function secrets in Supabase, never in GitHub HTML:
+   - `STRIPE_SECRET_KEY`
+   - `STRIPE_WEBHOOK_SECRET`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SITE_URL=https://fq-snrg-mma.com`
+   - `SUPABASE_URL` and `SUPABASE_ANON_KEY` (confirm the project's Edge Functions environment provides these values).
+4. Deploy `create-checkout-session` with JWT verification enabled, `stripe-webhook` with JWT verification disabled, and `create-protected-media-url` with JWT verification enabled. The webhook must verify `Stripe-Signature` against the webhook secret inside the handler. Never disable signature verification.
+5. Register a Stripe **test-mode** webhook pointing to the deployed `stripe-webhook` URL and subscribe to:
    - `checkout.session.completed`
    - `checkout.session.async_payment_succeeded`
    - `checkout.session.async_payment_failed`
@@ -46,17 +52,9 @@ The checkout and webhook function code is in the repository, but **paid checkout
    - `invoice.paid`
    - `invoice.payment_failed`
    - `charge.refunded`
-5. Configure Edge Function secrets in Supabase, never in GitHub HTML:
-   - `STRIPE_SECRET_KEY`
-   - `STRIPE_WEBHOOK_SECRET`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `SITE_URL=https://fq-snrg-mma.com`
-   - Supabase Edge Functions also need their project URL and anon key available as `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
-6. Deploy `create-protected-media-url` with JWT verification enabled. Apply the hardening migration before deploying the webhook, because the webhook uses `stripe_webhook_events` and the payment-intent column.
-7. Create and publish membership plans in `admin.html`, then test a checkout using Stripe test cards. Verify successful, failed, duplicate, refunded, and subscription renewal/payment-failure events. Only the signed webhook should change paid checkout status.
-6. Switch to Stripe live credentials only after test-mode verification.
-
-The private-media endpoint only signs files stored in `fqmma-private` under `<membership-plan-uuid>/<filename>` and only for admins or users with an active membership for that plan. The current membership records are not, by themselves, a complete protected live-stream paywall. A trusted stream provider and a player integration that calls the protected URL endpoint are still required before selling stream access. Product listings can link to a real external checkout URL; this project does not itself process merchandise payments.
+6. Create and publish membership plans in `admin.html`. Test successful, declined, delayed/failed, duplicate webhook, refund, subscription renewal, and subscription payment-failure cases. Confirm a paid checkout activates only the matching user/plan membership and that failed or refunded payments do not retain access.
+7. For paid media, upload files to `fqmma-private` under `<membership-plan-uuid>/<filename>`. Use `create-protected-media-url` to issue a five-minute signed URL only after entitlement verification. Do not paste private object URLs into public homepage JSON. A trusted live-stream provider and a player integration that calls the protected URL endpoint are still required before selling live-stream access.
+8. Switch to Stripe live credentials only after all test-mode cases pass and a live-mode webhook endpoint is registered and verified. The connected account previously inspected was in test mode; live-mode readiness has not been established.
 
 ## Storage, chat, and content notes
 
