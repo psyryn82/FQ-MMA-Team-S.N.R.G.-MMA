@@ -1,0 +1,12 @@
+# Stripe sends signed webhook requests without Supabase user JWTs.
+# The handler verifies the Stripe-Signature header against STRIPE_WEBHOOK_SECRET.
+[functions.stripe-webhook]
+verify_jwt = false
+
+# Checkout must only be called with an authenticated Supabase user JWT.
+[functions.create-checkout-session]
+verify_jwt = true
+
+# Private media URLs require an authenticated user; the function then checks active entitlement.
+[functions.create-protected-media-url]
+verify_jwt = true

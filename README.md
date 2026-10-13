@@ -9,7 +9,9 @@ Static website hosted from the repository root. The Supabase client uses only th
 - `membership.html`: member sign-in/account creation, published plan list, and Stripe Checkout launcher.
 - `supabase-schema.sql`: database tables, row-level security policies, and public media bucket setup.
 - `supabase/functions/create-checkout-session/index.ts`: authenticated Stripe Checkout session creation.
-- `supabase/functions/stripe-webhook/index.ts`: signed Stripe webhook processing for membership status.
+- `supabase/functions/stripe-webhook/index.ts`: signed, idempotent Stripe webhook processing for membership status.
+- `supabase/functions/create-protected-media-url/index.ts`: issues short-lived URLs for private media only after verifying an active membership for the plan encoded in the file path.
+- `supabase/migrations/20261013_launch_readiness_hardening.sql`: hardens payment-record privileges, adds webhook idempotency, and creates a private media bucket.
 
 ## Supabase setup
 
@@ -25,33 +27,39 @@ Static website hosted from the repository root. The Supabase client uses only th
    on conflict (user_id) do update set email = excluded.email;
    ```
    The account must already exist in Supabase Auth. Google and email/password sign-in must resolve to the same intended Auth user ID or the admin record must be updated to the correct ID.
-6. Open `https://fq-snrg-mma.com/admin.html` after the changes are approved and deployed. Test email/password and Google sign-in, then verify the dashboard rejects non-admin accounts.
+6. In **Authentication → Security and Protection**, enable leaked-password protection if available for the project plan.
+7. Open `https://fq-snrg-mma.com/admin.html` after the changes are approved and deployed. Test email/password and Google sign-in, then verify the dashboard rejects non-admin accounts.
 
 ## Stripe membership setup
 
-The checkout and webhook function code is in the repository, but **paid checkout is not active until you configure and deploy it**.
+Paid checkout is **not launch-ready** until the database migration, Edge Function secrets, webhook registration, and end-to-end tests below are complete. Start in Stripe test mode.
 
-1. Create a Stripe account and set up a test-mode product/payment setup as appropriate. First test with Stripe test keys.
-2. Deploy `create-checkout-session` as a Supabase Edge Function with JWT verification enabled.
-3. Deploy `stripe-webhook` as an Edge Function with JWT verification disabled, because Stripe calls it directly. In Stripe's webhook configuration, use the deployed function URL and subscribe to:
-   - `checkout.session.completed`
-   - `checkout.session.async_payment_succeeded`
-   - `customer.subscription.updated`
-   - `customer.subscription.deleted`
-4. Configure Edge Function secrets in Supabase, never in GitHub HTML:
+1. Create/configure a Stripe account in test mode. Do not use live credentials during initial verification.
+2. Confirm a recoverable Supabase backup exists, then review and apply `supabase/migrations/20261013_launch_readiness_hardening.sql`. It hardens legacy payment-record privileges, adds webhook idempotency, and creates the private media bucket. It expects the current `memberships` table and Stripe checkout columns from `supabase-schema.sql`.
+3. Configure Edge Function secrets in Supabase, never in GitHub HTML:
    - `STRIPE_SECRET_KEY`
    - `STRIPE_WEBHOOK_SECRET`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `SITE_URL=https://fq-snrg-mma.com`
-   - Supabase Edge Functions also need their project URL and anon key available as `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
-5. Create and publish membership plans in `admin.html`, then test a checkout using Stripe test cards. Verify that only the signed webhook changes a paid checkout to active.
-6. Switch to Stripe live credentials only after test-mode verification.
-
-The current membership records are not, by themselves, a protected stream paywall. Connect a trusted stream provider and enforce access using verified membership status before selling stream access. Product listings can link to a real external checkout URL; this project does not itself process merchandise payments.
+   - `SUPABASE_URL` and `SUPABASE_ANON_KEY` (confirm the project's Edge Functions environment provides these values).
+4. Deploy `create-checkout-session` with JWT verification enabled, `stripe-webhook` with JWT verification disabled, and `create-protected-media-url` with JWT verification enabled. The webhook must verify `Stripe-Signature` against the webhook secret inside the handler. Never disable signature verification.
+5. Register a Stripe **test-mode** webhook pointing to the deployed `stripe-webhook` URL and subscribe to:
+   - `checkout.session.completed`
+   - `checkout.session.async_payment_succeeded`
+   - `checkout.session.async_payment_failed`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.paid`
+   - `invoice.payment_failed`
+   - `charge.refunded`
+6. Create and publish membership plans in `admin.html`. Test successful, declined, delayed/failed, duplicate webhook, refund, subscription renewal, and subscription payment-failure cases. Confirm a paid checkout activates only the matching user/plan membership and that failed or refunded payments do not retain access.
+7. For paid media, upload files to `fqmma-private` under `<membership-plan-uuid>/<filename>`. Use `create-protected-media-url` to issue a five-minute signed URL only after entitlement verification. Do not paste private object URLs into public homepage JSON. A trusted live-stream provider and a player integration that calls the protected URL endpoint are still required before selling live-stream access.
+8. Switch to Stripe live credentials only after all test-mode cases pass and a live-mode webhook endpoint is registered and verified. The connected account previously inspected was in test mode; live-mode readiness has not been established.
 
 ## Storage, chat, and content notes
 
-- The SQL creates a public-read `fqmma-media` storage bucket with admin-only uploads/updates/deletes. Public files should never contain private member information.
+- `fqmma-media` is for ordinary public team/event media only. Never upload paid videos or private member information to this bucket.
+- `fqmma-private` is for paid media. Upload files beneath the membership plan UUID folder and serve them only through `create-protected-media-url`, which returns a five-minute signed URL after an entitlement check. Never paste private object paths into public homepage JSON.
 - The fan chat is shared by signed-in users; chat input is disabled until sign-in. Fan-chat rows are isolated from private support conversations with a channel field and RLS. The admin inbox can still review both kinds of messages.
 - Homepage JSON is stored in `site_content` under `content_key='public'`. The admin editor includes a starter template; keep the expected fields: `general`, `disciplines`, `schedule`, `fighters`, `store`, `portfolio`, and `promos`.
 - The website still needs real verified team details, event information, product links, privacy/terms content, and a protected stream provider before public launch.
