@@ -691,7 +691,12 @@
         window.siteData = siteData;
 
         function redirectToPaysite() {
-            openCustomLink(PAYSITE_URL);
+            const destination = String(PAYSITE_URL || '').trim();
+            if (!destination) {
+                window.location.href = './membership.html';
+                return;
+            }
+            openCustomLink(destination);
         }
 
         function openCustomLink(url) {
