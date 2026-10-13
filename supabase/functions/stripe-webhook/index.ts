@@ -68,10 +68,16 @@ Deno.serve(async (req) => {
       }
       const paid = session.payment_status === "paid" ||
         (session.mode === "subscription" && session.payment_status === "no_payment_required");
+      const subscriptionId = typeof session.subscription === "string" ? session.subscription : "";
+      // Retrieve the current Stripe subscription instead of trusting an old checkout snapshot.
+      // This avoids granting indefinite access if subscription lifecycle events arrive out of order.
+      const subscription = subscriptionId ? await stripe.subscriptions.retrieve(subscriptionId) : null;
       const { data: existing, error: findError } = await db.from("memberships")
         .select("status").eq("stripe_checkout_session_id", session.id).maybeSingle();
       if (findError) throw findError;
-      const status = paid ? "active" : existing?.status === "active" ? "active" : "pending";
+      const status = subscription?.status === "canceled" ? "cancelled"
+        : paid && (!subscription || subscription.status === "active" || subscription.status === "trialing")
+          ? "active" : existing?.status === "active" ? "active" : "pending";
       const row = {
         user_id: userId,
         email,
@@ -81,8 +87,10 @@ Deno.serve(async (req) => {
         external_payment_id: session.id,
         stripe_checkout_session_id: session.id,
         stripe_customer_id: typeof session.customer === "string" ? session.customer : "",
-        stripe_subscription_id: typeof session.subscription === "string" ? session.subscription : "",
+        stripe_subscription_id: subscriptionId,
         stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : "",
+        current_period_end: subscription?.current_period_end
+          ? new Date(subscription.current_period_end * 1000).toISOString() : null,
         updated_at: new Date().toISOString(),
       };
       const { error } = await db.from("memberships").upsert(row, { onConflict: "stripe_checkout_session_id" });
