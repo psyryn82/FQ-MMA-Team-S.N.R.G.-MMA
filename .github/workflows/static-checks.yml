@@ -19,4 +19,4 @@ jobs:
       - name: Check inline browser JavaScript
         run: python3 scripts/check-inline-js.py
       - name: Type-check Supabase Edge Functions
-        run: deno check supabase/functions/create-checkout-session/index.ts supabase/functions/stripe-webhook/index.ts
+        run: deno check supabase/functions/create-checkout-session/index.ts supabase/functions/stripe-webhook/index.ts supabase/functions/create-protected-media-url/index.ts
