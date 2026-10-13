@@ -112,7 +112,7 @@ create index if not exists chat_messages_fan_chat_created_at_idx on public.chat_
 create or replace function public.is_fqmma_admin()
 returns boolean language sql stable security definer set search_path = public
 as $$ select exists (select 1 from public.admin_users where user_id = (select auth.uid())); $$;
-revoke all on function public.is_fqmma_admin() from public;
+revoke all on function public.is_fqmma_admin() from public, anon;
 grant execute on function public.is_fqmma_admin() to authenticated;
 
 alter table public.admin_users enable row level security;
