@@ -101,8 +101,13 @@ create table if not exists public.chat_messages (
   sender_email text not null default '',
   message text not null check(length(message) between 1 and 5000),
   is_admin_reply boolean not null default false,
+  channel text not null default 'support' check(channel in ('support','fan_chat')),
   created_at timestamptz not null default now()
 );
+alter table public.chat_messages add column if not exists channel text not null default 'support';
+alter table public.chat_messages drop constraint if exists chat_messages_channel_check;
+alter table public.chat_messages add constraint chat_messages_channel_check check(channel in ('support','fan_chat'));
+create index if not exists chat_messages_fan_chat_created_at_idx on public.chat_messages (created_at desc) where channel = 'fan_chat';
 
 create or replace function public.is_fqmma_admin()
 returns boolean language sql stable security definer set search_path = public
@@ -158,13 +163,26 @@ drop policy if exists "Admins manage memberships" on public.memberships;
 create policy "Admins manage memberships" on public.memberships for all to authenticated using (public.is_fqmma_admin()) with check (public.is_fqmma_admin());
 
 drop policy if exists "Users read own chat and admins read all" on public.chat_messages;
-create policy "Users read own chat and admins read all" on public.chat_messages for select to authenticated using (user_id = (select auth.uid()) or public.is_fqmma_admin());
+drop policy if exists "Users read own support and shared fan chat" on public.chat_messages;
+create policy "Users read own support and shared fan chat" on public.chat_messages for select to authenticated using (channel = 'fan_chat' or user_id = (select auth.uid()) or public.is_fqmma_admin());
 drop policy if exists "Authenticated users send chat" on public.chat_messages;
-create policy "Authenticated users send chat" on public.chat_messages for insert to authenticated with check (user_id = (select auth.uid()) and is_admin_reply = false);
+create policy "Authenticated users send chat" on public.chat_messages for insert to authenticated with check (user_id = (select auth.uid()) and is_admin_reply = false and channel in ('support','fan_chat'));
 drop policy if exists "Admins reply to chat" on public.chat_messages;
 create policy "Admins reply to chat" on public.chat_messages for insert to authenticated with check (public.is_fqmma_admin() and is_admin_reply = true);
 drop policy if exists "Admins delete chat" on public.chat_messages;
 create policy "Admins delete chat" on public.chat_messages for delete to authenticated using (public.is_fqmma_admin());
+
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+    and not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'chat_messages'
+    ) then
+    execute 'alter publication supabase_realtime add table public.chat_messages';
+  end if;
+end
+$$;
 
 grant select on public.site_content,public.fighters,public.events,public.training_schedule,public.products,public.membership_plans to anon,authenticated;
 grant insert,update,delete on public.site_content,public.fighters,public.events,public.training_schedule,public.products,public.membership_plans to authenticated;
@@ -195,5 +213,5 @@ create policy "Admins delete FQ MMA media" on storage.objects for delete to auth
 -- IMPORTANT: This schema creates membership records, but it does NOT verify payments.
 -- Never mark memberships active based only on a browser redirect or user-submitted claim.
 -- Connect a payment provider webhook/server-side function before selling paid access.
--- Live chat currently requires signed-in users; anonymous website visitor chat needs a server-side
--- rate-limited endpoint to avoid exposing an unauthenticated message-writing policy.
+-- Fan chat requires signed-in users. Do not add anonymous message writes without a rate-limited
+-- server-side endpoint; support conversations remain private to their sender and administrators.

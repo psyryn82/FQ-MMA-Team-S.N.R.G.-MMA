@@ -37,19 +37,19 @@ Deno.serve(async (req) => {
   if (!supabaseUrl || !anonKey || !serviceKey || !stripeKey) return response({ error: "Payment service is not configured. Ask an administrator to set the Edge Function secrets." }, 503, origin);
 
   const authorization = req.headers.get("Authorization");
-  if (!authorization?.startsWith("Bearer ")) return response({ error: "Please sign in before purchasing a membership." }, 401, origin);
+  if (!authorization?.startsWith("Bearer ")) return response({ error: "Please sign in before purchasing a ticket." }, 401, origin);
   const token = authorization.slice("Bearer ".length);
   const authClient = createClient(supabaseUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: userData, error: userError } = await authClient.auth.getUser(token);
   if (userError || !userData.user?.email) return response({ error: "Your sign-in session could not be verified." }, 401, origin);
 
   let planId = "";
-  try { planId = String((await req.json()).plan_id || ""); } catch { return response({ error: "A membership plan is required." }, 400, origin); }
-  if (!planId) return response({ error: "A membership plan is required." }, 400, origin);
+  try { planId = String((await req.json()).plan_id || ""); } catch { return response({ error: "A ticket option is required." }, 400, origin); }
+  if (!planId) return response({ error: "A ticket option is required." }, 400, origin);
 
   const adminDb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: plan, error: planError } = await adminDb.from("membership_plans").select("id,name,description,price_cents,currency,billing_interval,is_published").eq("id", planId).eq("is_published", true).maybeSingle();
-  if (planError || !plan) return response({ error: "That membership plan is unavailable." }, 404, origin);
+  if (planError || !plan) return response({ error: "That ticket option is unavailable." }, 404, origin);
   if (!Number.isInteger(plan.price_cents) || plan.price_cents < 0 || !/^[A-Z]{3}$/i.test(plan.currency || "")) return response({ error: "The selected plan has invalid pricing configuration." }, 400, origin);
 
   try {
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       price_data: {
         currency: plan.currency.toLowerCase(),
         unit_amount: plan.price_cents,
-        product_data: { name: plan.name, description: plan.description || "FQ MMA membership" },
+        product_data: { name: plan.name, description: plan.description || "FQ MMA live-stream ticket" },
         ...(isSubscription ? { recurring: { interval: plan.billing_interval } } : {}),
       },
     };
@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
     if (saveError) {
       await stripe.checkout.sessions.expire(session.id).catch(() => undefined);
       console.error("Could not create pending membership record", saveError.message);
-      return response({ error: "Could not start the membership purchase. Please try again." }, 500, origin);
+      return response({ error: "Could not start the ticket purchase. Please try again." }, 500, origin);
     }
     return response({ url: session.url }, 200, origin);
   } catch (error) {
