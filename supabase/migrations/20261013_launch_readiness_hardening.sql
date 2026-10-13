@@ -35,18 +35,31 @@ grant select, insert, update, delete on table public.stripe_webhook_events to se
 
 -- Payment records are server-managed only. RLS does not protect TRUNCATE, so remove
 -- every direct table privilege from browser roles rather than relying on row policies.
-revoke all privileges on table public.stripe_purchases from public, anon, authenticated;
-grant select, insert, update, delete on table public.stripe_purchases to service_role;
+-- These objects are present in the audited production schema but may be absent in a fresh project.
+do $
+begin
+  if to_regclass('public.stripe_purchases') is not null then
+    execute 'revoke all privileges on table public.stripe_purchases from public, anon, authenticated';
+    execute 'grant select, insert, update, delete on table public.stripe_purchases to service_role';
+  end if;
 
--- Admin-check helpers may be needed by authenticated RLS policies, but not by anonymous callers.
-revoke all on function public.is_admin() from public, anon;
-grant execute on function public.is_admin() to authenticated;
+  -- Admin-check helpers may be needed by authenticated RLS policies, but not by anonymous callers.
+  if to_regprocedure('public.is_admin()') is not null then
+    execute 'revoke all on function public.is_admin() from public, anon';
+    execute 'grant execute on function public.is_admin() to authenticated';
+  end if;
 
-revoke all on function public.is_fqmma_admin() from public, anon;
-grant execute on function public.is_fqmma_admin() to authenticated;
+  if to_regprocedure('public.is_fqmma_admin()') is not null then
+    execute 'revoke all on function public.is_fqmma_admin() from public, anon';
+    execute 'grant execute on function public.is_fqmma_admin() to authenticated';
+  end if;
 
--- Trigger functions are invoked by PostgreSQL triggers, not by browser clients.
-revoke all on function public.rls_auto_enable() from public, anon, authenticated;
+  -- Trigger functions are invoked by PostgreSQL triggers, not by browser clients.
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    execute 'revoke all on function public.rls_auto_enable() from public, anon, authenticated';
+  end if;
+end
+$;
 
 -- Paid media must not be stored in the public bucket. Keep the existing public bucket
 -- unchanged for published team/event imagery and create a separate private bucket.
