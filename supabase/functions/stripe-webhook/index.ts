@@ -59,12 +59,64 @@ Deno.serve(async (req) => {
             if (error) throw error;
           }
         }
+      } else if (session.metadata?.purchase_type === "stream") {
+        const purchaseId = session.metadata.stream_purchase_id;
+        if (!purchaseId || session.mode !== "payment") throw new Error("Stream checkout metadata is invalid");
+        if (session.payment_status === "paid") {
+          const { data: purchase, error: findError } = await db.from("stream_purchases")
+            .select("id,event_id,status,amount_cents,currency,stripe_checkout_session_id").eq("id", purchaseId).maybeSingle();
+          if (findError) throw findError;
+          if (!purchase) throw new Error("Stream purchase reservation was not found");
+          if (purchase.stripe_checkout_session_id && purchase.stripe_checkout_session_id !== session.id) throw new Error("Stream reservation/session mismatch");
+          if (purchase.event_id !== session.metadata.event_id || session.amount_total !== purchase.amount_cents ||
+              session.currency !== String(purchase.currency || "USD").toLowerCase()) {
+            throw new Error("Stream checkout details do not match the reservation");
+          }
+          if (purchase.status !== "refunded") {
+            const { error } = await db.from("stream_purchases").update({
+              status: "paid",
+              stripe_checkout_session_id: session.id,
+              stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
+              updated_at: new Date().toISOString(),
+            }).eq("id", purchaseId);
+            if (error) throw error;
+          }
+        }
+      } else if (session.metadata?.purchase_type === "media") {
+        const rawMediaId = session.metadata.media_id;
+        const mediaId = rawMediaId && /^\d+$/.test(rawMediaId) ? Number(rawMediaId) : NaN;
+        if (!Number.isSafeInteger(mediaId) || mediaId < 1 || session.mode !== "payment") {
+          throw new Error("Media checkout metadata is invalid");
+        }
+        if (session.payment_status === "paid") {
+          const { data: media, error: mediaError } = await db.from("media")
+            .select("id,is_published,price,file_path").eq("id", mediaId).maybeSingle();
+          if (mediaError) throw mediaError;
+          if (!media || !media.is_published || Number(media.price) <= 0 || !media.file_path) {
+            throw new Error("Paid media is unavailable or not configured for private delivery");
+          }
+          const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
+          const { error: purchaseError } = await db.from("media_purchases").upsert({
+            media_id: mediaId,
+            checkout_session_id: session.id,
+            payment_intent_id: paymentIntentId,
+            customer_email: session.customer_details?.email ?? session.customer_email ?? null,
+            payment_status: "paid",
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "checkout_session_id" });
+          if (purchaseError) throw purchaseError;
+        }
       }
     } else if (event.type === "checkout.session.async_payment_failed" || event.type === "checkout.session.expired") {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.metadata?.purchase_type === "ticket" && session.metadata.ticket_purchase_id) {
         const { error } = await db.from("ticket_purchases").update({ status: "failed", updated_at: new Date().toISOString() })
           .eq("id", session.metadata.ticket_purchase_id).eq("status", "pending");
+        if (error) throw error;
+      } else if (session.metadata?.purchase_type === "stream" && session.metadata.stream_purchase_id) {
+        const failureStatus = event.type === "checkout.session.expired" ? "expired" : "failed";
+        const { error } = await db.from("stream_purchases").update({ status: failureStatus, updated_at: new Date().toISOString() })
+          .eq("id", session.metadata.stream_purchase_id).eq("status", "pending");
         if (error) throw error;
       }
     } else if (event.type === "charge.refunded") {
@@ -74,6 +126,16 @@ Deno.serve(async (req) => {
         const { error } = await db.from("ticket_purchases").update({ status: "refunded", updated_at: new Date().toISOString() })
           .eq("stripe_payment_intent_id", paymentIntentId).eq("status", "paid");
         if (error) throw error;
+        const { error: mediaRefundError } = await db.from("media_purchases").update({
+          payment_status: "refunded",
+          updated_at: new Date().toISOString(),
+        }).eq("payment_intent_id", paymentIntentId).eq("payment_status", "paid");
+        if (mediaRefundError) throw mediaRefundError;
+        const { error: streamRefundError } = await db.from("stream_purchases").update({
+          status: "refunded",
+          updated_at: new Date().toISOString(),
+        }).eq("stripe_payment_intent_id", paymentIntentId).eq("status", "paid");
+        if (streamRefundError) throw streamRefundError;
       }
     }
 
