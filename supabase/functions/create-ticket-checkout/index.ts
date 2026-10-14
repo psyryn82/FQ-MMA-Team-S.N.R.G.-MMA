@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
   const stripe = new Stripe(stripeKey, { httpClient: Stripe.createFetchHttpClient() });
   try {
-    const eventDetails = [event.title, event.venue, event.event_date ? new Date(event.event_date).toLocaleString("en-US", { timeZone: "UTC", timeZoneName: "UTC" }) : "Date to be announced"].filter(Boolean).join(" • ");
+    const eventDetails = [event.title, event.venue, event.event_date ? new Date(event.event_date).toLocaleString("en-US", { timeZone: "UTC" }) : "Date to be announced"].filter(Boolean).join(" • ");
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
