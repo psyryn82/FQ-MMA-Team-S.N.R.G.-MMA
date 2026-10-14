@@ -987,9 +987,9 @@
                             <span class="${badgeStyle} text-xs font-heading font-black px-2.5 py-1 rounded uppercase tracking-wider border">${escapeHtml(item.date)}</span>
                             <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide mt-1">${escapeHtml(item.title)}</h3>
                             <p class="text-xs text-gray-300">${escapeHtml(item.subtitle)}</p>
-                            ${isEvent ? `<p class="font-heading text-lg font-bold text-brand-neon">Tickets: ${escapeHtml(item.ticketPrice || 'Price TBA')}</p>` : ''}
+                            ${isEvent ? `<p class="font-heading text-lg font-bold text-brand-neon">Tickets: ${escapeHtml(item.ticketPrice || 'Price TBA')}</p>${item.ticketOptions?.length ? `<div class="flex flex-wrap gap-2 mt-3">${item.ticketOptions.map(ticket => { const price = new Intl.NumberFormat('en-US',{style:'currency',currency:ticket.currency||'USD'}).format((ticket.price_cents||0)/100); return `<button type="button" data-buy-ticket="${escapeHtml(ticket.id)}" data-ticket-name="${escapeHtml(ticket.name)}" data-ticket-price="${escapeHtml(price)}" class="bg-brand-red hover:bg-red-700 text-white font-heading text-xs font-black uppercase px-4 py-2 rounded-lg">${escapeHtml(ticket.name)} · ${escapeHtml(price)}</button>`; }).join('')}</div>` : ''}` : ''}
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             ${getSafeHttpUrl(item.link) ? `<a href="${escapeHtml(getSafeHttpUrl(item.link))}" target="_blank" rel="noopener noreferrer" class="${btnStyle} font-heading text-sm font-black uppercase px-6 py-3 rounded-xl shadow-lg whitespace-nowrap">Event details</a>` : `<button onclick="openCustomLink('')" class="${btnStyle} font-heading text-sm font-black uppercase px-6 py-3 rounded-xl shadow-lg whitespace-nowrap">Event details</button>`}
                         </div>
                     </div>
@@ -1039,7 +1039,7 @@
                     <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
                         <div class="space-y-1">
                             ${s.image && /^https:\/\/[a-z0-9.-]+(?:\/[^\s"'<>]*)?$/i.test(s.image) ? '<img src="' + s.image + '" alt="' + s.title + '" loading="lazy" class="w-full max-h-48 object-cover rounded-lg mb-3">' : ''}
-                            <span class="${tagColor} font-heading font-black text-xs tracking-widest uppercase">FQ MMA PRODUCT</span>
+                            <span class="${tagColor} font-heading font-black text-xs tracking-widest uppercase">FQ MMA MEDIA / PURCHASE</span>
                             <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide">${s.title}</h3>
                             <p class="text-xs text-gray-300">${s.subtitle}</p>
                         </div>
@@ -1539,22 +1539,25 @@
             if (data?.content_value) applySiteContent(data.content_value);
             // Keep the public roster, event schedule, and product list connected to their structured tables.
             try {
-                const [fightersResult, eventsResult, scheduleResult, productsResult] = await Promise.all([
+                const [fightersResult, eventsResult, scheduleResult, productsResult, ticketsResult] = await Promise.all([
                     window.sb.from('fighters').select('id,name,nickname,record,bio,image_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.from('events').select('id,title,event_date,venue,main_event,description,status').in('status', ['upcoming','live','completed']).order('event_date', {ascending:true}),
                     window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
-                    window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false})
+                    window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
+                    window.sb.from('event_ticket_options').select('id,event_id,name,description,price_cents,currency,quantity_limit').eq('is_available', true)
                 ]);
                 if (fightersResult.error) console.warn('Could not load published fighters from Supabase.', fightersResult.error);
                 else if (fightersResult.data?.length) siteData.fighters = fightersResult.data.map(f => ({id:f.id,name:f.name,record:f.record||'',desc:f.bio||f.nickname||'',initials:(f.name||'').substring(0,2).toUpperCase(),image:f.image_url||''}));
                 if (eventsResult.error) console.warn('Could not load events from Supabase.', eventsResult.error);
+                if (ticketsResult.error) console.warn('Could not load available ticket options from Supabase.', ticketsResult.error);
+                const availableTickets = ticketsResult.data || [];
                 if (scheduleResult.error) console.warn('Could not load training schedule from Supabase.', scheduleResult.error);
                 const savedEvents = new Map(siteData.schedule.map(item => [String(item.id), item]));
-                const eventItems = (eventsResult.data||[]).map(e => ({id:e.id,type:'event',date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:savedEvents.get(String(e.id))?.ticketPrice || '',link:savedEvents.get(String(e.id))?.link || ''}));
+                const eventItems = (eventsResult.data||[]).map(e => ({id:e.id,type:'event',date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:availableTickets.some(t=>t.event_id===e.id)?'Available now':(savedEvents.get(String(e.id))?.ticketPrice || ''),ticketOptions:availableTickets.filter(t=>t.event_id===e.id),link:savedEvents.get(String(e.id))?.link || ''}));
                 const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,type:'class',date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
                 if (eventItems.length || classItems.length) siteData.schedule = [...eventItems,...classItems];
                 if (productsResult.error) console.warn('Could not load products from Supabase.', productsResult.error);
-                else if (productsResult.data?.length) siteData.store = productsResult.data.map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA merchandise',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
+                else if (productsResult.data?.length) siteData.store = productsResult.data.map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA media',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
             } catch (e) { console.warn('Supabase structured content could not be loaded; retaining homepage defaults.', e); }
             renderAllContent();
             if (window.__snrgAdminUser) renderAdminManagerLists();
