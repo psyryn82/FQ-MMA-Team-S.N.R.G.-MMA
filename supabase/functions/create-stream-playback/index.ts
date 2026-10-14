@@ -30,7 +30,10 @@ function privateKeyDer(rawValue: string): Uint8Array {
   return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 }
 async function signPlaybackToken(playbackId: string, purchaseId: string, keyId: string, privateKeyValue: string): Promise<string> {
-  const key = await crypto.subtle.importKey("pkcs8", privateKeyDer(privateKeyValue), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+  const der = privateKeyDer(privateKeyValue);
+  const keyData = new ArrayBuffer(der.byteLength);
+  new Uint8Array(keyData).set(der);
+  const key = await crypto.subtle.importKey("pkcs8", keyData, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
   const now = Math.floor(Date.now() / 1000);
   const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT", kid: keyId }));
   const payload = base64Url(JSON.stringify({ sub: playbackId, aud: "v", exp: now + 6 * 60 * 60, kid: keyId, custom: { purchase_id: purchaseId } }));
