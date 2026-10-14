@@ -6,7 +6,7 @@ begin;
 create table if not exists public.event_streams (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null unique references public.events(id) on delete cascade,
-  mux_playback_id text,
+  livepeer_playback_id text,
   stream_price_cents integer not null default 3500 check (stream_price_cents >= 50),
   currency text not null default 'USD' check (currency = upper(currency) and currency ~ '^[A-Z]{3}$'),
   is_enabled boolean not null default false,
