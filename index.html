@@ -881,13 +881,8 @@
         }
 
         function openAdminModal() {
-            if (isAdminLoggedIn) {
-                document.getElementById('admin-modal').classList.remove('hidden');
-                cleanupExpiredPromos();
-                renderAdminManagerLists();
-            } else {
-                document.getElementById('admin-login-modal').classList.remove('hidden');
-            }
+            // Keep one source of truth for administration instead of opening the legacy in-page dashboard.
+            window.location.href = './admin.html';
         }
 
         function closeAdminLoginModal() {
