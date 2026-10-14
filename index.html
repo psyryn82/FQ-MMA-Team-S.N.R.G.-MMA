@@ -678,6 +678,23 @@
   </div>
 </div>
 
+<div id="streamCheckoutModal" class="hidden fixed inset-0 z-[110] bg-black/85 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="streamCheckoutTitle">
+  <div class="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-950 p-6 shadow-2xl">
+    <div class="flex items-start justify-between gap-4">
+      <div><p class="text-xs font-black uppercase tracking-widest text-brand-red">Secure checkout</p><h2 id="streamCheckoutTitle" class="font-heading text-2xl font-black uppercase mt-1">Live-stream access</h2><p id="streamCheckoutPrice" class="text-sm text-gray-300 mt-2">One-time access: $35.00</p></div>
+      <button id="streamCheckoutClose" type="button" class="btn2" aria-label="Close stream checkout">✕</button>
+    </div>
+    <form id="streamCheckoutForm" class="mt-5 space-y-4">
+      <label class="block text-sm">Choose event<select id="streamCheckoutEvent" class="field" required><option value="">Loading available streams…</option></select></label>
+      <label class="block text-sm">Email for your payment confirmation<input id="streamCheckoutEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label>
+      <p class="text-xs text-gray-400">One-time payment only. Checkout remains in test mode until payment confirmation and secure playback pass end-to-end testing.</p>
+      <button id="streamCheckoutSubmit" type="submit" class="btn w-full" disabled>Continue to secure payment</button>
+      <p id="streamCheckoutMessage" class="text-sm" role="status"></p>
+    </form>
+  </div>
+</div>
+
+
 <script>
         let isAdminLoggedIn = false;
         let PAYSITE_URL = "";
@@ -705,8 +722,98 @@
         // Expose the same object to the Supabase bridge; edits continue to mutate this object.
         window.siteData = siteData;
 
+        let availableStreamOptions = [];
+
+        function closeStreamCheckout() {
+            document.getElementById('streamCheckoutModal').classList.add('hidden');
+        }
+
+        async function openStreamCheckout() {
+            if (!window.sb || !window.supabaseReady) {
+                showNotification("Live-stream checkout is not available right now. No payment will be taken.", "info");
+                return;
+            }
+            const modal = document.getElementById('streamCheckoutModal');
+            const select = document.getElementById('streamCheckoutEvent');
+            const message = document.getElementById('streamCheckoutMessage');
+            const submit = document.getElementById('streamCheckoutSubmit');
+            const price = document.getElementById('streamCheckoutPrice');
+            modal.classList.remove('hidden');
+            select.innerHTML = '';
+            const loading = document.createElement('option');
+            loading.value = '';
+            loading.textContent = 'Loading available streams…';
+            select.appendChild(loading);
+            submit.disabled = true;
+            message.textContent = 'Checking available stream events…';
+            try {
+                const { data, error } = await window.sb.functions.invoke('list-available-streams', { body: {} });
+                if (error) throw error;
+                availableStreamOptions = Array.isArray(data?.streams) ? data.streams : [];
+                select.innerHTML = '';
+                if (!availableStreamOptions.length) {
+                    const empty = document.createElement('option');
+                    empty.value = '';
+                    empty.textContent = 'No stream available';
+                    select.appendChild(empty);
+                    price.textContent = 'One-time access: $35.00';
+                    message.textContent = 'No live-stream event is available yet. No payment will be taken.';
+                    return;
+                }
+                for (const stream of availableStreamOptions) {
+                    const option = document.createElement('option');
+                    option.value = stream.event_id;
+                    const dateText = stream.event_date ? ' · ' + new Date(stream.event_date).toLocaleString() : ' · Date to be announced';
+                    const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: stream.currency || 'USD' }).format((stream.price_cents || 0) / 100);
+                    option.textContent = (stream.title || 'FQ MMA event') + dateText + ' · ' + amount;
+                    select.appendChild(option);
+                }
+                const updatePrice = () => {
+                    const selected = availableStreamOptions.find((stream) => stream.event_id === select.value);
+                    if (!selected) return;
+                    price.textContent = 'One-time access: ' + new Intl.NumberFormat('en-US', { style: 'currency', currency: selected.currency || 'USD' }).format((selected.price_cents || 0) / 100);
+                };
+                select.onchange = updatePrice;
+                updatePrice();
+                submit.disabled = false;
+                message.textContent = 'Enter your email to continue to secure checkout.';
+            } catch (error) {
+                availableStreamOptions = [];
+                submit.disabled = true;
+                message.textContent = error?.message || 'Stream listings are unavailable. No payment will be taken.';
+            }
+        }
+
+        document.getElementById('streamCheckoutClose').addEventListener('click', closeStreamCheckout);
+        document.getElementById('streamCheckoutForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const select = document.getElementById('streamCheckoutEvent');
+            const email = document.getElementById('streamCheckoutEmail').value.trim();
+            const message = document.getElementById('streamCheckoutMessage');
+            const submit = document.getElementById('streamCheckoutSubmit');
+            if (!availableStreamOptions.some((stream) => stream.event_id === select.value)) {
+                message.textContent = 'Choose an available stream event first.';
+                return;
+            }
+            submit.disabled = true;
+            submit.textContent = 'Preparing secure checkout…';
+            message.textContent = '';
+            try {
+                const { data, error } = await window.sb.functions.invoke('create-stream-checkout', {
+                    body: { event_id: select.value, buyer_email: email }
+                });
+                if (error) throw error;
+                if (!data?.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
+                window.location.assign(data.url);
+            } catch (error) {
+                message.textContent = error?.message || 'Could not start checkout. No payment was taken.';
+                submit.disabled = false;
+                submit.textContent = 'Continue to secure payment';
+            }
+        });
+
         function redirectToPaysite() {
-            showNotification("Live-stream checkout is not available yet. No payment will be taken.", "info");
+            openStreamCheckout();
         }
 
         function openTicketCheckout(optionId, ticketName, ticketPrice) {
