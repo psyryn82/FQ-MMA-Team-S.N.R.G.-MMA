@@ -1,4 +1,4 @@
-// Entitlement-checked signed Mux playback. Stripe test mode only until the full flow is verified.
+// Entitlement-checked Cloudflare Stream playback. Stripe test mode only until the full flow is verified.
 import Stripe from "https://esm.sh/stripe@17.7.0?target=denonext";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,41 +7,6 @@ const headers = { "Access-Control-Allow-Headers": "authorization, x-client-info,
 function respond(body: unknown, status = 200, origin = "") {
   return new Response(JSON.stringify(body), { status, headers: { ...headers, "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://fq-snrg-mma.com", "Vary": "Origin" } });
 }
-function base64Url(input: string | Uint8Array): string {
-  const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-function privateKeyDer(rawValue: string): Uint8Array {
-  let pem = rawValue.replace(/\\n/g, "\n").trim();
-  if (!pem.includes("-----BEGIN")) {
-    try {
-      const decoded = atob(pem);
-      if (decoded.includes("-----BEGIN")) pem = decoded;
-      else pem = "-----BEGIN PRIVATE KEY-----\n" + (pem.match(/.{1,64}/g) || []).join("\n") + "\n-----END PRIVATE KEY-----";
-    } catch {
-      pem = "-----BEGIN PRIVATE KEY-----\n" + (pem.match(/.{1,64}/g) || []).join("\n") + "\n-----END PRIVATE KEY-----";
-    }
-  }
-  const match = pem.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
-  if (!match) throw new Error("Mux signing private key must be PKCS#8 PEM or its base64-encoded form.");
-  const base64 = match[1].replace(/\s/g, "");
-  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-}
-async function signPlaybackToken(playbackId: string, purchaseId: string, keyId: string, privateKeyValue: string): Promise<string> {
-  const der = privateKeyDer(privateKeyValue);
-  const keyData = new ArrayBuffer(der.byteLength);
-  new Uint8Array(keyData).set(der);
-  const key = await crypto.subtle.importKey("pkcs8", keyData, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
-  const now = Math.floor(Date.now() / 1000);
-  const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT", kid: keyId }));
-  const payload = base64Url(JSON.stringify({ sub: playbackId, aud: "v", exp: now + 6 * 60 * 60, kid: keyId, custom: { purchase_id: purchaseId } }));
-  const unsigned = header + "." + payload;
-  const signature = new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(unsigned)));
-  return unsigned + "." + base64Url(signature);
-}
-
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
   if (req.method === "OPTIONS") return new Response("ok", { headers: { ...headers, "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://fq-snrg-mma.com", "Vary": "Origin" } });
@@ -52,11 +17,12 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-  const signingKeyId = Deno.env.get("MUX_SIGNING_KEY");
-  const signingPrivateKey = Deno.env.get("MUX_PRIVATE_KEY");
+  const cloudflareAccountId = Deno.env.get("CLOUDFLARE_ACCOUNT_ID");
+  const cloudflareApiToken = Deno.env.get("CLOUDFLARE_STREAM_API_TOKEN");
+  const cloudflareCustomerCode = Deno.env.get("CLOUDFLARE_STREAM_CUSTOMER_CODE") || "46irc6h95foi67cf";
   if (!supabaseUrl || !serviceKey || !stripeKey) return respond({ error: "Stream playback is not configured." }, 503, origin);
   if (!stripeKey.startsWith("sk_test_")) return respond({ error: "Stream playback is locked to test mode until end-to-end testing is complete." }, 503, origin);
-  if (!signingKeyId || !signingPrivateKey) return respond({ error: "Secure stream playback is not configured yet." }, 503, origin);
+  if (!cloudflareAccountId || !cloudflareApiToken || !/^[a-z0-9]+$/i.test(cloudflareCustomerCode)) return respond({ error: "Cloudflare Stream playback is not configured yet." }, 503, origin);
 
   let input: { session_id?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "A paid checkout session is required." }, 400, origin); }
@@ -88,16 +54,28 @@ Deno.serve(async (req) => {
   const { data: config, error: configError } = await db.from("event_streams")
     .select("mux_playback_id,is_enabled").eq("event_id", purchase.event_id).maybeSingle();
   if (configError || !config?.is_enabled || !config.mux_playback_id) return respond({ error: "Secure playback is not available for this event yet." }, 409, origin);
-  if (!/^[A-Za-z0-9_-]+$/.test(config.mux_playback_id)) return respond({ error: "The event playback ID is not valid." }, 503, origin);
+  // Legacy column name retained to avoid a destructive schema change. It now stores the Cloudflare Live Input ID.
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(config.mux_playback_id)) return respond({ error: "The Cloudflare Live Input ID is not valid." }, 503, origin);
 
   const { data: event, error: eventError } = await db.from("events").select("title,status").eq("id", purchase.event_id).maybeSingle();
   if (eventError || !event || !["upcoming", "live", "completed"].includes(event.status)) return respond({ error: "Playback is not available for this event." }, 409, origin);
 
   try {
-    const token = await signPlaybackToken(config.mux_playback_id, purchase.id, signingKeyId, signingPrivateKey);
-    return respond({ playback_url: "https://stream.mux.com/" + config.mux_playback_id + ".m3u8?token=" + token, event_title: event.title }, 200, origin);
+    const tokenResponse = await fetch(
+      "https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(cloudflareAccountId) + "/stream/" + encodeURIComponent(config.mux_playback_id) + "/token",
+      { method: "POST", headers: { "Authorization": "Bearer " + cloudflareApiToken, "Content-Type": "application/json" },
+        body: JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 6 * 60 * 60, downloadable: false }) },
+    );
+    const tokenPayload = await tokenResponse.json().catch(() => null);
+    if (!tokenResponse.ok || tokenPayload?.success !== true || typeof tokenPayload?.result?.token !== "string") {
+      const codes = Array.isArray(tokenPayload?.errors) ? tokenPayload.errors.map((item: { code?: number }) => item.code).filter(Boolean).join(",") : "";
+      console.error("Cloudflare signed playback token request failed", tokenResponse.status, codes);
+      return respond({ error: "Cloudflare could not authorize playback yet. Confirm this Live Input requires signed URLs and the Stream API token has Stream edit permissions." }, 503, origin);
+    }
+    const token = tokenPayload.result.token;
+    return respond({ playback_url: "https://customer-" + cloudflareCustomerCode + ".cloudflarestream.com/" + token + "/iframe", event_title: event.title }, 200, origin);
   } catch (error) {
-    console.error("Could not sign Mux playback token", error instanceof Error ? error.message : "unknown error");
+    console.error("Could not request Cloudflare playback token", error instanceof Error ? error.message : "unknown error");
     return respond({ error: "Secure stream playback could not be initialized." }, 503, origin);
   }
 });
