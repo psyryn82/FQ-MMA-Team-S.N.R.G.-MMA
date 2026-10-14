@@ -1609,7 +1609,7 @@
                 const savedEvents = new Map(siteData.schedule.map(item => [String(item.id), item]));
                 const eventItems = (eventsResult.data||[]).map(e => ({id:e.id,type:'event',date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:availableTickets.some(t=>t.event_id===e.id)?'Available now':(savedEvents.get(String(e.id))?.ticketPrice || ''),ticketOptions:availableTickets.filter(t=>t.event_id===e.id),link:savedEvents.get(String(e.id))?.link || ''}));
                 const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,type:'class',date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
-                siteData.schedule = [...eventItems,...classItems];
+                if (!eventsResult.error && !scheduleResult.error) siteData.schedule = [...eventItems,...classItems];
                 if (productsResult.error) console.warn('Could not load products from Supabase.', productsResult.error);
                 else if (productsResult.data?.length) siteData.store = productsResult.data.map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA media',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
             } catch (e) { console.warn('Supabase structured content could not be loaded; retaining homepage defaults.', e); }
