@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-FILES = ["index.html", "admin.html", "membership.html"]
+FILES = ["index.html", "admin.html", "membership.html", "watch.html"]
 SCRIPT_RE = re.compile(r"<script\b([^>]*)>(.*?)</script\s*>", re.IGNORECASE | re.DOTALL)
 failures = []
 checked = 0
