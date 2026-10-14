@@ -31,9 +31,9 @@ Deno.serve(async (req) => {
 
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: config, error: configError } = await db.from("event_streams")
-    .select("id,event_id,mux_playback_id,stream_price_cents,currency,is_enabled")
+    .select("id,event_id,livepeer_playback_id,stream_price_cents,currency,is_enabled")
     .eq("event_id", eventId).eq("is_enabled", true).maybeSingle();
-  if (configError || !config || !config.mux_playback_id) return respond({ error: "Paid stream access is not available for that event yet." }, 409, origin);
+  if (configError || !config || !config.livepeer_playback_id) return respond({ error: "Paid stream access is not available for that event yet." }, 409, origin);
 
   const { data: event, error: eventError } = await db.from("events")
     .select("id,title,event_date,venue,status").eq("id", eventId).maybeSingle();
