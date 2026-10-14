@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="index,follow">
-<title>FQ MMA Live-Stream Tickets</title>
+<title>FQ MMA Account &amp; Fan Chat</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://js.stripe.com/dahlia/stripe.js"></script>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -14,9 +14,9 @@
 </style>
 </head>
 <body class="min-h-screen">
-<header class="border-b border-gray-800 bg-black/80 px-4 py-4 backdrop-blur-sm"><div class="max-w-5xl mx-auto flex items-center justify-between gap-4"><div><div class="head text-2xl font-bold uppercase"><span class="text-red-500">FQ MMA</span> Live-Stream Tickets</div><div class="muted text-xs mt-1">Team S.N.R.G. MMA</div></div><a href="./index.html" class="btn2 text-sm">← Back to website</a></div></header>
+<header class="border-b border-gray-800 bg-black/80 px-4 py-4 backdrop-blur-sm"><div class="max-w-5xl mx-auto flex items-center justify-between gap-4"><div><div class="head text-2xl font-bold uppercase"><span class="text-red-500">FQ MMA</span> Account & Fan Chat</div><div class="muted text-xs mt-1">Team S.N.R.G. MMA</div></div><a href="./index.html" class="btn2 text-sm">← Back to website</a></div></header>
 <main class="max-w-5xl mx-auto px-4 py-8">
-<section class="panel hero-card mb-6"><span class="pill">Live stream pay-per-view</span><h1 class="head text-3xl uppercase mt-3">Get your live-stream ticket</h1><p class="muted text-sm mt-2">Purchase a ticket to watch the live-stream event. Sign in below to continue to checkout.</p></section>
+<section class="panel hero-card mb-6"><span class="pill">Account access</span><h1 class="head text-3xl uppercase mt-3">Sign in to your account</h1><p class="muted text-sm mt-2">Sign in or create an account to message the team and use fan chat. Ticket purchases do not require an account.</p></section>
 <section class="grid lg:grid-cols-2 gap-5 member-layout">
 <div class="panel auth-card">
 <div class="flex gap-2 mb-4"><button id="modeSignIn" class="btn text-sm" type="button">Sign in</button><button id="modeSignUp" class="btn2 text-sm" type="button">Create account</button></div>
@@ -36,7 +36,7 @@
 </div>
 </section>
 <section class="mt-8">
-<div class="flex items-end justify-between gap-3 mb-4"><div><h2 class="head text-3xl uppercase">Available ticket options</h2><p class="muted text-sm mt-1">Tickets available for purchase.</p></div><button id="refreshPlans" class="btn2 text-sm" type="button">Refresh</button></div>
+<div class="flex items-end justify-between gap-3 mb-4"><div><h2 class="head text-3xl uppercase">Event tickets</h2><p class="muted text-sm mt-1">Ticket options and prices are shown on each event listing.</p></div><button id="refreshPlans" class="btn2 text-sm" type="button">Refresh</button></div>
 <div id="plans" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"><div class="panel plan-card muted text-sm">Loading ticket options…</div></div>
 </section>
 <section id="checkoutPanel" class="panel plan-card mt-8 hidden" aria-live="polite">
@@ -57,38 +57,11 @@ function msg(s,error=false){$("authMessage").textContent=s;$("authMessage").clas
 function setMode(next){mode=next;$("modeSignIn").className=next==="signin"?"btn text-sm":"btn2 text-sm";$("modeSignUp").className=next==="signup"?"btn text-sm":"btn2 text-sm";$("authSubmit").textContent=next==="signin"?"Sign in":"Create account";$("password").autocomplete=next==="signin"?"current-password":"new-password";msg("")}
 $("modeSignIn").onclick=()=>setMode("signin");$("modeSignUp").onclick=()=>setMode("signup");
 function money(cents,currency){try{return new Intl.NumberFormat("en-US",{style:"currency",currency:currency||"USD"}).format((cents||0)/100)}catch{return "$"+((cents||0)/100).toFixed(2)}}
-async function loadPlans(){const {data,error}=await client.from("membership_plans").select("id,name,description,price_cents,currency,billing_interval").eq("is_published",true).order("price_cents");if(error){$("plans").innerHTML='<div class="panel plan-card text-red-400">Could not load ticket options. Run the updated Supabase schema first. '+esc(error.message)+'</div>';return}const rows=data||[];$("plans").innerHTML=rows.map(p=>'<article class="panel plan-card flex flex-col"><h3 class="head text-2xl uppercase">'+esc(p.name)+'</h3><div class="price mt-3">'+money(p.price_cents,p.currency)+'<small> / '+esc(p.billing_interval==="month"?"month":p.billing_interval==="year"?"year":"one-time")+'</small></div><p class="muted text-sm mt-3 flex-1">'+esc(p.description||"Live-stream event ticket")+'</p><button class="btn w-full mt-5" data-buy="'+p.id+'">Continue to checkout</button></article>').join("")||'<div class="panel plan-card muted">No tickets available for purchase yet. Check back soon.</div>';document.querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>checkout(b.dataset.buy))}
-async function loadMembershipInfo(){if(!currentSession){$("membershipInfo").innerHTML="";$("userChatForm").classList.add("hidden");$("userChatList").innerHTML="";return}const {data,error}=await client.from("memberships").select("status,current_period_end,created_at,membership_plans(name)").order("created_at",{ascending:false}).limit(10);if(error){$("membershipInfo").innerHTML='<p class="muted text-sm">Ticket status could not be loaded.</p>'}else{$("membershipInfo").innerHTML=(data||[]).map(m=>'<div class="border border-gray-800 rounded-lg p-3"><b>'+esc(m.membership_plans?.name||"Live-stream ticket")+'</b><p class="muted text-sm mt-1">Ticket status: '+esc(m.status)+' '+(m.current_period_end?'• Until '+esc(new Date(m.current_period_end).toLocaleDateString()):'')+'</p></div>').join("")||'<p class="muted text-sm">No ticket purchases yet.</p>'}$("userChatForm").classList.remove("hidden");await loadUserChat()}
+async function loadPlans(){$("plans").innerHTML='<div class="panel plan-card"><h3 class="head text-2xl uppercase">Tickets are sold by event</h3><p class="muted text-sm mt-3">Open the main website and choose an event to see available ticket options and fixed prices. You do not need an account to buy tickets.</p><a class="btn inline-block mt-5" href="./index.html#tab-schedule">View events and tickets</a></div>'}
+async function loadMembershipInfo(){if(!currentSession){$("membershipInfo").innerHTML="";$("userChatForm").classList.add("hidden");$("userChatList").innerHTML="";return}$("membershipInfo").innerHTML='<p class="muted text-sm">Event ticket purchases are recorded separately from website accounts. Keep the email and Stripe receipt used at checkout. FQ MMA can verify payment from the admin dashboard.</p>';$("userChatForm").classList.remove("hidden");await loadUserChat()}
 async function loadUserChat(){if(!currentSession)return;const {data,error}=await client.from("chat_messages").select("id,sender_name,message,is_admin_reply,created_at").eq("user_id",currentSession.user.id).order("created_at",{ascending:true}).limit(100);if(error){$("userChatList").innerHTML='<p class="muted text-xs">Chat is unavailable. Run the updated schema first.</p>';return}$("userChatList").innerHTML=(data||[]).map(m=>'<div class="border border-gray-800 rounded-lg p-3"><p class="muted text-xs">'+(m.is_admin_reply?'FQ MMA team':'You')+' • '+esc(new Date(m.created_at).toLocaleString())+'</p><p class="text-sm mt-1 whitespace-pre-wrap">'+esc(m.message)+'</p></div>').join("")||'<p class="muted text-xs">No messages yet.</p>'}
 $("userChatForm").addEventListener("submit",async e=>{e.preventDefault();if(!currentSession){msg("Sign in before messaging.",true);return}const message=$("userChatMessage").value.trim();if(!message)return;const {error}=await client.from("chat_messages").insert({user_id:currentSession.user.id,sender_name:currentSession.user.user_metadata?.full_name||"",sender_email:currentSession.user.email||"",message,is_admin_reply:false});if(error){msg(error.message,true);return}$("userChatMessage").value="";msg("Message sent.");await loadUserChat()});
-async function checkout(planId){
-if(!currentSession){msg("Please sign in or create an account before checkout.",true);$("email").focus();return}
-if(!STRIPE_PUBLISHABLE_KEY||STRIPE_PUBLISHABLE_KEY.includes("REPLACE_WITH")){msg("Add your Stripe test publishable key in membership.html before testing checkout.",true);return}
-msg("Creating secure checkout…");
-const {data,error}=await client.functions.invoke("create-checkout-session",{body:{plan_id:planId}});
-if(error){msg("Checkout is not ready yet. Confirm the Edge Function and Stripe secrets are configured. "+error.message,true);return}
-if(!data?.client_secret){msg(data?.error||"Checkout did not return a client secret.",true);return}
-try{
-const stripe=Stripe(STRIPE_PUBLISHABLE_KEY,{betas:["custom_checkout_payment_form_1"]});
-const appearance={theme:"night",labels:"floating",inputs:"condensed",variables:{borderRadius:"4px",colorBackground:"#403f3f",colorDanger:"#ec5b78",colorPrimary:"#e12605",colorSuccess:"#2ced7c",colorText:"#fafafa",fontFamily:"Roboto",fontSizeBase:"16px",spacingUnit:"4px"}};
-const checkout=stripe.initCheckoutFormSdk({clientSecret:data.client_secret,appearance});
-$("checkout-form").innerHTML="";
-$("checkoutPanel").classList.remove("hidden");
-const form=checkout.createForm({layout:"expanded"});
-form.mount("#checkout-form");
-const loadActionsResult=await checkout.loadActions();
-if(loadActionsResult.type==="success"){
-form.on("confirm",async event=>{
-try{await loadActionsResult.actions.confirm({formConfirmEvent:event});msg("Payment submitted. Your ticket status will update after Stripe verifies the payment.");}
-catch(error){console.error("Payment confirmation error:",error);msg("Payment could not be confirmed. Please try again.",true);}
-});
-}
-$("checkoutPanel").scrollIntoView({behavior:"smooth",block:"start"});
-}catch(error){console.error("Stripe Checkout Form initialization failed:",error);msg("Could not load the secure payment form. Please try again later.",true)}
-}
-$("authForm").addEventListener("submit",async e=>{e.preventDefault();msg("Please wait…");const email=$("email").value.trim(),password=$("password").value;if(mode==="signin"){const {data,error}=await client.auth.signInWithPassword({email,password});if(error){msg(error.message,true);return}currentSession={user:data.user};await refreshSession(data.session);msg("Signed in successfully.")}else{const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:window.location.href.split("?")[0]}});if(error){msg(error.message,true);return}if(data.session){await refreshSession(data.session);msg("Account created and signed in.")}else{msg("Account created. Check your email to confirm it, then return here to sign in.")}}});
-$("googleBtn").onclick=async()=>{const {error}=await client.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.href.split("?")[0]}});if(error)msg(error.message,true)};
-$("signOutBtn").onclick=async()=>{await client.auth.signOut();await refreshSession(null);msg("Signed out.")};
+async function checkout(){msg("Ticket checkout is available from each event on the main website.",true)}
 $("refreshPlans").onclick=loadPlans;
 async function refreshSession(session){currentSession=session;$("sessionInfo").textContent=session?"Signed in as "+(session.user.email||"member"):"Sign in to purchase a ticket. Your account email will be used for the ticket purchase.";$("signOutBtn").classList.toggle("hidden",!session);$("authSubmit").classList.toggle("hidden",!!session);$("googleBtn").classList.toggle("hidden",!!session);$("email").disabled=!!session;$("password").disabled=!!session;await loadMembershipInfo()}
 client.auth.getSession().then(({data})=>refreshSession(data.session));
