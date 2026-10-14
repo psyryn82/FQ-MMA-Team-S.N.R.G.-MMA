@@ -1765,6 +1765,13 @@
         window.addEventListener('DOMContentLoaded', () => {
             window.renderAllContent();
             cleanupExpiredPromos();
+            if (window.location.hash === '#tab-schedule') {
+                setActiveTab('schedule');
+                document.getElementById('tab-schedule')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            const ticketResult = new URLSearchParams(window.location.search).get('ticket_purchase');
+            if (ticketResult === 'success') showNotification('Checkout returned successfully. Keep your Stripe receipt; the team can verify ticket payment from the admin dashboard.', 'info');
+            else if (ticketResult === 'cancelled') showNotification('Checkout was cancelled. No ticket payment was completed.', 'info');
             if (new URLSearchParams(location.search).get('admin') === '1') openAdminModal();
             if (window.supabaseReady) {
                 window.sb.auth.getSession().then(async ({data}) => {
