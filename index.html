@@ -481,7 +481,7 @@
                 <button onclick="switchAdminTab('portfolio')" id="adm-tab-portfolio" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Portfolio</button>
                 <button onclick="switchAdminTab('promos')" id="adm-tab-promos" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Promo Codes</button>
                 <button onclick="switchAdminTab('uploads')" id="adm-tab-uploads" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Upload Media</button>
-                <button onclick="switchAdminTab('members')" id="adm-tab-members" class="admin-tab-btn bg-gray-800 text-gray-300 px-3.5 py-2 rounded uppercase text-xs font-heading font-black">Tickets & Access</button>
+                <button onclick="switchAdminTab('tickets')" id="adm-tab-tickets" class="admin-tab-btn bg-gray-800 text-gray-300 px-3.5 py-2 rounded uppercase text-xs font-heading font-black">Ticket Purchases</button>
                 <button onclick="switchAdminTab('chat')" id="adm-tab-chat" class="admin-tab-btn bg-gray-800 text-gray-300 px-3.5 py-2 rounded uppercase text-xs font-heading font-black">Live Chat</button>
             </div>
 
@@ -616,11 +616,11 @@
                     </form><p id="media-upload-status" class="text-xs text-gray-400" role="status"></p>
                 </div>
             </div>
-            <div id="admin-panel-members" class="admin-panel-section space-y-4 hidden">
+            <div id="admin-panel-tickets" class="admin-panel-section space-y-4 hidden">
                 <div class="bg-gray-900 p-5 rounded-xl border border-gray-800 space-y-3">
-                  <div class="flex flex-wrap items-center justify-between gap-2"><h4 class="font-heading text-sm font-black uppercase text-brand-red">Ticket purchases & access</h4><button onclick="loadAdminMembers()" class="rounded bg-gray-700 px-3 py-2 text-xs">Refresh tickets</button></div>
-                  <p class="text-xs text-gray-400">Toggle access on ticket purchase records. Verify payment with the payment provider before granting access; changes here do not verify payment.</p>
-                  <div id="admin-members-list" class="space-y-2"><p class="text-xs text-gray-500">Choose Refresh tickets to load records.</p></div>
+                  <div class="flex flex-wrap items-center justify-between gap-2"><h4 class="font-heading text-sm font-black uppercase text-brand-red">Ticket purchases</h4><button onclick="loadAdminTicketPurchases()" class="rounded bg-gray-700 px-3 py-2 text-xs">Refresh purchases</button></div>
+                  <p class="text-xs text-gray-400">Read-only records confirmed by Stripe’s signed webhook. Pending checkouts are not proof of payment; no access or payment status can be manually toggled here.</p>
+                  <div id="admin-ticket-purchases-list" class="space-y-2"><p class="text-xs text-gray-500">Choose Refresh purchases to load records.</p></div>
                 </div>
             </div>
             <div id="admin-panel-chat" class="admin-panel-section space-y-4 hidden">
@@ -900,7 +900,7 @@
                 document.getElementById('admin-gen-paysite').value = siteData.general.paysiteUrl;
             } else {
                 renderAdminManagerLists();
-                if (tabName === 'members') loadAdminMembers();
+                if (tabName === 'tickets') loadAdminTicketPurchases();
                 if (tabName === 'chat') loadAdminChat();
             }
         }
@@ -1687,18 +1687,21 @@
             } catch(err) { status.textContent=err.message || 'Upload failed.'; }
         }
 
-        async function loadAdminMembers() {
-            const box=document.getElementById('admin-members-list'); box.innerHTML='<p class="text-xs text-gray-400">Loading ticket purchases…</p>';
+        async function loadAdminTicketPurchases() {
+            const box=document.getElementById('admin-ticket-purchases-list');
+            box.innerHTML='<p class="text-xs text-gray-400">Loading ticket purchases…</p>';
             try {
-                const {data,error}=await window.sb.from('memberships').select('id,user_id,email,status,current_period_end,updated_at').order('email');
-                if(error) throw error;
-                if(!data?.length){box.innerHTML='<p class="text-xs text-gray-400">No ticket purchases yet.</p>';return;}
-                box.innerHTML=data.map(m=>{const isActive=m.status==='active';const expiry=m.current_period_end?` • until ${escapeHtml(new Date(m.current_period_end).toLocaleDateString())}`:'';return `<div class="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-800 bg-black p-3"><div><div class="text-xs font-bold">${escapeHtml(m.email||m.user_id||'Unknown account')}</div><div class="text-[10px] text-gray-500">${isActive?'Access enabled':'Access disabled'}${expiry}</div></div><button onclick="toggleMemberAccess('${m.id}',${!isActive})" class="rounded ${isActive?'bg-red-900':'bg-emerald-800'} px-3 py-2 text-xs">${isActive?'Revoke access':'Grant access'}</button></div>`}).join('');
-            } catch(err) { box.innerHTML=`<p class="text-xs text-red-400">${escapeHtml(err.message)}. Confirm the Supabase setup SQL has been run.</p>`; }
-        }
-        async function toggleMemberAccess(membershipId, enabled) {
-            try { const {error}=await window.sb.from('memberships').update({status:enabled?'active':'pending',updated_at:new Date().toISOString()}).eq('id',membershipId); if(error) throw error; await loadAdminMembers(); showNotification(enabled?'Access granted.':'Access revoked.','success'); }
-            catch(err){showNotification('Could not update access: '+err.message,'error');}
+                const [purchases, options, events] = await Promise.all([
+                    window.sb.from('ticket_purchases').select('id,buyer_email,quantity,total_cents,currency,status,created_at,ticket_option_id,event_id,stripe_checkout_session_id').order('created_at',{ascending:false}).limit(100),
+                    window.sb.from('event_ticket_options').select('id,name'),
+                    window.sb.from('events').select('id,title')
+                ]);
+                if(purchases.error) throw purchases.error;
+                const optionMap=new Map((options.data||[]).map(x=>[x.id,x.name]));
+                const eventMap=new Map((events.data||[]).map(x=>[x.id,x.title]));
+                if(!purchases.data?.length){box.innerHTML='<p class="text-xs text-gray-400">No ticket purchases yet.</p>';return;}
+                box.innerHTML=purchases.data.map(p=>`<div class="rounded border border-gray-800 bg-black p-3"><div class="flex flex-wrap items-center justify-between gap-2"><div class="text-xs font-bold">${escapeHtml(eventMap.get(p.event_id)||'Event')} · ${escapeHtml(optionMap.get(p.ticket_option_id)||'Ticket')}</div><span class="text-[10px] uppercase ${p.status==='paid'?'text-emerald-400':p.status==='refunded'?'text-yellow-300':'text-gray-400'}">${escapeHtml(p.status)}</span></div><div class="mt-2 text-xs">${escapeHtml(p.buyer_email)} · ${p.quantity} ticket(s) · ${escapeHtml(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.total_cents||0)/100))}</div><div class="mt-1 break-all text-[10px] text-gray-500">${escapeHtml(p.stripe_checkout_session_id||'Checkout not completed')} · ${new Date(p.created_at).toLocaleString()}</div></div>`).join('');
+            } catch(err) { box.innerHTML=`<p class="text-xs text-red-400">${escapeHtml(err.message)}. Confirm the ticket-sales migration is applied.</p>`; }
         }
 
         async function loadAdminChat() {
