@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
   const siteUrl = (Deno.env.get("SITE_URL") || "https://fq-snrg-mma.com").replace(/\/$/, "");
   if (!supabaseUrl || !anonKey || !serviceKey || !stripeKey) return respond({ error: "Ticket checkout is not configured." }, 503, origin);
+  if (req.headers.get("apikey") !== anonKey) return respond({ error: "A valid public API key is required." }, 401, origin);
   if (!stripeKey.startsWith("sk_test_")) return respond({ error: "Ticket checkout is locked to Stripe test mode until end-to-end testing is complete." }, 503, origin);
 
   let input: { ticket_option_id?: unknown; quantity?: unknown; buyer_email?: unknown };
@@ -69,7 +70,7 @@ Deno.serve(async (req) => {
         },
       }],
       metadata: { purchase_type: "ticket", ticket_purchase_id: purchaseId, ticket_option_id: option.id, event_id: event.id },
-      payment_intent_data: { metadata: { purchase_type: "ticket", ticket_purchase_id: purchaseId, ticket_option_id: option.id, event_id: event.id } },
+      payment_intent_data: { receipt_email: email, metadata: { purchase_type: "ticket", ticket_purchase_id: purchaseId, ticket_option_id: option.id, event_id: event.id } },
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     const { error: updateError } = await db.from("ticket_purchases").update({
