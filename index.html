@@ -481,7 +481,7 @@
                 <button onclick="switchAdminTab('portfolio')" id="adm-tab-portfolio" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Portfolio</button>
                 <button onclick="switchAdminTab('promos')" id="adm-tab-promos" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Promo Codes</button>
                 <button onclick="switchAdminTab('uploads')" id="adm-tab-uploads" class="admin-tab-btn bg-gray-800 text-gray-300 text-xs font-heading font-black px-3.5 py-2 rounded uppercase">Upload Media</button>
-                <button onclick="switchAdminTab('members')" id="adm-tab-members" class="admin-tab-btn bg-gray-800 text-gray-300 px-3.5 py-2 rounded uppercase text-xs font-heading font-black">Tickets & Access</button>
+                <button onclick="switchAdminTab('tickets')" id="adm-tab-tickets" class="admin-tab-btn bg-gray-800 text-gray-300 px-3.5 py-2 rounded uppercase text-xs font-heading font-black">Ticket Purchases</button>
                 <button onclick="switchAdminTab('chat')" id="adm-tab-chat" class="admin-tab-btn bg-gray-800 text-gray-300 px-3.5 py-2 rounded uppercase text-xs font-heading font-black">Live Chat</button>
             </div>
 
@@ -616,11 +616,11 @@
                     </form><p id="media-upload-status" class="text-xs text-gray-400" role="status"></p>
                 </div>
             </div>
-            <div id="admin-panel-members" class="admin-panel-section space-y-4 hidden">
+            <div id="admin-panel-tickets" class="admin-panel-section space-y-4 hidden">
                 <div class="bg-gray-900 p-5 rounded-xl border border-gray-800 space-y-3">
-                  <div class="flex flex-wrap items-center justify-between gap-2"><h4 class="font-heading text-sm font-black uppercase text-brand-red">Ticket purchases & access</h4><button onclick="loadAdminMembers()" class="rounded bg-gray-700 px-3 py-2 text-xs">Refresh tickets</button></div>
-                  <p class="text-xs text-gray-400">Toggle access on ticket purchase records. Verify payment with the payment provider before granting access; changes here do not verify payment.</p>
-                  <div id="admin-members-list" class="space-y-2"><p class="text-xs text-gray-500">Choose Refresh tickets to load records.</p></div>
+                  <div class="flex flex-wrap items-center justify-between gap-2"><h4 class="font-heading text-sm font-black uppercase text-brand-red">Ticket purchases</h4><button onclick="loadAdminTicketPurchases()" class="rounded bg-gray-700 px-3 py-2 text-xs">Refresh purchases</button></div>
+                  <p class="text-xs text-gray-400">Read-only records confirmed by Stripe’s signed webhook. Pending checkouts are not proof of payment; no access or payment status can be manually toggled here.</p>
+                  <div id="admin-ticket-purchases-list" class="space-y-2"><p class="text-xs text-gray-500">Choose Refresh purchases to load records.</p></div>
                 </div>
             </div>
             <div id="admin-panel-chat" class="admin-panel-section space-y-4 hidden">
@@ -663,7 +663,22 @@
         </div>
     </div>
 
-    <script>
+    
+<div id="ticketCheckoutModal" class="hidden fixed inset-0 z-[100] bg-black/80 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="ticketCheckoutTitle">
+  <div class="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-950 p-6 shadow-2xl">
+    <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-widest text-brand-red">Secure checkout</p><h2 id="ticketCheckoutTitle" class="font-heading text-2xl font-black uppercase mt-1">Buy event tickets</h2><p id="ticketCheckoutPrice" class="text-sm text-gray-300 mt-2"></p></div><button id="ticketCheckoutClose" type="button" class="btn2" aria-label="Close checkout">✕</button></div>
+    <form id="ticketCheckoutForm" class="mt-5 space-y-4">
+      <input id="ticketCheckoutOptionId" type="hidden" required>
+      <label class="block text-sm">Email for your payment confirmation<input id="ticketCheckoutEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label>
+      <label class="block text-sm">Number of tickets<input id="ticketCheckoutQuantity" class="field" type="number" min="1" max="10" step="1" value="1" required></label>
+      <p class="text-xs text-gray-400">Checkout is currently restricted to Stripe test mode. A ticket purchase is confirmed only after Stripe verifies payment.</p>
+      <button id="ticketCheckoutSubmit" class="btn w-full" type="submit">Continue to secure payment</button>
+      <p id="ticketCheckoutMessage" class="text-sm" role="status"></p>
+    </form>
+  </div>
+</div>
+
+<script>
         let isAdminLoggedIn = false;
         let PAYSITE_URL = "";
 
@@ -693,11 +708,56 @@
         function redirectToPaysite() {
             const destination = String(PAYSITE_URL || '').trim();
             if (!destination) {
-                window.location.href = './membership.html';
+                setActiveTab('store');
+                showNotification("Add a secure purchase URL in admin settings before offering live-stream access.", "info");
                 return;
             }
             openCustomLink(destination);
         }
+
+        function openTicketCheckout(optionId, ticketName, ticketPrice) {
+            if (!window.sb || !window.supabaseReady) { showNotification("Ticket checkout is not available right now. Please try again later.", "error"); return; }
+            document.getElementById('ticketCheckoutOptionId').value = optionId;
+            document.getElementById('ticketCheckoutTitle').textContent = ticketName || 'Buy event tickets';
+            document.getElementById('ticketCheckoutPrice').textContent = ticketPrice ? 'Price per ticket: ' + ticketPrice : '';
+            document.getElementById('ticketCheckoutMessage').textContent = '';
+            document.getElementById('ticketCheckoutModal').classList.remove('hidden');
+            document.getElementById('ticketCheckoutEmail').focus();
+        }
+
+        function closeTicketCheckout() {
+            document.getElementById('ticketCheckoutModal').classList.add('hidden');
+        }
+
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-buy-ticket]');
+            if (button) openTicketCheckout(button.dataset.buyTicket, button.dataset.ticketName, button.dataset.ticketPrice);
+            if (event.target.id === 'ticketCheckoutModal') closeTicketCheckout();
+        });
+        document.getElementById('ticketCheckoutClose').addEventListener('click', closeTicketCheckout);
+        document.getElementById('ticketCheckoutForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const submit = document.getElementById('ticketCheckoutSubmit');
+            const message = document.getElementById('ticketCheckoutMessage');
+            const quantity = Number(document.getElementById('ticketCheckoutQuantity').value);
+            const email = document.getElementById('ticketCheckoutEmail').value.trim();
+            if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) { message.textContent = 'Choose between 1 and 10 tickets.'; return; }
+            submit.disabled = true;
+            submit.textContent = 'Preparing secure checkout…';
+            message.textContent = '';
+            try {
+                const { data, error } = await window.sb.functions.invoke('create-ticket-checkout', {
+                    body: { ticket_option_id: document.getElementById('ticketCheckoutOptionId').value, quantity, buyer_email: email }
+                });
+                if (error) throw error;
+                if (!data || !data.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
+                window.location.assign(data.url);
+            } catch (error) {
+                message.textContent = error?.message || 'Could not start checkout. No payment was taken.';
+                submit.disabled = false;
+                submit.textContent = 'Continue to secure payment';
+            }
+        });
 
         function openCustomLink(url) {
             const destination = String(url || '').trim();
@@ -841,7 +901,7 @@
                 document.getElementById('admin-gen-paysite').value = siteData.general.paysiteUrl;
             } else {
                 renderAdminManagerLists();
-                if (tabName === 'members') loadAdminMembers();
+                if (tabName === 'tickets') loadAdminTicketPurchases();
                 if (tabName === 'chat') loadAdminChat();
             }
         }
@@ -987,9 +1047,9 @@
                             <span class="${badgeStyle} text-xs font-heading font-black px-2.5 py-1 rounded uppercase tracking-wider border">${escapeHtml(item.date)}</span>
                             <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide mt-1">${escapeHtml(item.title)}</h3>
                             <p class="text-xs text-gray-300">${escapeHtml(item.subtitle)}</p>
-                            ${isEvent ? `<p class="font-heading text-lg font-bold text-brand-neon">Tickets: ${escapeHtml(item.ticketPrice || 'Price TBA')}</p>` : ''}
+                            ${isEvent ? `<p class="font-heading text-lg font-bold text-brand-neon">Tickets: ${escapeHtml(item.ticketPrice || 'Price TBA')}</p>${item.ticketOptions?.length ? `<div class="flex flex-wrap gap-2 mt-3">${item.ticketOptions.map(ticket => { const price = new Intl.NumberFormat('en-US',{style:'currency',currency:ticket.currency||'USD'}).format((ticket.price_cents||0)/100); return `<button type="button" data-buy-ticket="${escapeHtml(ticket.id)}" data-ticket-name="${escapeHtml(ticket.name)}" data-ticket-price="${escapeHtml(price)}" class="bg-brand-red hover:bg-red-700 text-white font-heading text-xs font-black uppercase px-4 py-2 rounded-lg">${escapeHtml(ticket.name)} · ${escapeHtml(price)}</button>`; }).join('')}</div>` : ''}` : ''}
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             ${getSafeHttpUrl(item.link) ? `<a href="${escapeHtml(getSafeHttpUrl(item.link))}" target="_blank" rel="noopener noreferrer" class="${btnStyle} font-heading text-sm font-black uppercase px-6 py-3 rounded-xl shadow-lg whitespace-nowrap">Event details</a>` : `<button onclick="openCustomLink('')" class="${btnStyle} font-heading text-sm font-black uppercase px-6 py-3 rounded-xl shadow-lg whitespace-nowrap">Event details</button>`}
                         </div>
                     </div>
@@ -1039,7 +1099,7 @@
                     <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
                         <div class="space-y-1">
                             ${s.image && /^https:\/\/[a-z0-9.-]+(?:\/[^\s"'<>]*)?$/i.test(s.image) ? '<img src="' + s.image + '" alt="' + s.title + '" loading="lazy" class="w-full max-h-48 object-cover rounded-lg mb-3">' : ''}
-                            <span class="${tagColor} font-heading font-black text-xs tracking-widest uppercase">FQ MMA PRODUCT</span>
+                            <span class="${tagColor} font-heading font-black text-xs tracking-widest uppercase">FQ MMA MEDIA / PURCHASE</span>
                             <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide">${s.title}</h3>
                             <p class="text-xs text-gray-300">${s.subtitle}</p>
                         </div>
@@ -1539,22 +1599,25 @@
             if (data?.content_value) applySiteContent(data.content_value);
             // Keep the public roster, event schedule, and product list connected to their structured tables.
             try {
-                const [fightersResult, eventsResult, scheduleResult, productsResult] = await Promise.all([
+                const [fightersResult, eventsResult, scheduleResult, productsResult, ticketsResult] = await Promise.all([
                     window.sb.from('fighters').select('id,name,nickname,record,bio,image_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.from('events').select('id,title,event_date,venue,main_event,description,status').in('status', ['upcoming','live','completed']).order('event_date', {ascending:true}),
                     window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
-                    window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false})
+                    window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
+                    window.sb.from('event_ticket_options').select('id,event_id,name,description,price_cents,currency,quantity_limit').eq('is_available', true)
                 ]);
                 if (fightersResult.error) console.warn('Could not load published fighters from Supabase.', fightersResult.error);
                 else if (fightersResult.data?.length) siteData.fighters = fightersResult.data.map(f => ({id:f.id,name:f.name,record:f.record||'',desc:f.bio||f.nickname||'',initials:(f.name||'').substring(0,2).toUpperCase(),image:f.image_url||''}));
                 if (eventsResult.error) console.warn('Could not load events from Supabase.', eventsResult.error);
+                if (ticketsResult.error) console.warn('Could not load available ticket options from Supabase.', ticketsResult.error);
+                const availableTickets = ticketsResult.data || [];
                 if (scheduleResult.error) console.warn('Could not load training schedule from Supabase.', scheduleResult.error);
                 const savedEvents = new Map(siteData.schedule.map(item => [String(item.id), item]));
-                const eventItems = (eventsResult.data||[]).map(e => ({id:e.id,type:'event',date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:savedEvents.get(String(e.id))?.ticketPrice || '',link:savedEvents.get(String(e.id))?.link || ''}));
+                const eventItems = (eventsResult.data||[]).map(e => ({id:e.id,type:'event',date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:availableTickets.some(t=>t.event_id===e.id)?'Available now':(savedEvents.get(String(e.id))?.ticketPrice || ''),ticketOptions:availableTickets.filter(t=>t.event_id===e.id),link:savedEvents.get(String(e.id))?.link || ''}));
                 const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,type:'class',date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
                 if (eventItems.length || classItems.length) siteData.schedule = [...eventItems,...classItems];
                 if (productsResult.error) console.warn('Could not load products from Supabase.', productsResult.error);
-                else if (productsResult.data?.length) siteData.store = productsResult.data.map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA merchandise',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
+                else if (productsResult.data?.length) siteData.store = productsResult.data.map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA media',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
             } catch (e) { console.warn('Supabase structured content could not be loaded; retaining homepage defaults.', e); }
             renderAllContent();
             if (window.__snrgAdminUser) renderAdminManagerLists();
@@ -1625,18 +1688,21 @@
             } catch(err) { status.textContent=err.message || 'Upload failed.'; }
         }
 
-        async function loadAdminMembers() {
-            const box=document.getElementById('admin-members-list'); box.innerHTML='<p class="text-xs text-gray-400">Loading ticket purchases…</p>';
+        async function loadAdminTicketPurchases() {
+            const box=document.getElementById('admin-ticket-purchases-list');
+            box.innerHTML='<p class="text-xs text-gray-400">Loading ticket purchases…</p>';
             try {
-                const {data,error}=await window.sb.from('memberships').select('id,user_id,email,status,current_period_end,updated_at').order('email');
-                if(error) throw error;
-                if(!data?.length){box.innerHTML='<p class="text-xs text-gray-400">No ticket purchases yet.</p>';return;}
-                box.innerHTML=data.map(m=>{const isActive=m.status==='active';const expiry=m.current_period_end?` • until ${escapeHtml(new Date(m.current_period_end).toLocaleDateString())}`:'';return `<div class="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-800 bg-black p-3"><div><div class="text-xs font-bold">${escapeHtml(m.email||m.user_id||'Unknown account')}</div><div class="text-[10px] text-gray-500">${isActive?'Access enabled':'Access disabled'}${expiry}</div></div><button onclick="toggleMemberAccess('${m.id}',${!isActive})" class="rounded ${isActive?'bg-red-900':'bg-emerald-800'} px-3 py-2 text-xs">${isActive?'Revoke access':'Grant access'}</button></div>`}).join('');
-            } catch(err) { box.innerHTML=`<p class="text-xs text-red-400">${escapeHtml(err.message)}. Confirm the Supabase setup SQL has been run.</p>`; }
-        }
-        async function toggleMemberAccess(membershipId, enabled) {
-            try { const {error}=await window.sb.from('memberships').update({status:enabled?'active':'pending',updated_at:new Date().toISOString()}).eq('id',membershipId); if(error) throw error; await loadAdminMembers(); showNotification(enabled?'Access granted.':'Access revoked.','success'); }
-            catch(err){showNotification('Could not update access: '+err.message,'error');}
+                const [purchases, options, events] = await Promise.all([
+                    window.sb.from('ticket_purchases').select('id,buyer_email,quantity,total_cents,currency,status,created_at,ticket_option_id,event_id,stripe_checkout_session_id').order('created_at',{ascending:false}).limit(100),
+                    window.sb.from('event_ticket_options').select('id,name'),
+                    window.sb.from('events').select('id,title')
+                ]);
+                if(purchases.error) throw purchases.error;
+                const optionMap=new Map((options.data||[]).map(x=>[x.id,x.name]));
+                const eventMap=new Map((events.data||[]).map(x=>[x.id,x.title]));
+                if(!purchases.data?.length){box.innerHTML='<p class="text-xs text-gray-400">No ticket purchases yet.</p>';return;}
+                box.innerHTML=purchases.data.map(p=>`<div class="rounded border border-gray-800 bg-black p-3"><div class="flex flex-wrap items-center justify-between gap-2"><div class="text-xs font-bold">${escapeHtml(eventMap.get(p.event_id)||'Event')} · ${escapeHtml(optionMap.get(p.ticket_option_id)||'Ticket')}</div><span class="text-[10px] uppercase ${p.status==='paid'?'text-emerald-400':p.status==='refunded'?'text-yellow-300':'text-gray-400'}">${escapeHtml(p.status)}</span></div><div class="mt-2 text-xs">${escapeHtml(p.buyer_email)} · ${p.quantity} ticket(s) · ${escapeHtml(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.total_cents||0)/100))}</div><div class="mt-1 break-all text-[10px] text-gray-500">${escapeHtml(p.stripe_checkout_session_id||'Checkout not completed')} · ${new Date(p.created_at).toLocaleString()}</div></div>`).join('');
+            } catch(err) { box.innerHTML=`<p class="text-xs text-red-400">${escapeHtml(err.message)}. Confirm the ticket-sales migration is applied.</p>`; }
         }
 
         async function loadAdminChat() {
@@ -1703,6 +1769,13 @@
         window.addEventListener('DOMContentLoaded', () => {
             window.renderAllContent();
             cleanupExpiredPromos();
+            if (window.location.hash === '#tab-schedule') {
+                setActiveTab('schedule');
+                document.getElementById('tab-schedule')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            const ticketResult = new URLSearchParams(window.location.search).get('ticket_purchase');
+            if (ticketResult === 'success') showNotification('Checkout returned successfully. Keep your Stripe receipt; the team can verify ticket payment from the admin dashboard.', 'info');
+            else if (ticketResult === 'cancelled') showNotification('Checkout was cancelled. No ticket payment was completed.', 'info');
             if (new URLSearchParams(location.search).get('admin') === '1') openAdminModal();
             if (window.supabaseReady) {
                 window.sb.auth.getSession().then(async ({data}) => {
