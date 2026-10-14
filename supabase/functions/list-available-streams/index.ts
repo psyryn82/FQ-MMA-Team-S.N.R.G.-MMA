@@ -19,9 +19,9 @@ Deno.serve(async (req) => {
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
   const { data: configs, error: configError } = await db.from("event_streams")
-    .select("event_id,stream_price_cents,currency,mux_playback_id")
+    .select("event_id,stream_price_cents,currency,livepeer_playback_id")
     .eq("is_enabled", true)
-    .not("mux_playback_id", "is", null);
+    .not("livepeer_playback_id", "is", null);
   if (configError) {
     console.error("Could not load stream listings", configError.message);
     return respond({ error: "Live-stream listings are temporarily unavailable." }, 503, origin);
@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
   const eventMap = new Map((events || []).map((event) => [event.id, event]));
   const streams = configs
-    .filter((config) => config.mux_playback_id && eventMap.has(config.event_id))
+    .filter((config) => config.livepeer_playback_id && eventMap.has(config.event_id))
     .map((config) => {
       const event = eventMap.get(config.event_id)!;
       return {
