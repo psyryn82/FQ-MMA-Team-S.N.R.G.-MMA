@@ -708,7 +708,8 @@
         function redirectToPaysite() {
             const destination = String(PAYSITE_URL || '').trim();
             if (!destination) {
-                window.location.href = './membership.html';
+                setActiveTab('store');
+                showNotification("Add a secure purchase URL in admin settings before offering live-stream access.", "info");
                 return;
             }
             openCustomLink(destination);
