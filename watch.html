@@ -40,7 +40,7 @@ async function startPlayback() {
     return;
   }
   try {
-    const { data, error } = await client.functions.invoke("create-stream-playback", { body: { session_id: sessionId } });
+    const { data, error } = await client.functions.invoke("create-livepeer-stream-playback", { body: { session_id: sessionId } });
     if (error) throw error;
     if (!data?.playback_url) throw new Error(data?.error || "Secure playback is not available yet.");
     document.getElementById("eventTitle").textContent = data.event_title || "FQ MMA Live Stream";
