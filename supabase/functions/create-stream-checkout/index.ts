@@ -1,4 +1,4 @@
-// Public one-time stream checkout. This remains test-mode-only until end-to-end testing is complete.
+// Public one-time Cloudflare Stream checkout. This remains test-mode-only until end-to-end testing is complete.
 import Stripe from "https://esm.sh/stripe@17.7.0?target=denonext";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

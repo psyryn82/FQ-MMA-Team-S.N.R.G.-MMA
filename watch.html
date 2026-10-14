@@ -6,11 +6,11 @@
 <meta name="robots" content="noindex,nofollow">
 <title>FQ MMA | Secure Live Stream</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.13/dist/hls.min.js"></script>
+
 <style>
 :root{color-scheme:dark;--bg:#07080a;--panel:#111318;--line:#2d3643;--text:#edf2f7;--muted:#a0a8b7;--accent:#ef4444}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#1a202b 0,#07080a 48%);color:var(--text);font-family:Inter,system-ui,sans-serif;display:grid;place-items:center;padding:24px}
-main{width:min(100%,1000px)}.brand{font-size:.8rem;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:var(--accent)}h1{font-size:clamp(1.8rem,5vw,3rem);text-transform:uppercase;margin:.6rem 0}p{color:var(--muted);line-height:1.6}.panel{background:rgba(17,19,24,.94);border:1px solid var(--line);border-radius:18px;padding:clamp(18px,4vw,34px);box-shadow:0 24px 60px #0008}.player{width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;margin-top:18px}video{width:100%;height:100%;border-radius:12px;background:#000}.message{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#07080a}.btn{display:inline-block;background:var(--accent);color:#fff;padding:12px 18px;border-radius:9px;text-decoration:none;font-weight:800;margin-top:14px}
+main{width:min(100%,1000px)}.brand{font-size:.8rem;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:var(--accent)}h1{font-size:clamp(1.8rem,5vw,3rem);text-transform:uppercase;margin:.6rem 0}p{color:var(--muted);line-height:1.6}.panel{background:rgba(17,19,24,.94);border:1px solid var(--line);border-radius:18px;padding:clamp(18px,4vw,34px);box-shadow:0 24px 60px #0008}.player{width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;margin-top:18px;overflow:hidden}.player iframe{display:block;width:100%;height:100%;border:0;background:#000}.message{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#07080a}.btn{display:inline-block;background:var(--accent);color:#fff;padding:12px 18px;border-radius:9px;text-decoration:none;font-weight:800;margin-top:14px}
 </style>
 </head>
 <body>
@@ -20,7 +20,7 @@ main{width:min(100%,1000px)}.brand{font-size:.8rem;font-weight:900;letter-spacin
     <h1 id="eventTitle">Secure live stream</h1>
     <p>This page verifies your Stripe payment before requesting a short-lived signed playback token. Please do not share your checkout link.</p>
     <p id="streamMessage" class="message" role="status">Verifying your purchase…</p>
-    <div id="playerWrap" class="player" hidden><video id="streamVideo" controls playsinline preload="metadata"></video></div>
+    <div id="playerWrap" class="player" hidden><iframe id="streamPlayer" title="FQ MMA paid live stream" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
     <a class="btn" href="./index.html">Back to FQ MMA</a>
   </section>
 </main>
@@ -29,7 +29,7 @@ const SUPABASE_URL = "https://dmcbbavsxyxrxuuzraiu.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_vJAptJ41TpicuxtMspB8tA_AaMFlGEC";
 const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false } });
 const message = document.getElementById("streamMessage");
-const video = document.getElementById("streamVideo");
+const player = document.getElementById("streamPlayer");
 const playerWrap = document.getElementById("playerWrap");
 const sessionId = new URLSearchParams(window.location.search).get("session_id");
 async function startPlayback() {
@@ -40,22 +40,11 @@ async function startPlayback() {
   try {
     const { data, error } = await client.functions.invoke("create-stream-playback", { body: { session_id: sessionId } });
     if (error) throw error;
-    if (!data?.playback_url || !data.playback_url.startsWith("https://stream.mux.com/")) throw new Error(data?.error || "Secure playback is not available yet.");
+    if (!data?.playback_url || !/^https:\/\/customer-[a-z0-9]+\.cloudflarestream\.com\/[A-Za-z0-9._~-]+\/iframe$/i.test(data.playback_url)) throw new Error(data?.error || "Secure playback is not available yet.");
     document.getElementById("eventTitle").textContent = data.event_title || "FQ MMA Live Stream";
+    player.src = data.playback_url;
     playerWrap.hidden = false;
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = data.playback_url;
-    } else if (window.Hls && Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true });
-      hls.loadSource(data.playback_url);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.ERROR, (_event, info) => {
-        if (info.fatal) message.textContent = "The stream could not be loaded. Refresh this page to request a new playback token.";
-      });
-    } else {
-      throw new Error("This browser cannot play the stream format.");
-    }
-    message.textContent = "Payment verified. Press play when you're ready.";
+    message.textContent = "Payment verified. Press play when you are ready.";
   } catch (error) {
     message.textContent = error?.message || "Secure playback could not be started. If you just paid, wait a moment and refresh.";
   }
