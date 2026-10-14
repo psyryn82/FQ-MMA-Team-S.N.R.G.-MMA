@@ -663,7 +663,22 @@
         </div>
     </div>
 
-    <script>
+    
+<div id="ticketCheckoutModal" class="hidden fixed inset-0 z-[100] bg-black/80 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="ticketCheckoutTitle">
+  <div class="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-950 p-6 shadow-2xl">
+    <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-widest text-brand-red">Secure checkout</p><h2 id="ticketCheckoutTitle" class="font-heading text-2xl font-black uppercase mt-1">Buy event tickets</h2><p id="ticketCheckoutPrice" class="text-sm text-gray-300 mt-2"></p></div><button id="ticketCheckoutClose" type="button" class="btn2" aria-label="Close checkout">✕</button></div>
+    <form id="ticketCheckoutForm" class="mt-5 space-y-4">
+      <input id="ticketCheckoutOptionId" type="hidden" required>
+      <label class="block text-sm">Email for your payment confirmation<input id="ticketCheckoutEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label>
+      <label class="block text-sm">Number of tickets<input id="ticketCheckoutQuantity" class="field" type="number" min="1" max="10" step="1" value="1" required></label>
+      <p class="text-xs text-gray-400">Checkout is currently restricted to Stripe test mode. A ticket purchase is confirmed only after Stripe verifies payment.</p>
+      <button id="ticketCheckoutSubmit" class="btn w-full" type="submit">Continue to secure payment</button>
+      <p id="ticketCheckoutMessage" class="text-sm" role="status"></p>
+    </form>
+  </div>
+</div>
+
+<script>
         let isAdminLoggedIn = false;
         let PAYSITE_URL = "";
 
@@ -698,6 +713,50 @@
             }
             openCustomLink(destination);
         }
+
+        function openTicketCheckout(optionId, ticketName, ticketPrice) {
+            if (!window.sb || !window.supabaseReady) { showNotification("Ticket checkout is not available right now. Please try again later.", "error"); return; }
+            document.getElementById('ticketCheckoutOptionId').value = optionId;
+            document.getElementById('ticketCheckoutTitle').textContent = ticketName || 'Buy event tickets';
+            document.getElementById('ticketCheckoutPrice').textContent = ticketPrice ? 'Price per ticket: ' + ticketPrice : '';
+            document.getElementById('ticketCheckoutMessage').textContent = '';
+            document.getElementById('ticketCheckoutModal').classList.remove('hidden');
+            document.getElementById('ticketCheckoutEmail').focus();
+        }
+
+        function closeTicketCheckout() {
+            document.getElementById('ticketCheckoutModal').classList.add('hidden');
+        }
+
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-buy-ticket]');
+            if (button) openTicketCheckout(button.dataset.buyTicket, button.dataset.ticketName, button.dataset.ticketPrice);
+            if (event.target.id === 'ticketCheckoutModal') closeTicketCheckout();
+        });
+        document.getElementById('ticketCheckoutClose').addEventListener('click', closeTicketCheckout);
+        document.getElementById('ticketCheckoutForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const submit = document.getElementById('ticketCheckoutSubmit');
+            const message = document.getElementById('ticketCheckoutMessage');
+            const quantity = Number(document.getElementById('ticketCheckoutQuantity').value);
+            const email = document.getElementById('ticketCheckoutEmail').value.trim();
+            if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) { message.textContent = 'Choose between 1 and 10 tickets.'; return; }
+            submit.disabled = true;
+            submit.textContent = 'Preparing secure checkout…';
+            message.textContent = '';
+            try {
+                const { data, error } = await window.sb.functions.invoke('create-ticket-checkout', {
+                    body: { ticket_option_id: document.getElementById('ticketCheckoutOptionId').value, quantity, buyer_email: email }
+                });
+                if (error) throw error;
+                if (!data || !data.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
+                window.location.assign(data.url);
+            } catch (error) {
+                message.textContent = error?.message || 'Could not start checkout. No payment was taken.';
+                submit.disabled = false;
+                submit.textContent = 'Continue to secure payment';
+            }
+        });
 
         function openCustomLink(url) {
             const destination = String(url || '').trim();
