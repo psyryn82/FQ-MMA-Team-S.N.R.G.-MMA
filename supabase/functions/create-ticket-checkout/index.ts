@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       payment_method_types: ["card"],
       customer_email: email,
       client_reference_id: purchaseId,
-      expires_at: Math.floor(Date.now() / 1000) + 1800,
+      expires_at: Math.floor(Date.now() / 1000) + 1860,
       success_url: siteUrl + "/?ticket_purchase=success&session_id={CHECKOUT_SESSION_ID}",
       cancel_url: siteUrl + "/?ticket_purchase=cancelled",
       line_items: [{
