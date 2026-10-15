@@ -315,7 +315,7 @@
                                 </p>
                                 <div class="flex flex-wrap items-center justify-center gap-3">
                                     <button onclick="redirectToPaysite()" class="bg-gradient-to-r from-brand-red to-red-600 hover:from-red-600 text-white font-heading text-lg font-black px-6 py-3 rounded-xl tracking-wider shadow-neon-red transition-transform transform hover:scale-105">
-                                        <i class="fa-solid fa-arrow-up-right-from-square mr-2"></i> Click here for access
+                                        <i class="fa-solid fa-arrow-up-right-from-square mr-2"></i> Unlock Stream
                                     </button>
                                     <button onclick="togglePaywallModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-200 font-heading text-lg font-bold px-5 py-3 rounded-xl uppercase tracking-wider border border-gray-700">
                                         <i class="fa-solid fa-key mr-2 text-brand-red"></i> HAVE PROMO CODE?
@@ -701,7 +701,7 @@
 
             <div class="space-y-3">
                 <button onclick="redirectToPaysite()" class="w-full bg-gradient-to-r from-brand-red to-red-600 hover:from-red-600 text-white font-heading text-lg font-black py-3.5 rounded-xl tracking-wider shadow-neon-red transition-transform transform hover:scale-[1.02] flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Click here for access
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Unlock Stream
                 </button>
             </div>
             <button type="button" onclick="document.getElementById('paywall-modal').classList.add('hidden'); setActiveTab('schedule');" class="block w-full text-center border border-gray-700 hover:border-brand-red text-white font-heading font-black uppercase tracking-wider py-3 rounded-xl">EVENT DETAILS / TICKETS</button>
@@ -1742,7 +1742,7 @@
             try {
                 const [fightersResult, eventsResult, scheduleResult, productsResult, ticketsResult] = await Promise.all([
                     window.sb.from('fighters').select('id,name,nickname,record,bio,image_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
-                    window.sb.from('events').select('id,title,event_date,venue,main_event,description,status').in('status', ['upcoming','live','completed']).order('event_date', {ascending:true}),
+                    window.sb.from('events').select('id,title,event_date,venue,main_event,description,status,is_published').eq('is_published', true).in('status', ['upcoming','live','completed']).order('event_date', {ascending:true}),
                     window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
                     window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.from('event_ticket_options').select('id,event_id,name,description,price_cents,currency,quantity_limit').eq('is_available', true)
