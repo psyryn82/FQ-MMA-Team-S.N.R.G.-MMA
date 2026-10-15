@@ -1913,7 +1913,7 @@
             const button=document.getElementById('mediaDeliverySubmit'),message=document.getElementById('mediaDeliveryMessage');
             button.disabled=true;button.textContent='Verifying purchase…';message.textContent='';
             try {
-                const {data,error}=await window.sb.functions.invoke('create-protected-media-url',{body:{media_id:Number(document.getElementById('mediaDeliveryId').value),buyer_email:document.getElementById('mediaDeliveryEmail').value.trim()}});
+                const {data,error}=await window.sb.functions.invoke('create-protected-media-url',{body:{media_id:Number(document.getElementById('mediaDeliveryId').value),buyer_email:document.getElementById('mediaDeliveryEmail').value.trim(),session_id:document.getElementById('mediaDeliverySessionId').value}});
                 if(error) throw error;
                 if(!data?.url||!data.url.startsWith('https://')) throw new Error(data?.error||'Download link could not be created.');
                 message.innerHTML='';
@@ -1929,6 +1929,7 @@
                 document.getElementById('mediaPurchaseForm').classList.add('hidden');
                 document.getElementById('mediaDeliveryForm').classList.remove('hidden');
                 document.getElementById('mediaDeliveryId').value=mediaPurchaseResult.get('media_id');
+                document.getElementById('mediaDeliverySessionId').value=mediaPurchaseResult.get('session_id')||'';
                 document.getElementById('mediaPurchaseTitle').textContent='Get your download';
                 document.getElementById('mediaDeliveryMessage').textContent='Your payment is being verified. If it just completed, wait a few seconds and try again.';
             });
@@ -2090,7 +2091,7 @@
   <div class="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-950 p-6">
     <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-widest text-brand-red">Secure media checkout</p><h2 id="mediaPurchaseTitle" class="mt-1 font-heading text-2xl font-black uppercase">Purchase media</h2></div><button id="mediaPurchaseClose" type="button" class="btn2" aria-label="Close media checkout">✕</button></div>
     <form id="mediaPurchaseForm" class="mt-5 space-y-4"><input id="mediaPurchaseId" type="hidden"><label class="block text-sm">Email for receipt and download access<input id="mediaPurchaseEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label><button id="mediaPurchaseSubmit" class="btn w-full" type="submit">Continue to secure payment</button><p id="mediaPurchaseMessage" class="text-sm" role="status"></p></form>
-    <form id="mediaDeliveryForm" class="hidden mt-5 space-y-4"><p class="text-sm text-gray-300">Payment return detected. Enter the same email used at checkout to retrieve your private download.</p><input id="mediaDeliveryId" type="hidden"><label class="block text-sm">Checkout email<input id="mediaDeliveryEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label><button id="mediaDeliverySubmit" class="btn w-full" type="submit">Get my download</button><p id="mediaDeliveryMessage" class="text-sm" role="status"></p></form>
+    <form id="mediaDeliveryForm" class="hidden mt-5 space-y-4"><p class="text-sm text-gray-300">Payment return detected. Enter the same email used at checkout to retrieve your private download.</p><input id="mediaDeliveryId" type="hidden"><input id="mediaDeliverySessionId" type="hidden"><label class="block text-sm">Checkout email<input id="mediaDeliveryEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label><button id="mediaDeliverySubmit" class="btn w-full" type="submit">Get my download</button><p id="mediaDeliveryMessage" class="text-sm" role="status"></p></form>
   </div>
 </div>
 </body>
