@@ -1754,7 +1754,11 @@
                 const availableTickets = ticketsResult.data || [];
                 if (scheduleResult.error) console.warn('Could not load training schedule from Supabase.', scheduleResult.error);
                 const savedEvents = new Map(siteData.schedule.map(item => [String(item.id), item]));
-                const eventItems = (eventsResult.data||[]).map(e => ({id:e.id,type:'event',date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:availableTickets.some(t=>t.event_id===e.id)?'Available now':(savedEvents.get(String(e.id))?.ticketPrice || ''),ticketOptions:availableTickets.filter(t=>t.event_id===e.id),link:savedEvents.get(String(e.id))?.link || ''}));
+                const eventItems = (eventsResult.data || []).map(e => {
+                    const canSellTickets = ['upcoming', 'live'].includes(e.status);
+                    const eventTickets = canSellTickets ? availableTickets.filter(t => t.event_id === e.id) : [];
+                    return {id:e.id,type:'event',date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:eventTickets.length?'Available now':(canSellTickets?(savedEvents.get(String(e.id))?.ticketPrice || ''):'Sales closed'),ticketOptions:eventTickets,link:savedEvents.get(String(e.id))?.link || ''};
+                });
                 const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,type:'class',date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
                 if (!eventsResult.error && !scheduleResult.error) siteData.schedule = [...eventItems,...classItems];
                 if (productsResult.error) console.warn('Could not load products from Supabase.', productsResult.error);
