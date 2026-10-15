@@ -72,7 +72,7 @@
 <form id="promotionForm" class="grid md:grid-cols-2 gap-4">
 <input id="promotionId" type="hidden">
 <label class="block text-sm">Promotion name<input id="promotionName" class="field" maxlength="120" required placeholder="Sponsor guest access"></label>
-<label class="block text-sm">Promo code<input id="promotionCode" class="field" maxlength="40" required pattern="[A-Za-z0-9_-]+" placeholder="FIGHT10"></label>
+<div class="block text-sm">Promo code<div class="flex gap-2 items-end"><input id="promotionCode" class="field flex-1" maxlength="40" required pattern="[A-Za-z0-9_-]+" placeholder="FIGHT10"><button id="promotionGenerate" class="btn2 whitespace-nowrap" type="button">Generate code</button></div></div>
 <label class="block text-sm">Promotion type<select id="promotionType" class="field" required><option value="discount_percent">Percentage discount</option><option value="discount_amount">Fixed-dollar discount</option><option value="free_stream">Complimentary live-stream access</option><option value="free_ticket">Complimentary event ticket</option></select></label>
 <label class="block text-sm">Applies to<select id="promotionAppliesTo" class="field" required><option value="stream">Live-stream access</option><option value="ticket">Event tickets</option><option value="both">Tickets and live-stream access</option></select></label>
 <label class="block text-sm">Discount value<input id="promotionValue" class="field" type="number" min="0.01" max="100" step="0.01" placeholder="10"><span class="muted text-xs">Percent: 1–100. Fixed amount: dollars. Leave blank for free-access codes.</span></label>
@@ -432,6 +432,7 @@ function isoToLocalDateTime(value){if(!value)return '';const d=new Date(value);r
 function clearPromotionForm(){ $('promotionForm').reset();$('promotionId').value='';$('promotionActive').checked=true;$('promotionSave').textContent='Save promotion';$('promotionValue').disabled=false;$('promotionValue').required=true }
 $('promotionType').addEventListener('change',()=>{const free=$('promotionType').value.startsWith('free_');$('promotionValue').disabled=free;$('promotionValue').required=!free;if(free)$('promotionValue').value='';$('promotionAppliesTo').value=$('promotionType').value==='free_stream'?'stream':$('promotionType').value==='free_ticket'?'ticket':$('promotionAppliesTo').value});
 $('promotionClear').addEventListener('click',clearPromotionForm);
+$('promotionGenerate').addEventListener('click',()=>{const bytes=new Uint8Array(6);crypto.getRandomValues(bytes);$('promotionCode').value='FQ'+Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();});
 $('refreshPromotions').addEventListener('click',loadPromotions);
 async function loadPromotions(){
  const list=$('promotionList'),message=$('promotionMessage');list.innerHTML='<p class="muted text-sm">Loading promotions…</p>';
