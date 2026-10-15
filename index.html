@@ -1929,7 +1929,7 @@
                 const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
                 const path=`${Date.now()}-${safeName}`;
                 const isPaid=price>0;
-                const bucket=isPaid?'fqmma-paid-media':'fqmma-media';
+                const bucket=isPaid?'fqmma-private':'fqmma-media';
                 status.textContent=isPaid?'Uploading privately…':'Uploading…';
                 const { error: uploadError }=await window.sb.storage.from(bucket).upload(path,file,{upsert:false,contentType:file.type});
                 if(uploadError) throw uploadError;
