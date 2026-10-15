@@ -1721,11 +1721,11 @@
             status.textContent = 'Submitting your request securely…';
             status.className = 'text-sm text-gray-400';
             try {
-                const { data: booking, error } = await window.sb.from('booking_requests').insert({
+                const { error } = await window.sb.from('booking_requests').insert({
                     customer_name: name, customer_email: email, customer_phone: phone,
                     service_type: service, preferred_date: date, preferred_time: time,
                     location, details, status: 'pending'
-                }).select('id').single();
+                });
                 if (error) throw error;
                 let notified = false;
                 try {
