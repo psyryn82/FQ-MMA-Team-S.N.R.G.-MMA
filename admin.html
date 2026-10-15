@@ -466,7 +466,7 @@ $('promotionForm').addEventListener('submit',async e=>{
  if(starts&&expires&&new Date(expires)<=new Date(starts)){message.textContent='Expiration must be later than the start date.';return}
  const maxText=$('promotionMax').value.trim(),max=maxText===''?null:Number(maxText);
  if(max!==null&&(!Number.isInteger(max)||max<1)){message.textContent='Maximum redemptions must be a positive whole number.';return}
- const row={code,name:$('promotionName').value.trim(),promotion_type:type,applies_to:$('promotionAppliesTo').value,discount_value:value,event_id:$('promotionEvent').value||null,starts_at:starts,expires_at:expires,max_redemptions:max,is_active:$('promotionActive').checked,updated_at:new Date().toISOString()};
+ const row={created_by:currentUser?.id||null,code,name:$('promotionName').value.trim(),promotion_type:type,applies_to:type==='free_stream'?'stream':type==='free_ticket'?'ticket':$('promotionAppliesTo').value,discount_value:value,event_id:$('promotionEvent').value||null,starts_at:starts,expires_at:expires,max_redemptions:max,is_active:$('promotionActive').checked,updated_at:new Date().toISOString()};
  button.disabled=true;button.textContent='Saving…';
  try{const result=id?await client.from('promotions').update(row).eq('id',id):await client.from('promotions').insert(row);if(result.error)throw result.error;message.textContent='Promotion saved. It is not redeemable at customer checkout until the checkout integration is implemented and tested.';clearPromotionForm();await loadPromotions()}catch(err){message.textContent='Could not save promotion: '+(err?.message||String(err))}finally{button.disabled=false;button.textContent='Save promotion'}
 });
