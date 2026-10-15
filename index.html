@@ -752,6 +752,7 @@
       <input id="ticketCheckoutOptionId" type="hidden" required>
       <label class="block text-sm">Email for your payment confirmation<input id="ticketCheckoutEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label>
       <label class="block text-sm">Number of tickets<input id="ticketCheckoutQuantity" class="field" type="number" min="1" max="10" step="1" value="1" required></label>
+      <label class="block text-sm">Promotion code (optional)<input id="ticketCheckoutPromotionCode" class="field" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" autocomplete="off" placeholder="Enter promo code"></label>
       <p class="text-xs text-gray-400">Checkout is currently restricted to Stripe test mode. A ticket purchase is confirmed only after Stripe verifies payment.</p>
       <button id="ticketCheckoutSubmit" class="btn w-full" type="submit">Continue to secure payment</button>
       <p id="ticketCheckoutMessage" class="text-sm" role="status"></p>
@@ -768,6 +769,7 @@
     <form id="streamCheckoutForm" class="mt-5 space-y-4">
       <label class="block text-sm">Choose event<select id="streamCheckoutEvent" class="field" required><option value="">Loading available streams…</option></select></label>
       <label class="block text-sm">Email for your payment confirmation<input id="streamCheckoutEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label>
+      <label class="block text-sm">Promotion code (optional)<input id="streamCheckoutPromotionCode" class="field" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" autocomplete="off" placeholder="Enter promo code"></label>
       <p class="text-xs text-gray-400">One-time payment only. Checkout remains in test mode until payment confirmation and secure playback pass end-to-end testing.</p>
       <button id="streamCheckoutSubmit" type="submit" class="btn w-full" disabled>Continue to secure payment</button>
       <p id="streamCheckoutMessage" class="text-sm" role="status"></p>
@@ -881,7 +883,7 @@
             message.textContent = '';
             try {
                 const { data, error } = await window.sb.functions.invoke('create-stream-checkout', {
-                    body: { event_id: select.value, buyer_email: email }
+                    body: { event_id: select.value, buyer_email: email, promotion_code: document.getElementById('streamCheckoutPromotionCode').value.trim() }
                 });
                 if (error) throw error;
                 if (!data?.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
@@ -929,7 +931,7 @@
             message.textContent = '';
             try {
                 const { data, error } = await window.sb.functions.invoke('create-ticket-checkout', {
-                    body: { ticket_option_id: document.getElementById('ticketCheckoutOptionId').value, quantity, buyer_email: email }
+                    body: { ticket_option_id: document.getElementById('ticketCheckoutOptionId').value, quantity, buyer_email: email, promotion_code: document.getElementById('ticketCheckoutPromotionCode').value.trim() }
                 });
                 if (error) throw error;
                 if (!data || !data.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
