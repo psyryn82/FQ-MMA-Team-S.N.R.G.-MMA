@@ -65,6 +65,15 @@ Deno.serve(async (req) => {
     return respond({ error: capacity ? "There are not enough tickets left for that quantity." : "Could not reserve those tickets. Please refresh and try again." }, capacity ? 409 : 400, origin);
   }
 
+  const { error: chargedTotalError } = await db.from("ticket_purchases")
+    .update({ charged_total_cents: finalAmountCents, updated_at: new Date().toISOString() })
+    .eq("id", purchaseId).eq("status", "pending");
+  if (chargedTotalError) {
+    await db.from("ticket_purchases").update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", purchaseId).eq("status", "pending");
+    if (redemptionId) await db.rpc("finish_promotion_redemption", { p_redemption_id: redemptionId, p_outcome: "released" });
+    return respond({ error: "Could not save the discounted ticket total. Please try again." }, 500, origin);
+  }
+
   const stripe = new Stripe(stripeKey, { httpClient: Stripe.createFetchHttpClient() });
   try {
     const eventDetails = [event.title, event.venue, event.event_date ? new Date(event.event_date).toLocaleString("en-US", { timeZone: "UTC" }) : "Date to be announced"].filter(Boolean).join(" • ");
