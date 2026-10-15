@@ -1271,24 +1271,30 @@
                 const borderColor = isRed ? 'border-brand-red' : 'border-white';
                 const tagColor = isRed ? 'text-brand-red' : 'text-white';
                 const btnStyle = isRed ? 'bg-brand-red hover:bg-red-700 text-white' : 'bg-white hover:bg-gray-200 text-black';
+                const productUrl = getSafeHttpUrl(s.link, true);
+                const imageUrl = getSafeHttpUrl(s.image, true);
 
                 return `
                     <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
                         <div class="space-y-1">
-                            ${s.image && /^https:\/\/[a-z0-9.-]+(?:\/[^\s"'<>]*)?$/i.test(s.image) ? '<img src="' + s.image + '" alt="' + s.title + '" loading="lazy" class="w-full max-h-48 object-cover rounded-lg mb-3">' : ''}
-                            <span class="${tagColor} font-heading font-black text-xs tracking-widest uppercase">FQ MMA MEDIA / PURCHASE</span>
-                            <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide">${s.title}</h3>
-                            <p class="text-xs text-gray-300">${s.subtitle}</p>
+                            ${imageUrl ? '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(s.title || 'FQ MMA product') + '" loading="lazy" class="w-full max-h-48 object-cover rounded-lg mb-3">' : ''}
+                            <span class="${tagColor} font-heading font-black text-xs tracking-widest uppercase">FQ MMA PRODUCT</span>
+                            <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide">${escapeHtml(s.title)}</h3>
+                            <p class="text-xs text-gray-300">${escapeHtml(s.subtitle)}</p>
                         </div>
                         <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                            <span class="font-heading text-2xl font-black ${isRed ? 'text-brand-neon' : 'text-white'}">${s.price}</span>
-                            <button onclick="openCustomLink('${s.link}')" class="${btnStyle} text-xs font-black uppercase px-5 py-2.5 rounded-lg shadow-lg">Buy Now</button>
+                            <span class="font-heading text-2xl font-black ${isRed ? 'text-brand-neon' : 'text-white'}">${escapeHtml(s.price)}</span>
+                            <button type="button" data-product-url="${escapeHtml(productUrl)}" class="${btnStyle} text-xs font-black uppercase px-5 py-2.5 rounded-lg shadow-lg" ${productUrl ? '' : 'disabled aria-disabled="true"'}>Buy Now</button>
                         </div>
                     </div>
                 `;
             }).join('');
+            storeContainer.onclick = event => {
+                const button = event.target.closest('[data-product-url]');
+                if (button && button.dataset.productUrl) openCustomLink(button.dataset.productUrl);
+            };
 
-            if (!siteData.store.length) storeContainer.innerHTML = '<p class="text-center text-sm text-gray-400">Official media and purchase links will be posted here when available.</p>';
+            if (!siteData.store.length) storeContainer.innerHTML = '<p class="text-center text-sm text-gray-400">Official products and purchase links will be posted here when available.</p>';
 
             // 4. Separate public catalogs: FQ MMA event media and Sasha's portfolio.
             const renderMediaCards = (items, container, emptyMessage) => {
@@ -2029,6 +2035,12 @@
                 document.getElementById('mediaDeliverySessionId').value=mediaPurchaseResult.get('session_id')||'';
                 document.getElementById('mediaPurchaseTitle').textContent='Get your download';
                 document.getElementById('mediaDeliveryMessage').textContent='Your payment is being verified. If it just completed, wait a few seconds and try again.';
+            });
+        } else if(mediaPurchaseResult.get('media_purchase')==='cancelled'){
+            document.addEventListener('DOMContentLoaded',()=>{
+                document.getElementById('mediaPurchaseModal').classList.remove('hidden');
+                document.getElementById('mediaPurchaseTitle').textContent='Checkout cancelled';
+                document.getElementById('mediaPurchaseMessage').textContent='No payment was completed. You can close this window or try again.';
             });
         }
         async function uploadSiteMedia(e) {
