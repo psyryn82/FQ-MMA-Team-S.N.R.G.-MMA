@@ -84,11 +84,11 @@ begin
     raise exception 'That promotion type is not supported at checkout.';
   end if;
 
-  discount_cents := least(greatest(discount_cents, 0), p_original_amount_cents - 1);
-  final_cents := p_original_amount_cents - discount_cents;
-  if final_cents < 50 then
-    raise exception 'That discount would make the purchase less than the minimum checkout amount.';
+  discount_cents := greatest(discount_cents, 0);
+  if discount_cents > p_original_amount_cents - 50 then
+    raise exception 'That discount would make checkout free or below the minimum amount. Complimentary access codes are not enabled yet.';
   end if;
+  final_cents := p_original_amount_cents - discount_cents;
 
   insert into public.promotion_redemptions (
     promotion_id, customer_email, purchase_type, event_id, status, discount_amount_cents
