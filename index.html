@@ -844,7 +844,7 @@
                 for (const stream of availableStreamOptions) {
                     const option = document.createElement('option');
                     option.value = stream.event_id;
-                    const dateText = stream.event_date ? ' · ' + new Date(stream.event_date).toLocaleString() : ' · Date to be announced';
+                    const dateText = stream.event_date ? ' · ' + formatLongDateTime(stream.event_date) : ' · Date to be announced';
                     const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: stream.currency || 'USD' }).format((stream.price_cents || 0) / 100);
                     option.textContent = (stream.title || 'FQ MMA event') + dateText + ' · ' + amount;
                     select.appendChild(option);
@@ -1130,24 +1130,41 @@
             }
         }
 
+        function formatLongDate(value) {
+            const date = new Date(value);
+            return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(date) : '';
+        }
+
+        function formatLongDateTime(value) {
+            const date = new Date(value);
+            return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date) : '';
+        }
+
         function updateEventCountdown() {
             const title = document.getElementById('countdown-event-title');
             const timer = document.getElementById('event-countdown');
-            const countdownDate = siteData.general.countdownDate;
-            const eventTime = countdownDate ? new Date(countdownDate).getTime() : NaN;
+            const now = Date.now();
+            const nextEvent = (siteData.schedule || [])
+                .filter(item => item.type === 'event' && item.eventDate && item.status === 'upcoming' && new Date(item.eventDate).getTime() > now)
+                .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())[0];
+            const configuredTime = siteData.general.countdownDate ? new Date(siteData.general.countdownDate).getTime() : NaN;
+            const eventTime = nextEvent ? new Date(nextEvent.eventDate).getTime() : configuredTime;
 
             if (countdownInterval !== null) {
                 clearInterval(countdownInterval);
                 countdownInterval = null;
             }
 
-            if (!Number.isFinite(eventTime)) {
-                title.textContent = 'Coming soon';
+            if (!Number.isFinite(eventTime) || eventTime <= now) {
+                title.textContent = 'Event announcements coming soon.';
                 timer.classList.add('hidden');
                 return;
             }
 
-            title.textContent = siteData.general.countdownTitle || 'Coming soon';
+            const configuredHeading = String(siteData.general.countdownTitle || '').trim();
+            title.textContent = nextEvent
+                ? (configuredHeading && !/coming soon/i.test(configuredHeading) ? configuredHeading : 'Countdown to ' + nextEvent.title + ' · ' + formatLongDate(nextEvent.eventDate))
+                : (configuredHeading || 'Event announcements coming soon.');
             timer.classList.remove('hidden');
 
             const update = () => {
@@ -1914,7 +1931,7 @@
                     const canSellStream = ['upcoming', 'live'].includes(e.status);
                     const stream = canSellStream ? availableStreams.find(item => item.event_id === e.id) : null;
                     const streamPrice = stream ? new Intl.NumberFormat('en-US',{style:'currency',currency:stream.currency||'USD'}).format((stream.price_cents||0)/100) : '';
-                    return {id:e.id,type:'event',date:e.event_date?new Date(e.event_date).toLocaleDateString():'Date to be announced',title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:stream?'Live-stream access: '+streamPrice:(canSellStream?'Live-stream access not available yet':'Sales closed'),streamEnabled:!!stream,link:savedEvents.get(String(e.id))?.link || ''};
+                    return {id:e.id,type:'event',date:e.event_date?formatLongDate(e.event_date):'Date to be announced',eventDate:e.event_date||'',status:e.status,title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:stream?'Live-stream access: '+streamPrice:(canSellStream?'Live-stream access not available yet':'Sales closed'),streamEnabled:!!stream,link:savedEvents.get(String(e.id))?.link || ''};
                 });
                 const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,type:'class',date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
                 if (!eventsResult.error && !scheduleResult.error) siteData.schedule = [...eventItems,...classItems];
@@ -2099,7 +2116,7 @@
                 const optionMap=new Map((options.data||[]).map(x=>[x.id,x.name]));
                 const eventMap=new Map((events.data||[]).map(x=>[x.id,x.title]));
                 if(!purchases.data?.length){box.innerHTML='<p class="text-xs text-gray-400">No ticket purchases yet.</p>';return;}
-                box.innerHTML=purchases.data.map(p=>`<div class="rounded border border-gray-800 bg-black p-3"><div class="flex flex-wrap items-center justify-between gap-2"><div class="text-xs font-bold">${escapeHtml(eventMap.get(p.event_id)||'Event')} · ${escapeHtml(optionMap.get(p.ticket_option_id)||'Ticket')}</div><span class="text-[10px] uppercase ${p.status==='paid'?'text-emerald-400':p.status==='refunded'?'text-yellow-300':'text-gray-400'}">${escapeHtml(p.status)}</span></div><div class="mt-2 text-xs">${escapeHtml(p.buyer_email)} · ${p.quantity} ticket(s) · ${escapeHtml(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.total_cents||0)/100))}</div><div class="mt-1 break-all text-[10px] text-gray-500">${escapeHtml(p.stripe_checkout_session_id||'Checkout not completed')} · ${new Date(p.created_at).toLocaleString()}</div></div>`).join('');
+                box.innerHTML=purchases.data.map(p=>`<div class="rounded border border-gray-800 bg-black p-3"><div class="flex flex-wrap items-center justify-between gap-2"><div class="text-xs font-bold">${escapeHtml(eventMap.get(p.event_id)||'Event')} · ${escapeHtml(optionMap.get(p.ticket_option_id)||'Ticket')}</div><span class="text-[10px] uppercase ${p.status==='paid'?'text-emerald-400':p.status==='refunded'?'text-yellow-300':'text-gray-400'}">${escapeHtml(p.status)}</span></div><div class="mt-2 text-xs">${escapeHtml(p.buyer_email)} · ${p.quantity} ticket(s) · ${escapeHtml(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.total_cents||0)/100))}</div><div class="mt-1 break-all text-[10px] text-gray-500">${escapeHtml(p.stripe_checkout_session_id||'Checkout not completed')} · ${formatLongDateTime(p.created_at)}</div></div>`).join('');
             } catch(err) { box.innerHTML=`<p class="text-xs text-red-400">${escapeHtml(err.message)}. Confirm the ticket-sales migration is applied.</p>`; }
         }
 
@@ -2107,7 +2124,7 @@
             const box=document.getElementById('admin-chat-list'); box.innerHTML='<p class="text-xs text-gray-400">Loading chat…</p>';
             try { const {data,error}=await window.sb.from('chat_messages').select('id,sender_name,message,created_at').order('created_at',{ascending:false}).limit(100); if(error) throw error;
               if(!data?.length){box.innerHTML='<p class="text-xs text-gray-400">No messages yet.</p>';return;}
-              box.innerHTML=data.map(m=>`<div class="flex items-start justify-between gap-3 rounded border border-gray-800 bg-black p-3"><div><div class="text-[10px] text-gray-500">${escapeHtml(m.sender_name||'Fan')} • ${new Date(m.created_at).toLocaleString()}</div><div class="mt-1 text-xs">${escapeHtml(m.message)}</div></div><button onclick="deleteChatMessage('${m.id}')" class="text-xs text-red-400">Delete</button></div>`).join('');
+              box.innerHTML=data.map(m=>`<div class="flex items-start justify-between gap-3 rounded border border-gray-800 bg-black p-3"><div><div class="text-[10px] text-gray-500">${escapeHtml(m.sender_name||'Fan')} • ${formatLongDateTime(m.created_at)}</div><div class="mt-1 text-xs">${escapeHtml(m.message)}</div></div><button onclick="deleteChatMessage('${m.id}')" class="text-xs text-red-400">Delete</button></div>`).join('');
             } catch(err) { box.innerHTML=`<p class="text-xs text-red-400">${escapeHtml(err.message)}. Confirm the Supabase setup SQL has been run.</p>`; }
         }
         async function deleteChatMessage(id) { const {error}=await window.sb.from('chat_messages').delete().eq('id',id); if(error) showNotification(error.message,'error'); else await loadAdminChat(); }
