@@ -318,7 +318,21 @@ async function loadBookings(){
  });
 }
 $('refreshBookings').onclick=loadBookings;
-async function loadTicketPurchases(){const list=$('ticketPurchasesList');list.innerHTML='<p class="muted text-sm">Loading purchases…</p>';const [purchases,options,events]=await Promise.all([client.from('ticket_purchases').select('id,buyer_email,quantity,total_cents,currency,status,stripe_checkout_session_id,created_at,ticket_option_id,event_id').order('created_at',{ascending:false}).limit(100),client.from('event_ticket_options').select('id,name'),client.from('events').select('id,title')]);if(purchases.error){list.innerHTML='<p class="text-red-400 text-sm">'+esc(purchases.error.message)+'</p>';return}const optionMap=new Map((options.data||[]).map(x=>[x.id,x.name]));const eventMap=new Map((events.data||[]).map(x=>[x.id,x.title]));list.innerHTML=(purchases.data||[]).map(p=>'<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><b>'+esc(eventMap.get(p.event_id)||'Event')+' · '+esc(optionMap.get(p.ticket_option_id)||'Ticket')+'</b><span class="text-xs uppercase '+(p.status==='paid'?'text-green-400':p.status==='refunded'?'text-yellow-300':'muted')+'">'+esc(p.status)+'</span></div><p class="text-sm mt-2">'+esc(p.buyer_email)+' · '+p.quantity+' ticket(s) · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.total_cents||0)/100))+'</p><p class="muted text-xs mt-1">'+esc(new Date(p.created_at).toLocaleString())+' · '+esc(p.stripe_checkout_session_id||'Checkout not completed')+'</p></article>').join('')||'<p class="muted text-sm">No ticket purchases yet.</p>'}
+async function loadTicketPurchases(){
+  const list=$('ticketPurchasesList');
+  list.innerHTML='<p class="muted text-sm">Loading purchases…</p>';
+  const [purchases,options,events]=await Promise.all([
+    client.from('ticket_purchases').select('id,buyer_email,quantity,total_cents,currency,status,stripe_checkout_session_id,created_at,ticket_option_id,event_id').order('created_at',{ascending:false}).limit(100),
+    client.from('event_ticket_options').select('id,name'),
+    client.from('events').select('id,title')
+  ]);
+  if(purchases.error){list.innerHTML='<p class="text-red-400 text-sm">Could not load ticket purchases: '+esc(purchases.error.message)+'</p>';return}
+  if(options.error){list.innerHTML='<p class="text-red-400 text-sm">Ticket purchases loaded, but ticket names could not be loaded: '+esc(options.error.message)+'</p>';return}
+  if(events.error){list.innerHTML='<p class="text-red-400 text-sm">Ticket purchases loaded, but event names could not be loaded: '+esc(events.error.message)+'</p>';return}
+  const optionMap=new Map((options.data||[]).map(x=>[x.id,x.name]));
+  const eventMap=new Map((events.data||[]).map(x=>[x.id,x.title]));
+  list.innerHTML=(purchases.data||[]).map(p=>'<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><b>'+esc(eventMap.get(p.event_id)||'Event')+' · '+esc(optionMap.get(p.ticket_option_id)||'Ticket')+'</b><span class="text-xs uppercase '+(p.status==='paid'?'text-green-400':p.status==='refunded'?'text-yellow-300':'muted')+'">'+esc(p.status)+'</span></div><p class="text-sm mt-2">'+esc(p.buyer_email)+' · '+p.quantity+' ticket(s) · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.total_cents||0)/100))+'</p><p class="muted text-xs mt-1">'+esc(new Date(p.created_at).toLocaleString())+' · '+esc(p.stripe_checkout_session_id||'Checkout not completed')+'</p></article>').join('')||'<p class="muted text-sm">No ticket purchases yet.</p>';
+}
 $('refreshTicketPurchases').onclick=loadTicketPurchases;
 async function loadSales(){
   const streamList=$('streamSalesList'),mediaList=$('mediaSalesList');
@@ -330,11 +344,13 @@ async function loadSales(){
     client.from('media').select('id,title,collection,price')
   ]);
   if(streams.error){streamList.innerHTML='<p class="text-red-400 text-sm">Could not read stream purchases: '+esc(streams.error.message)+'</p>'}
+  else if(events.error){streamList.innerHTML='<p class="text-red-400 text-sm">Stream purchases loaded, but event names could not be loaded: '+esc(events.error.message)+'</p>'}
   else{
     const emap=new Map((events.data||[]).map(x=>[x.id,x.title]));
     streamList.innerHTML=(streams.data||[]).map(p=>'<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><b>'+esc(emap.get(p.event_id)||'MMA event')+'</b><span class="text-xs uppercase '+(p.status==='paid'?'text-green-400':p.status==='refunded'?'text-yellow-300':'muted')+'">'+esc(p.status)+'</span></div><p class="text-sm mt-2">'+esc(p.buyer_email)+' · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.amount_cents||0)/100))+'</p><p class="muted text-xs mt-1">'+esc(new Date(p.created_at).toLocaleString())+' · '+esc(p.stripe_checkout_session_id||'No completed checkout')+'</p><p class="muted text-xs break-all">'+esc(p.stripe_payment_intent_id||'')+'</p></article>').join('')||'<p class="muted text-sm">No live-stream purchases yet.</p>';
   }
   if(mediaPurchases.error){mediaList.innerHTML='<p class="text-red-400 text-sm">Could not read media purchases: '+esc(mediaPurchases.error.message)+'</p>'}
+  else if(media.error){mediaList.innerHTML='<p class="text-red-400 text-sm">Media purchases loaded, but media details could not be loaded: '+esc(media.error.message)+'</p>'}
   else{
     const mmap=new Map((media.data||[]).map(x=>[String(x.id),x]));
     mediaList.innerHTML=(mediaPurchases.data||[]).map(p=>{
