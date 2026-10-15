@@ -125,6 +125,51 @@
       .snrg-hero-banner { background-image: linear-gradient(90deg,rgba(0,0,0,.88),rgba(0,0,0,.35)),url("./hero-banner-1920x800.png"); background-size: cover; background-position: center; }
     </style>
 
+
+    <style>
+      /* High-contrast stream checkout fields: dark controls with readable text. */
+      #streamCheckoutModal .field,
+      #streamCheckoutModal input,
+      #streamCheckoutModal select,
+      #ticketCheckoutModal .field,
+      #ticketCheckoutModal input,
+      #ticketCheckoutModal select {
+        display: block;
+        width: 100%;
+        min-height: 48px;
+        margin-top: 6px;
+        padding: 12px 14px;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff;
+        background-color: #111319 !important;
+        border: 1px solid #737b8c !important;
+        border-radius: 8px;
+        opacity: 1;
+        color-scheme: dark;
+      }
+      #streamCheckoutModal select option,
+      #ticketCheckoutModal select option {
+        color: #ffffff !important;
+        background-color: #111319 !important;
+      }
+      #streamCheckoutModal input::placeholder,
+      #ticketCheckoutModal input::placeholder {
+        color: #c4cad4 !important;
+        -webkit-text-fill-color: #c4cad4;
+        opacity: 1;
+      }
+      #streamCheckoutModal label,
+      #ticketCheckoutModal label {
+        color: #f3f4f6;
+      }
+      #streamCheckoutModal .field:focus,
+      #ticketCheckoutModal .field:focus {
+        outline: 3px solid #ff2a2a;
+        outline-offset: 2px;
+        border-color: #ff2a2a !important;
+      }
+    </style>
+
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-red selection:text-white">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-black focus:px-4 focus:py-3 focus:text-white">Skip to main content</a>
