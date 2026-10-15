@@ -476,6 +476,27 @@
                 <div class="border-b border-gray-800 pb-3"><h3 class="font-heading text-2xl font-black uppercase text-white">Sasha’s Portfolio</h3><p class="text-sm text-gray-400 mt-1">A separate collection of Sasha’s photos and videos available to browse and purchase.</p></div>
                 <div id="sasha-portfolio-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
               </section>
+              <section class="rounded-2xl border border-gray-800 bg-gray-900/70 p-5 space-y-4">
+                <div class="border-b border-gray-800 pb-3">
+                  <h3 class="font-heading text-2xl font-black uppercase text-brand-red">Request a Sasha Portfolio Booking</h3>
+                  <p class="text-sm text-gray-400 mt-1">Send a booking request first. The team will review your request and, if approved, email you a payment or deposit link. Submitting a request does not reserve a date or require payment.</p>
+                </div>
+                <form id="booking-request-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label class="block text-sm text-gray-300">Your name<input id="booking-name" required maxlength="120" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="name"></label>
+                  <label class="block text-sm text-gray-300">Email address<input id="booking-email" required type="email" maxlength="254" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="email"></label>
+                  <label class="block text-sm text-gray-300">Phone (optional)<input id="booking-phone" type="tel" maxlength="40" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="tel"></label>
+                  <label class="block text-sm text-gray-300">What are you booking?<select id="booking-service" required class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"><option value="">Choose a service</option><option>Photography session</option><option>Event photography</option><option>Portrait session</option><option>Video service</option><option>Other / discuss options</option></select></label>
+                  <label class="block text-sm text-gray-300">Preferred date (optional)<input id="booking-date" type="date" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"></label>
+                  <label class="block text-sm text-gray-300">Preferred time (optional)<input id="booking-time" maxlength="80" placeholder="Morning, afternoon, or a time range" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"></label>
+                  <label class="block text-sm text-gray-300 md:col-span-2">Location or venue (optional)<input id="booking-location" maxlength="250" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" placeholder="Where would you like the session?"></label>
+                  <label class="block text-sm text-gray-300 md:col-span-2">Tell us what you need<textarea id="booking-details" rows="4" maxlength="3000" required class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" placeholder="Describe the session, event, timing, or questions."></textarea></label>
+                  <div class="hidden" aria-hidden="true"><label>Leave this field empty<input id="booking-company" tabindex="-1" autocomplete="off"></label></div>
+                  <div class="md:col-span-2 flex flex-wrap items-center gap-3">
+                    <button id="booking-submit" type="submit" class="rounded-xl bg-brand-red px-5 py-3 font-heading text-sm font-black uppercase text-white hover:bg-red-700">Send booking request</button>
+                    <p id="booking-status" class="text-sm text-gray-400" role="status" aria-live="polite">No payment is collected when you submit this form.</p>
+                  </div>
+                </form>
+              </section>
             </div>
         </div>
 
@@ -1664,6 +1685,79 @@
 
             });
         }
+
+        async function submitBookingRequest(event) {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const status = document.getElementById('booking-status');
+            const button = document.getElementById('booking-submit');
+            const honeypot = document.getElementById('booking-company').value.trim();
+            if (honeypot) return;
+            const name = document.getElementById('booking-name').value.trim();
+            const email = document.getElementById('booking-email').value.trim();
+            const phone = document.getElementById('booking-phone').value.trim();
+            const service = document.getElementById('booking-service').value;
+            const date = document.getElementById('booking-date').value || null;
+            const time = document.getElementById('booking-time').value.trim();
+            const location = document.getElementById('booking-location').value.trim();
+            const details = document.getElementById('booking-details').value.trim();
+            if (!name || !email || !service || !details) {
+                status.textContent = 'Please complete your name, email, service, and booking details.';
+                status.className = 'text-sm text-red-400';
+                return;
+            }
+            if (name.length > 120 || email.length > 254 || phone.length > 40 || details.length > 3000) {
+                status.textContent = 'Please shorten one or more fields and try again.';
+                status.className = 'text-sm text-red-400';
+                return;
+            }
+            if (!window.sb || !window.supabaseReady) {
+                status.textContent = 'The booking service is temporarily unavailable. Please try again later.';
+                status.className = 'text-sm text-red-400';
+                return;
+            }
+            button.disabled = true;
+            button.textContent = 'Submitting…';
+            status.textContent = 'Submitting your request securely…';
+            status.className = 'text-sm text-gray-400';
+            try {
+                const { data: booking, error } = await window.sb.from('booking_requests').insert({
+                    customer_name: name, customer_email: email, customer_phone: phone,
+                    service_type: service, preferred_date: date, preferred_time: time,
+                    location, details, status: 'pending'
+                }).select('id').single();
+                if (error) throw error;
+                let notified = false;
+                try {
+                    const notice = await window.sb.functions.invoke('send-contact-message', {
+                        body: {
+                            name, email, category: 'Portfolio / Photography Inquiry',
+                            company: '',
+                            message: 'NEW SASHA PORTFOLIO BOOKING REQUEST\nBooking ID: ' + booking.id +
+                                '\nService: ' + service + '\nPreferred date: ' + (date || 'Not specified') +
+                                '\nPreferred time: ' + (time || 'Not specified') + '\nPhone: ' + (phone || 'Not provided') +
+                                '\nLocation: ' + (location || 'Not specified') + '\n\nDetails:\n' + details
+                        }
+                    });
+                    notified = !notice.error && notice.data?.success === true;
+                } catch (noticeError) {
+                    console.warn('Booking was saved but admin email notification failed.', noticeError);
+                }
+                status.textContent = notified
+                    ? 'Request received! The team has been notified. Your date is not confirmed until the request is approved.'
+                    : 'Your request was saved, but the team notification could not be confirmed. If you need a quick reply, use Contact Us.';
+                status.className = notified ? 'text-sm text-emerald-400' : 'text-sm text-yellow-300';
+                form.reset();
+            } catch (error) {
+                console.error('Booking request submission failed.', error);
+                status.textContent = 'We could not submit your request. Please try again in a few minutes.';
+                status.className = 'text-sm text-red-400';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Send booking request';
+            }
+        }
+        document.getElementById('booking-request-form')?.addEventListener('submit', submitBookingRequest);
 
         async function submitSupportInquiry(event) {
             event.preventDefault();
