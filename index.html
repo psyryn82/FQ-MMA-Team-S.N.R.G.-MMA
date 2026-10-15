@@ -1748,7 +1748,7 @@
                     window.sb.from('event_ticket_options').select('id,event_id,name,description,price_cents,currency,quantity_limit').eq('is_available', true)
                 ]);
                 if (fightersResult.error) console.warn('Could not load published fighters from Supabase.', fightersResult.error);
-                else if (fightersResult.data?.length) siteData.fighters = fightersResult.data.map(f => ({id:f.id,name:f.name,record:f.record||'',desc:f.bio||f.nickname||'',initials:(f.name||'').substring(0,2).toUpperCase(),image:f.image_url||''}));
+                else siteData.fighters = (fightersResult.data || []).map(f => ({id:f.id,name:f.name,record:f.record||'',desc:f.bio||f.nickname||'',initials:(f.name||'').substring(0,2).toUpperCase(),image:f.image_url||''}));
                 if (eventsResult.error) console.warn('Could not load events from Supabase.', eventsResult.error);
                 if (ticketsResult.error) console.warn('Could not load available ticket options from Supabase.', ticketsResult.error);
                 const availableTickets = ticketsResult.data || [];
@@ -1758,7 +1758,7 @@
                 const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,type:'class',date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
                 if (!eventsResult.error && !scheduleResult.error) siteData.schedule = [...eventItems,...classItems];
                 if (productsResult.error) console.warn('Could not load products from Supabase.', productsResult.error);
-                else if (productsResult.data?.length) siteData.store = productsResult.data.map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA media',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
+                else siteData.store = (productsResult.data || []).map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA media',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
             } catch (e) { console.warn('Supabase structured content could not be loaded; retaining homepage defaults.', e); }
             renderAllContent();
             if (window.__snrgAdminUser) renderAdminManagerLists();
