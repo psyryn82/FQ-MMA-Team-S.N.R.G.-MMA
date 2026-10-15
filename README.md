@@ -6,6 +6,7 @@ Static public website hosted from the repository root on GitHub Pages. Browser c
 
 - `index.html`: public website, public event schedule, published fighters and training schedule, media/product listings, signed-in fan chat, and event-ticket checkout.
 - `admin.html`: the canonical administrator dashboard. Use `https://fq-snrg-mma.com/admin.html`. It manages homepage content, fighters, events, training schedule, merchandise/media purchase links, public/private uploads, ticket options and purchase records, and the chat inbox.
+- `membership.html`: member sign-in/account creation and fan chat. It is not a membership-payment page; event tickets are purchased from the public event listings.
 - `docs/TICKET_SALES_SETUP.md`: current ticket-option setup, purchase records, and test-mode safety notes.
 - `supabase/functions/create-ticket-checkout/index.ts`: server-side, test-mode-only Stripe Checkout creation for event tickets.
 - `supabase/functions/stripe-webhook/index.ts`: signed Stripe webhook processing. Ticket purchases are marked paid only after verified Stripe payment.
