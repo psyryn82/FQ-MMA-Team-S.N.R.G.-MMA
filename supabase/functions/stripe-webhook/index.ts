@@ -46,10 +46,11 @@ Deno.serve(async (req) => {
         if (session.payment_status === "paid") {
           if (session.amount_total !== Number(session.metadata.expected_amount_cents || NaN)) throw new Error("Ticket checkout amount does not match expected amount");
           const { data: purchase, error: findError } = await db.from("ticket_purchases")
-            .select("id,status,stripe_checkout_session_id").eq("id", purchaseId).maybeSingle();
+            .select("id,status,stripe_checkout_session_id,total_cents,charged_total_cents").eq("id", purchaseId).maybeSingle();
           if (findError) throw findError;
           if (!purchase) throw new Error("Ticket reservation was not found");
           if (purchase.stripe_checkout_session_id && purchase.stripe_checkout_session_id !== session.id) throw new Error("Ticket reservation/session mismatch");
+          if (session.amount_total !== Number(purchase.charged_total_cents ?? purchase.total_cents)) throw new Error("Ticket checkout amount does not match the saved reservation total");
           if (purchase.status !== "refunded") {
             const { error } = await db.from("ticket_purchases").update({
               status: "paid",
