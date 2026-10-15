@@ -65,7 +65,10 @@ Deno.serve(async (req: Request) => {
 
   try {
     const privatePem = atob(encodedPrivate);
-    const privateKey = await crypto.subtle.importKey("pkcs8", pemToDer(privatePem), { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+    const der = pemToDer(privatePem);
+    const keyData = new ArrayBuffer(der.byteLength);
+    new Uint8Array(keyData).set(der);
+    const privateKey = await crypto.subtle.importKey("pkcs8", keyData, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
     const now = Math.floor(Date.now() / 1000);
     const header = { alg: "ES256", typ: "JWT" };
     const payload = { action: "pull", iss: "https://fq-snrg-mma.com", pub: encodedPublic, sub: playbackId, video: "none", exp: now + 600, iat: now };
