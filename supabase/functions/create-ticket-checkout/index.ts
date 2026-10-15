@@ -23,10 +23,11 @@ Deno.serve(async (req) => {
   if (!req.headers.get("apikey")) return respond({ error: "A public API key is required." }, 401, origin);
   if (!stripeKey.startsWith("sk_test_")) return respond({ error: "Ticket checkout is locked to Stripe test mode until end-to-end testing is complete." }, 503, origin);
 
-  let input: { ticket_option_id?: unknown; quantity?: unknown; buyer_email?: unknown };
+  let input: { ticket_option_id?: unknown; quantity?: unknown; buyer_email?: unknown; promotion_code?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "Ticket details are required." }, 400, origin); }
   const optionId = String(input.ticket_option_id || "");
   const email = String(input.buyer_email || "").trim().toLowerCase();
+  const promotionCode = String(input.promotion_code || "").trim().toUpperCase();
   const quantity = Number(input.quantity ?? 1);
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(optionId)) return respond({ error: "Choose a valid ticket option." }, 400, origin);
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) return respond({ error: "You can purchase between 1 and 10 tickets per checkout." }, 400, origin);
@@ -41,10 +42,24 @@ Deno.serve(async (req) => {
     .select("id,title,event_date,venue,status").eq("id", option.event_id).maybeSingle();
   if (eventError || !event || !["upcoming", "live"].includes(event.status)) return respond({ error: "Tickets for this event are not currently available." }, 409, origin);
 
+  const originalAmountCents = option.price_cents * quantity;
+  let finalAmountCents = originalAmountCents;
+  let redemptionId: string | null = null;
+  if (promotionCode) {
+    const { data: promo, error: promoError } = await db.rpc("reserve_promotion_redemption", {
+      p_code: promotionCode, p_purchase_type: "ticket", p_event_id: event.id,
+      p_customer_email: email, p_original_amount_cents: originalAmountCents,
+    });
+    if (promoError || !promo) return respond({ error: promoError?.message || "That promotion could not be applied." }, 400, origin);
+    finalAmountCents = Number(promo.final_amount_cents);
+    redemptionId = String(promo.redemption_id);
+  }
+
   const { data: purchaseId, error: reserveError } = await db.rpc("reserve_event_ticket_purchase", {
     p_ticket_option_id: option.id, p_quantity: quantity, p_buyer_email: email,
   });
   if (reserveError || !purchaseId) {
+    if (redemptionId) await db.rpc("finish_promotion_redemption", { p_redemption_id: redemptionId, p_outcome: "released" });
     const message = reserveError?.message || "";
     const capacity = /not enough tickets/i.test(message);
     return respond({ error: capacity ? "There are not enough tickets left for that quantity." : "Could not reserve those tickets. Please refresh and try again." }, capacity ? 409 : 400, origin);
@@ -62,15 +77,15 @@ Deno.serve(async (req) => {
       success_url: siteUrl + "/?ticket_purchase=success&session_id={CHECKOUT_SESSION_ID}",
       cancel_url: siteUrl + "/?ticket_purchase=cancelled",
       line_items: [{
-        quantity,
+        quantity: 1,
         price_data: {
           currency: String(option.currency || "USD").toLowerCase(),
-          unit_amount: option.price_cents,
-          product_data: { name: option.name, description: [option.description, eventDetails].filter(Boolean).join(" • ").slice(0, 500) },
+          unit_amount: finalAmountCents,
+          product_data: { name: option.name + " (" + quantity + (quantity === 1 ? " ticket)" : " tickets)"), description: [option.description, eventDetails, promotionCode ? "Promotion " + promotionCode : ""].filter(Boolean).join(" • ").slice(0, 500) },
         },
       }],
-      metadata: { purchase_type: "ticket", ticket_purchase_id: purchaseId, ticket_option_id: option.id, event_id: event.id },
-      payment_intent_data: { receipt_email: email, metadata: { purchase_type: "ticket", ticket_purchase_id: purchaseId, ticket_option_id: option.id, event_id: event.id } },
+      metadata: { purchase_type: "ticket", ticket_purchase_id: purchaseId, ticket_option_id: option.id, event_id: event.id, expected_amount_cents: String(finalAmountCents), ...(redemptionId ? { promotion_redemption_id: redemptionId } : {}) },
+      payment_intent_data: { receipt_email: email, metadata: { purchase_type: "ticket", ticket_purchase_id: purchaseId, ticket_option_id: option.id, event_id: event.id, expected_amount_cents: String(finalAmountCents), ...(redemptionId ? { promotion_redemption_id: redemptionId } : {}) } },
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     const { error: updateError } = await db.from("ticket_purchases").update({
@@ -85,6 +100,7 @@ Deno.serve(async (req) => {
     return respond({ url: session.url }, 200, origin);
   } catch (error) {
     await db.from("ticket_purchases").update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", purchaseId).eq("status", "pending");
+    if (redemptionId) await db.rpc("finish_promotion_redemption", { p_redemption_id: redemptionId, p_outcome: "released" });
     console.error("Ticket checkout creation failed", error instanceof Error ? error.message : "unknown error");
     return respond({ error: "Could not start checkout. No payment was taken. Please try again." }, 502, origin);
   }
