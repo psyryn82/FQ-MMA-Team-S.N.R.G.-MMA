@@ -1295,6 +1295,7 @@
                                 <div>
                                     <p class="text-xs font-black uppercase tracking-widest ${isRed ? 'text-brand-red' : 'text-white'}">${escapeHtml(item.category || 'Media')}</p>
                                     <h3 class="font-heading text-xl font-black text-white uppercase">${escapeHtml(item.title || 'Untitled media')}</h3>
+                                    ${item.eventTitle ? `<p class="text-xs text-brand-red mt-1">Event: ${escapeHtml(item.eventTitle)}</p>` : ''}
                                     ${item.description ? `<p class="text-sm text-gray-400 mt-2">${escapeHtml(item.description)}</p>` : ''}
                                 </div>
                                 <span class="shrink-0 font-heading font-bold ${isRed ? 'text-brand-neon' : 'text-white'}">${escapeHtml(item.price || 'Free')}</span>
@@ -1818,9 +1819,10 @@
                 else siteData.store = (productsResult.data || []).map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA media',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
                 if (mediaResult.error) console.warn('Could not load published media from Supabase.', mediaResult.error);
                 else {
+                    const eventTitleMap = new Map((eventsResult.data || []).map(e => [e.id, e.title]));
                     const databaseMedia = (mediaResult.data || []).map(m => ({
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
-                        collection: m.collection || 'mma_event', eventId: m.event_id || null,
+                        collection: m.collection || 'mma_event', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
                         priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Free',
                         image: Number(m.price || 0) > 0 ? '' : (m.file_url || ''), link: Number(m.price || 0) > 0 ? '' : (m.file_url || ''),
                         description: m.description || ''
