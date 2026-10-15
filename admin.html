@@ -357,7 +357,7 @@ async function loadTicketPurchases(){
   const list=$('ticketPurchasesList');
   list.innerHTML='<p class="muted text-sm">Loading purchases…</p>';
   const [purchases,options,events]=await Promise.all([
-    client.from('ticket_purchases').select('id,buyer_email,quantity,total_cents,currency,status,stripe_checkout_session_id,created_at,ticket_option_id,event_id').order('created_at',{ascending:false}).limit(100),
+    client.from('ticket_purchases').select('id,buyer_email,quantity,total_cents,charged_total_cents,currency,status,stripe_checkout_session_id,created_at,ticket_option_id,event_id').order('created_at',{ascending:false}).limit(100),
     client.from('event_ticket_options').select('id,name'),
     client.from('events').select('id,title')
   ]);
@@ -366,7 +366,7 @@ async function loadTicketPurchases(){
   if(events.error){list.innerHTML='<p class="text-red-400 text-sm">Ticket purchases loaded, but event names could not be loaded: '+esc(events.error.message)+'</p>';return}
   const optionMap=new Map((options.data||[]).map(x=>[x.id,x.name]));
   const eventMap=new Map((events.data||[]).map(x=>[x.id,x.title]));
-  list.innerHTML=(purchases.data||[]).map(p=>'<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><b>'+esc(eventMap.get(p.event_id)||'Event')+' · '+esc(optionMap.get(p.ticket_option_id)||'Ticket')+'</b><span class="text-xs uppercase '+(p.status==='paid'?'text-green-400':p.status==='refunded'?'text-yellow-300':'muted')+'">'+esc(p.status)+'</span></div><p class="text-sm mt-2">'+esc(p.buyer_email)+' · '+p.quantity+' ticket(s) · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.total_cents||0)/100))+'</p><p class="muted text-xs mt-1">'+esc(formatDateTimeShort(p.created_at))+' · '+esc(p.stripe_checkout_session_id||'Checkout not completed')+'</p></article>').join('')||'<p class="muted text-sm">No ticket purchases yet.</p>';
+  list.innerHTML=(purchases.data||[]).map(p=>'<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><b>'+esc(eventMap.get(p.event_id)||'Event')+' · '+esc(optionMap.get(p.ticket_option_id)||'Ticket')+'</b><span class="text-xs uppercase '+(p.status==='paid'?'text-green-400':p.status==='refunded'?'text-yellow-300':'muted')+'">'+esc(p.status)+'</span></div><p class="text-sm mt-2">'+esc(p.buyer_email)+' · '+p.quantity+' ticket(s) · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.charged_total_cents??p.total_cents??0)/100))+'</p><p class="muted text-xs mt-1">'+esc(formatDateTimeShort(p.created_at))+' · '+esc(p.stripe_checkout_session_id||'Checkout not completed')+'</p></article>').join('')||'<p class="muted text-sm">No ticket purchases yet.</p>';
 }
 $('refreshTicketPurchases').onclick=loadTicketPurchases;
 async function loadSales(){
