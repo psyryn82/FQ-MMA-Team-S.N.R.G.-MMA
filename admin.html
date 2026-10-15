@@ -21,7 +21,25 @@
 <section id="tab-home" class="panel p-5"><h2 class="head text-2xl uppercase mb-1">Homepage content</h2><p class="muted text-sm mb-4">The homepage uses one JSON document named public. Keep the fields and structure intact. For fighters, events, schedule, media purchase links, ticket options, ticket purchases, uploads, and chat, use their tabs.</p><form id="homeForm" class="space-y-3"><textarea id="homeJson" class="field font-mono text-xs" rows="18" spellcheck="false" required></textarea><button class="btn" type="submit">Save homepage JSON</button></form></section>
 <div id="modulePanels"></div>
 <section id="tab-ticket_purchases" class="panel p-5 hidden"><h2 class="head text-2xl uppercase mb-1">Ticket purchases</h2><p class="muted text-sm mb-4">Read-only payment records confirmed by the signed Stripe webhook. Pending checkouts are not proof of payment.</p><button id="refreshTicketPurchases" type="button" class="btn2 mb-4">Refresh purchases</button><div id="ticketPurchasesList" class="space-y-3"></div></section>
-<section id="tab-media" class="panel p-5 hidden"><h2 class="head text-2xl uppercase mb-1">Photo and video uploads</h2><p class="muted text-sm mb-4">Use Public for ordinary team/event imagery. Private uploads are stored in the admin-only archive and are not publicly sold. Add media for sale in “Media & purchase links” with its external purchase URL. Maximum file size: 50 MB.</p><form id="mediaForm" class="space-y-4"><input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" required><label class="block text-sm">Visibility<select id="mediaVisibility" class="field" required><option value="" disabled selected>Choose visibility…</option><option value="public">Public team/event media</option><option value="private">Private admin archive (not for sale)</option></select></label><label class="block text-sm">Optional filename<input id="mediaName" class="field" placeholder="event-photo-01"></label><button class="btn" type="submit">Upload media</button></form><div id="mediaMessage" class="text-sm mt-3" role="status"></div><div id="mediaList" class="mt-5 space-y-2"></div></section>
+<section id="tab-media" class="panel p-5 hidden">
+<h2 class="head text-2xl uppercase mb-1">Media Catalog & Uploads</h2>
+<p class="muted text-sm mb-4">Manage two separate catalogs. Free previews are public; paid files are uploaded to private storage and delivered only after Stripe confirms payment. Maximum file size: 50 MB.</p>
+<form id="mediaForm" class="space-y-4">
+<input id="mediaRecordId" type="hidden">
+<div class="grid md:grid-cols-2 gap-4">
+<label class="block text-sm">Catalog<select id="mediaCollection" class="field" required><option value="mma_event">MMA Events · live-stream/event media</option><option value="sasha_portfolio">Sasha’s Portfolio</option></select></label>
+<label class="block text-sm">Related MMA event (optional)<select id="mediaEvent" class="field"><option value="">General MMA media / not event-specific</option></select></label>
+<label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
+<label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
+<label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">0 = free public preview. Any price above $0 uses private storage.</span></label>
+<label class="block text-sm">Upload photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Required for a new listing. Leave empty when editing details.</span></label>
+<label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
+</div>
+<div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
+</form>
+<div id="mediaMessage" class="text-sm mt-3" role="status"></div>
+<div id="mediaList" class="mt-5 space-y-3"></div>
+</section>
 <section id="tab-chat" class="panel p-5 hidden"><h2 class="head text-2xl uppercase mb-1">Live chat inbox</h2><p class="muted text-sm mb-4">Inbox for signed-in members. Anonymous visitor chat is not enabled.</p><button id="refreshChat" class="btn2 mb-4" type="button">Refresh messages</button><div id="chatList" class="space-y-3"></div><form id="chatReplyForm" class="mt-5 space-y-3"><label class="block text-sm">Reply to user ID<input id="chatUserId" class="field" required></label><label class="block text-sm">Reply<textarea id="chatReply" class="field" rows="3" required maxlength="5000"></textarea></label><button class="btn" type="submit">Send reply</button></form></section>
 <p id="appMessage" class="text-sm mt-5" role="status"></p>
 </section>
@@ -130,38 +148,116 @@ document.addEventListener('click',async e=>{const edit=e.target.closest('[data-e
   return
 }const clear=e.target.closest('[data-clear]');if(clear){const form=document.querySelector('[data-form-table="'+clear.dataset.clear+'"]');form.reset();form.elements.id.value=''}});
 async function loadMedia(){
-  const [pub,priv]=await Promise.all([
-    client.storage.from('fqmma-media').list('',{limit:100,sortBy:{column:'created_at',order:'desc'}}),
-    client.storage.from('fqmma-private').list('',{limit:100,sortBy:{column:'created_at',order:'desc'}})
+  const message=$('mediaMessage'), list=$('mediaList');
+  list.innerHTML='<p class="muted text-sm">Loading media catalog…</p>';
+  const [mediaResult,eventResult]=await Promise.all([
+    client.from('media').select('id,title,category,description,file_url,file_path,price,is_published,collection,event_id,created_at').order('created_at',{ascending:false}).limit(250),
+    client.from('events').select('id,title,event_date,status').order('created_at',{ascending:false})
   ]);
-  if(pub.error){$('mediaMessage').textContent='Public storage not ready: '+pub.error.message;return}
-  if(priv.error){$('mediaMessage').textContent='Public media is available. Private media requires the launch-readiness migration: '+priv.error.message}
-  const items=[];
-  for(const f of (pub.data||[])){if(!f.name)continue;const u=client.storage.from('fqmma-media').getPublicUrl(f.name).data.publicUrl;items.push({bucket:'fqmma-media',path:f.name,url:u,label:'PUBLIC · '+f.name})}
-  const privateFiles=[];
-  for(const entry of (priv.error?[]:(priv.data||[]))){
-    if(!entry.name)continue;
-    if(entry.id===null){
-      const nested=await client.storage.from('fqmma-private').list(entry.name,{limit:100,sortBy:{column:'created_at',order:'desc'}});
-      if(nested.error){$('mediaMessage').textContent='Could not list private media: '+nested.error.message;return}
-      for(const file of (nested.data||[])){if(file.name&&file.id!==null)privateFiles.push({...file,name:entry.name+'/'+file.name})}
-    }else privateFiles.push(entry);
-  }
-  for(const f of privateFiles){const signed=await client.storage.from('fqmma-private').createSignedUrl(f.name,300);items.push({bucket:'fqmma-private',path:f.name,url:signed.data?.signedUrl||'',label:'PRIVATE · '+f.name})}
-  $('mediaList').innerHTML=items.map(i=>'<div class="border border-gray-800 rounded-lg p-3 flex items-center justify-between gap-3"><div class="min-w-0"><p class="text-sm break-all">'+esc(i.label)+'</p>'+(i.url?'<a class="text-red-400 underline break-all text-xs" target="_blank" rel="noopener" href="'+esc(i.url)+'">Open preview</a>':'<p class="muted text-xs">Preview unavailable</p>')+'</div><button class="btn2" data-media-bucket="'+i.bucket+'" data-media-del="'+esc(i.path)+'">Delete</button></div>').join('')||'<p class="muted text-sm">No uploads yet.</p>';
-  document.querySelectorAll('[data-media-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this file?'))return;const {error}=await client.storage.from(b.dataset.mediaBucket).remove([b.dataset.mediaDel]);if(error)$('mediaMessage').textContent=error.message;else loadMedia()})
+  if(mediaResult.error){list.innerHTML='<p class="text-red-400 text-sm">Could not load media catalog: '+esc(mediaResult.error.message)+'</p>';return}
+  if(eventResult.error){message.textContent='Could not load event names: '+eventResult.error.message;return}
+  eventsCache=eventResult.data||[];
+  const eventSelect=$('mediaEvent'), currentEvent=eventSelect.value;
+  eventSelect.innerHTML='<option value="">General MMA media / not event-specific</option>'+eventsCache.map(ev=>'<option value="'+esc(ev.id)+'">'+esc(ev.title)+(ev.event_date?' · '+new Date(ev.event_date).toLocaleDateString():'')+'</option>').join('');
+  if(eventsCache.some(ev=>ev.id===currentEvent))eventSelect.value=currentEvent;
+  records.media=mediaResult.data||[];
+  const cards=await Promise.all(records.media.map(async m=>{
+    let preview='';
+    if(Number(m.price||0)>0&&m.file_path){
+      const signed=await client.storage.from('fqmma-private').createSignedUrl(m.file_path,180);
+      if(signed.data?.signedUrl)preview='<a class="text-red-400 underline text-xs" target="_blank" rel="noopener" href="'+esc(signed.data.signedUrl)+'">Temporary preview</a>';
+    }else if(m.file_url){
+      preview='<a class="text-red-400 underline text-xs" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open public file</a>';
+    }
+    const section=m.collection==='sasha_portfolio'?'Sasha’s Portfolio':'MMA Events';
+    const eventName=eventsCache.find(ev=>ev.id===m.event_id)?.title||'General media';
+    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(Number(m.price||0)>0?'Private paid file':'Public/free file')+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(new Date(m.created_at).toLocaleString())+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button><button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
+  }));
+  list.innerHTML=cards.join('')||'<p class="muted text-sm">No media listings yet. Upload an item above to create the first listing.</p>';
+  message.textContent='Loaded '+records.media.length+' media listing(s).';
 }
+function clearMediaForm(){
+  $('mediaForm').reset();$('mediaRecordId').value='';$('mediaPrice').value='0';$('mediaPublished').checked=true;$('mediaSaveButton').textContent='Upload & publish listing';$('mediaFile').required=false;
+}
+$('mediaClearButton').onclick=clearMediaForm;
 $('mediaForm').addEventListener('submit',async e=>{
-  e.preventDefault();const file=$('mediaFile').files[0];if(!file)return;
-  if(file.size>50*1024*1024){$('mediaMessage').textContent='File exceeds 50 MB.';return}
-  const visibility=$('mediaVisibility').value;
-  const name=(($('mediaName').value.trim()||file.name).replace(/[^a-zA-Z0-9._-]+/g,'-'));
-  const path=Date.now()+'-'+name;
-  const bucket=visibility==='private'?'fqmma-private':'fqmma-media';
-  const {error}=await client.storage.from(bucket).upload(path,file,{upsert:false,contentType:file.type});
-  if(error){$('mediaMessage').textContent=error.message;return}
-  $('mediaMessage').textContent=visibility==='private'?'Private admin archive upload complete. This file is not publicly available for purchase. Path: '+path:'Public upload complete. Public URL: '+client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-  $('mediaForm').reset();loadMedia()
+  e.preventDefault();
+  const file=$('mediaFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
+  const description=$('mediaDescription').value.trim(), collection=$('mediaCollection').value, eventId=$('mediaEvent').value||null;
+  const price=Number($('mediaPrice').value), published=$('mediaPublished').checked;
+  const message=$('mediaMessage');message.textContent='';
+  if(!title){message.textContent='Enter a title.';return}
+  if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid price from $0 to $9,999.';return}
+  if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
+  if(!id&&!file){message.textContent='Choose a photo or video to upload.';return}
+  if(file&&file.size>50*1024*1024){message.textContent='File exceeds 50 MB.';return}
+  if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM file.';return}
+  const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Uploading…';
+  let uploadedBucket=null, uploadedPath=null;
+  try{
+    const patch={title,description,collection,event_id:eventId,price,is_published:published,category:file?(file.type.startsWith('video/')?'Video':'Photo'):undefined};
+    if(id){
+      const existing=records.media?.find(m=>String(m.id)===String(id));if(!existing)throw new Error('Media listing was not found. Refresh the catalog and try again.');
+      if(file)throw new Error('To replace the actual file, delete this listing and upload the replacement. This avoids accidentally exposing paid files.');
+      if((Number(existing.price||0)>0)!==(price>0))throw new Error('Changing between free and paid requires re-uploading the file so its storage privacy matches its price. Leave the price on the same side of $0, or create a replacement listing.');
+      delete patch.category;
+      const {error}=await client.from('media').update(patch).eq('id',id);if(error)throw error;
+      message.textContent='Listing updated.';
+    }else{
+      const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
+      const path=collection+'/'+Date.now()+'-'+safeName;
+      const bucket=price>0?'fqmma-private':'fqmma-media';uploadedBucket=bucket;uploadedPath=path;
+      const {error:uploadError}=await client.storage.from(bucket).upload(path,file,{upsert:false,contentType:file.type});
+      if(uploadError)throw uploadError;
+      const fileUrl=price>0?null:client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+      const {error:insertError}=await client.from('media').insert({...patch,file_path:path,file_url:fileUrl}).select('id').single();
+      if(insertError)throw insertError;
+      message.textContent='File uploaded and catalog listing created.';
+    }
+    clearMediaForm();await loadMedia();
+  }catch(err){
+    if(uploadedBucket&&uploadedPath)await client.storage.from(uploadedBucket).remove([uploadedPath]);
+    message.textContent=err?.message||String(err);
+  }finally{button.disabled=false;button.textContent=$('mediaRecordId').value?'Save changes':'Upload & publish listing'}
+});
+document.addEventListener('click',async e=>{
+  const edit=e.target.closest('[data-media-edit]');
+  if(edit){
+    const m=records.media?.find(x=>String(x.id)===edit.dataset.mediaEdit);if(!m)return;
+    $('mediaRecordId').value=m.id;$('mediaCollection').value=m.collection||'mma_event';$('mediaEvent').value=m.event_id||'';
+    $('mediaTitle').value=m.title||'';$('mediaDescription').value=m.description||'';$('mediaPrice').value=Number(m.price||0).toFixed(2);
+    $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
+    $('mediaMessage').textContent='Editing listing details. For security, changing a listing from free to paid or paid to free requires re-uploading the file.';
+    window.scrollTo({top:0,behavior:'smooth'});return;
+  }
+  const publish=e.target.closest('[data-media-publish]');
+  if(publish){
+    const id=publish.dataset.mediaPublish, next=publish.dataset.published!=='true';
+    publish.disabled=true;
+    const {error}=await client.from('media').update({is_published:next}).eq('id',id);
+    if(error){$('mediaMessage').textContent=error.message;publish.disabled=false;return}
+    $('mediaMessage').textContent=next?'Listing published.':'Listing unpublished.';await loadMedia();return;
+  }
+  const del=e.target.closest('[data-media-delete]');
+  if(del){
+    const id=del.dataset.mediaDelete,m=records.media?.find(x=>String(x.id)===id);if(!m)return;
+    if(!confirm('Delete this media listing and its file? Existing purchase history must remain intact.'))return;
+    del.disabled=true;
+    try{
+      const purchases=await client.from('media_purchases').select('id',{count:'exact',head:true}).eq('media_id',id);
+      if(purchases.error)throw purchases.error;
+      if((purchases.count||0)>0){
+        const {error}=await client.from('media').update({is_published:false}).eq('id',id);if(error)throw error;
+        $('mediaMessage').textContent='Listing unpublished instead of deleted because purchase history exists.';
+      }else{
+        const {error}=await client.from('media').delete().eq('id',id);if(error)throw error;
+        const bucket=Number(m.price||0)>0?'fqmma-private':'fqmma-media';
+        if(m.file_path){const removed=await client.storage.from(bucket).remove([m.file_path]);if(removed.error)throw removed.error}
+        $('mediaMessage').textContent='Media listing deleted.';
+      }
+      await loadMedia();
+    }catch(err){$('mediaMessage').textContent='Delete failed: '+(err?.message||String(err));del.disabled=false}
+  }
 });
 async function loadTicketPurchases(){const list=$('ticketPurchasesList');list.innerHTML='<p class="muted text-sm">Loading purchases…</p>';const [purchases,options,events]=await Promise.all([client.from('ticket_purchases').select('id,buyer_email,quantity,total_cents,currency,status,stripe_checkout_session_id,created_at,ticket_option_id,event_id').order('created_at',{ascending:false}).limit(100),client.from('event_ticket_options').select('id,name'),client.from('events').select('id,title')]);if(purchases.error){list.innerHTML='<p class="text-red-400 text-sm">'+esc(purchases.error.message)+'</p>';return}const optionMap=new Map((options.data||[]).map(x=>[x.id,x.name]));const eventMap=new Map((events.data||[]).map(x=>[x.id,x.title]));list.innerHTML=(purchases.data||[]).map(p=>'<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><b>'+esc(eventMap.get(p.event_id)||'Event')+' · '+esc(optionMap.get(p.ticket_option_id)||'Ticket')+'</b><span class="text-xs uppercase '+(p.status==='paid'?'text-green-400':p.status==='refunded'?'text-yellow-300':'muted')+'">'+esc(p.status)+'</span></div><p class="text-sm mt-2">'+esc(p.buyer_email)+' · '+p.quantity+' ticket(s) · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.total_cents||0)/100))+'</p><p class="muted text-xs mt-1">'+esc(new Date(p.created_at).toLocaleString())+' · '+esc(p.stripe_checkout_session_id||'Checkout not completed')+'</p></article>').join('')||'<p class="muted text-sm">No ticket purchases yet.</p>'}
 $('refreshTicketPurchases').onclick=loadTicketPurchases;
