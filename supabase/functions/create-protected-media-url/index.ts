@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
   if (mediaError || !media || Number(media.price) <= 0 || !media.file_path) return respond({ error: "This media is not configured for paid delivery." }, 404, origin);
   const { data: purchase, error: purchaseError } = await db.from("media_purchases").select("id").eq("media_id", mediaId).eq("customer_email", email).eq("payment_status", "paid").limit(1).maybeSingle();
   if (purchaseError || !purchase) return respond({ error: "We could not find a confirmed paid purchase for that email. If you just paid, wait a moment and try again." }, 403, origin);
-  const { data: signed, error: signedError } = await db.storage.from("fqmma-paid-media").createSignedUrl(media.file_path, 900, { download: true });
+  const { data: signed, error: signedError } = await db.storage.from("fqmma-private").createSignedUrl(media.file_path, 900, { download: true });
   if (signedError || !signed?.signedUrl) return respond({ error: "The download is temporarily unavailable. Please contact FQ MMA support." }, 502, origin);
   return respond({ url: signed.signedUrl, title: media.title, expires_in: 900 }, 200, origin);
 });
