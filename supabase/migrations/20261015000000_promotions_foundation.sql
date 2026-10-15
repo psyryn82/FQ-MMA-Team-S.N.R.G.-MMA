@@ -25,7 +25,8 @@ create table if not exists public.promotions (
     or (promotion_type = 'discount_amount' and discount_value > 0)
     or (promotion_type in ('free_stream','free_ticket') and discount_value = 0)
   ),
-  constraint promotions_expiration_after_start check (expires_at is null or starts_at is null or expires_at > starts_at)
+  constraint promotions_expiration_after_start check (expires_at is null or starts_at is null or expires_at > starts_at),
+  constraint promotions_free_type_scope check ((promotion_type <> 'free_stream' or applies_to = 'stream') and (promotion_type <> 'free_ticket' or applies_to = 'ticket'))
 );
 
 create unique index if not exists promotions_code_unique on public.promotions (code);
