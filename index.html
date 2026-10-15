@@ -1917,7 +1917,7 @@
             const ticketResult = new URLSearchParams(window.location.search).get('ticket_purchase');
             if (ticketResult === 'success') showNotification('Checkout returned successfully. Keep your Stripe receipt; the team can verify ticket payment from the admin dashboard.', 'info');
             else if (ticketResult === 'cancelled') showNotification('Checkout was cancelled. No ticket payment was completed.', 'info');
-            if (new URLSearchParams(location.search).get('admin') === '1') openAdminModal();
+            if (new URLSearchParams(location.search).get('admin') === '1') { window.location.replace(new URL('./admin.html', window.location.href).href); return; }
             if (window.supabaseReady) {
                 window.sb.auth.getSession().then(async ({data}) => {
                     updateLiveChatAuth(data.session);
@@ -1928,11 +1928,11 @@
                 window.sb.auth.onAuthStateChange((_event,session)=>{ setTimeout(()=>updateLiveChatAuth(session),0); });
             }
             if(!window.supabaseReady) startSimulatedChat();
-            // Secret keyboard shortcut to open admin login (Ctrl + Shift + A)
+            // Keep one canonical admin dashboard instead of opening the retired embedded panel.
             window.addEventListener('keydown', (e) => {
                 if (e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'A') {
                     e.preventDefault();
-                    openAdminModal();
+                    window.location.href = './admin.html';
                 }
             });
         });
