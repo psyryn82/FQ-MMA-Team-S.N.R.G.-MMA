@@ -275,7 +275,7 @@ async function loadSales(){
   streamList.innerHTML=mediaList.innerHTML='<p class="muted text-sm">Loading purchase records…</p>';
   const [streams,mediaPurchases,events,media]=await Promise.all([
     client.from('stream_purchases').select('id,event_id,buyer_email,amount_cents,currency,status,stripe_checkout_session_id,stripe_payment_intent_id,created_at').order('created_at',{ascending:false}).limit(200),
-    client.from('media_purchases').select('id,media_id,customer_email,payment_status,checkout_session_id,payment_intent_id,created_at').order('created_at',{ascending:false}).limit(200),
+    client.from('media_purchases').select('id,media_id,customer_email,payment_status,checkout_session_id,payment_intent_id,amount_cents,currency,created_at').order('created_at',{ascending:false}).limit(200),
     client.from('events').select('id,title'),
     client.from('media').select('id,title,collection,price')
   ]);
@@ -289,7 +289,7 @@ async function loadSales(){
     const mmap=new Map((media.data||[]).map(x=>[String(x.id),x]));
     mediaList.innerHTML=(mediaPurchases.data||[]).map(p=>{
       const m=mmap.get(String(p.media_id)),section=m?.collection==='sasha_portfolio'?'Sasha’s Portfolio':'MMA Events';
-      return '<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><b>'+esc(m?.title||('Media #'+p.media_id))+' · '+esc(section)+'</b><span class="text-xs uppercase '+(p.payment_status==='paid'?'text-green-400':p.payment_status==='refunded'?'text-yellow-300':'muted')+'">'+esc(p.payment_status)+'</span></div><p class="text-sm mt-2">'+esc(p.customer_email||'Email unavailable')+' · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m?.price||0)))+'</p><p class="muted text-xs mt-1">'+esc(new Date(p.created_at).toLocaleString())+' · '+esc(p.checkout_session_id)+'</p><p class="muted text-xs break-all">'+esc(p.payment_intent_id||'')+'</p></article>';
+      return '<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><b>'+esc(m?.title||('Media #'+p.media_id))+' · '+esc(section)+'</b><span class="text-xs uppercase '+(p.payment_status==='paid'?'text-green-400':p.payment_status==='refunded'?'text-yellow-300':'muted')+'">'+esc(p.payment_status)+'</span></div><p class="text-sm mt-2">'+esc(p.customer_email||'Email unavailable')+' · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format(p.amount_cents!=null?Number(p.amount_cents)/100:Number(m?.price||0)))+'</p><p class="muted text-xs mt-1">'+esc(new Date(p.created_at).toLocaleString())+' · '+esc(p.checkout_session_id)+'</p><p class="muted text-xs break-all">'+esc(p.payment_intent_id||'')+'</p></article>';
     }).join('')||'<p class="muted text-sm">No media purchases yet.</p>';
   }
 }
