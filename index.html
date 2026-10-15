@@ -1796,11 +1796,10 @@
                 return result;
             };
             if (!window.supabaseReady) return;
-            window.sb.from('site_content').select('content_value').eq('content_key','public').maybeSingle().then(({data,error}) => {
-                if (error) { console.warn('Supabase content unavailable; using bundled defaults.', error); return; }
-                if (!data?.content_value || !applySiteContent(data.content_value)) return;
-                applyingRemote = true;
-                originalRender.call(window); applyingRemote = false;
+            // Load both the homepage JSON and the structured public tables from the same startup path.
+            loadSiteContentFromSupabase().catch(error => {
+                console.warn('Supabase content unavailable; using bundled defaults.', error);
+                originalRender.call(window);
             });
             window.sb.auth.onAuthStateChange(async (event, session) => {
                 if (!session?.user) { window.__snrgAdminUser = null; isAdminLoggedIn = false; return; }
