@@ -421,9 +421,7 @@
                 <p class="text-sm text-gray-400 max-w-xl mx-auto">
                     Questions about media purchases, photography, live-stream tickets, or website support? Contact our team.
                 </p>
-                <p class="text-sm text-gray-300">
-                    Email: <a href="mailto:fqsnrg.info@gmail.com" class="text-red-400 hover:text-red-300 underline">fqsnrg.info@gmail.com</a>
-                </p>
+                <p class="text-sm text-gray-300">Use the form below and your message will be sent directly to our team.</p>
             </div>
             <div class="max-w-2xl mx-auto rounded-2xl border border-gray-800 bg-gray-900/80 p-6 sm:p-8">
                 <form onsubmit="submitSupportInquiry(event)" class="space-y-4">
@@ -450,10 +448,14 @@
                         <label for="contact-message" class="mb-1 block text-xs font-bold uppercase text-gray-400">Message</label>
                         <textarea id="contact-message" required rows="5" class="w-full rounded-lg border border-gray-700 bg-black p-3 text-sm text-white" placeholder="How can we help?"></textarea>
                     </div>
-                    <button type="submit" class="w-full rounded-xl bg-brand-red px-5 py-3 font-heading text-sm font-black uppercase text-white hover:bg-red-700">
-                        Prepare Email
+                    <div class="hidden" aria-hidden="true">
+                        <label for="contact-company">Leave this field empty</label>
+                        <input id="contact-company" type="text" tabindex="-1" autocomplete="off">
+                    </div>
+                    <button id="contact-submit" type="submit" class="w-full rounded-xl bg-brand-red px-5 py-3 font-heading text-sm font-black uppercase text-white hover:bg-red-700">
+                        Send Message
                     </button>
-                    <p class="text-xs text-gray-500">Your email app will open with your inquiry prepared for our team.</p>
+                    <p id="contact-status" class="text-sm text-gray-400" role="status" aria-live="polite">Your message will be sent securely without opening an email app.</p>
                 </form>
             </div>
         </div>
@@ -1641,28 +1643,57 @@
             });
         }
 
-        function submitSupportInquiry(event) {
+        async function submitSupportInquiry(event) {
             event.preventDefault();
-
+            const form = event.currentTarget;
+            const status = document.getElementById('contact-status');
+            const button = document.getElementById('contact-submit');
             const name = document.getElementById('contact-name').value.trim();
             const email = document.getElementById('contact-email').value.trim();
             const category = document.getElementById('contact-category').value;
             const message = document.getElementById('contact-message').value.trim();
+            const honeypot = document.getElementById('contact-company').value.trim();
 
-            const subject = `FQ MMA Website Inquiry: ${category}`;
-            const body = [
-                `Name: ${name}`,
-                `Reply email: ${email}`,
-                `Inquiry type: ${category}`,
-                '',
-                'Message:',
-                message
-            ].join('\n');
+            if (honeypot) return;
+            if (!name || !email || !category || !message) {
+                status.textContent = 'Please complete every field before sending.';
+                status.className = 'text-sm text-red-400';
+                return;
+            }
+            if (message.length > 5000 || name.length > 120 || email.length > 254) {
+                status.textContent = 'Please shorten your name, email address, or message and try again.';
+                status.className = 'text-sm text-red-400';
+                return;
+            }
+            if (!window.sb || !window.supabaseReady) {
+                status.textContent = 'The contact service is temporarily unavailable. Please try again later.';
+                status.className = 'text-sm text-red-400';
+                return;
+            }
 
-           window.open(
-    `https://mail.google.com/mail/?view=cm&fs=1&to=fqsnrg.info@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
-    '_blank'
-);
+            button.disabled = true;
+            button.textContent = 'Sending…';
+            status.textContent = 'Sending your message securely…';
+            status.className = 'text-sm text-gray-400';
+            try {
+                const { data, error } = await window.sb.functions.invoke('send-contact-message', {
+                    body: { name, email, category, message, company: honeypot }
+                });
+                if (error) throw error;
+                if (!data?.success) throw new Error(data?.error || 'The message could not be sent.');
+                status.textContent = 'Message sent! The FQ MMA team will be in touch.';
+                status.className = 'text-sm text-emerald-400';
+                form.reset();
+            } catch (error) {
+                console.error('Contact form submission failed.', error);
+                status.textContent = error?.message?.includes('RESEND_API_KEY')
+                    ? 'The contact form needs its email service configured before it can send. Please try again later.'
+                    : 'We could not send your message right now. Please try again in a few minutes.';
+                status.className = 'text-sm text-red-400';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Send Message';
+            }
         }
 
         function scrollToPPV() {
