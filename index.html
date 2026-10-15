@@ -276,7 +276,7 @@
     <main id="main-content" class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         <!-- TAB 1: LIVE STREAM & CHAT -->
-        <div id="tab-live" class="tab-content space-y-8">
+        <div id="tab-live" class="tab-content hidden space-y-8">
             <div class="text-center space-y-3">
                 <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">
                     Official stream information
@@ -373,7 +373,7 @@
         </div>
 
         <!-- TAB 3: SCHEDULE -->
-        <div id="tab-schedule" class="tab-content hidden space-y-6">
+        <div id="tab-schedule" class="tab-content space-y-6">
             <div class="text-center space-y-2 mb-6">
                 <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Multi-Discipline Fight Cards</span>
                 <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
@@ -1917,6 +1917,9 @@
             if (window.location.hash === '#tab-schedule') {
                 setActiveTab('schedule');
                 document.getElementById('tab-schedule')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                // Keep the public landing view focused on events and ticket information while stream playback is deferred.
+                setActiveTab('schedule');
             }
             const ticketResult = new URLSearchParams(window.location.search).get('ticket_purchase');
             if (ticketResult === 'success') showNotification('Checkout returned successfully. Keep your Stripe receipt; the team can verify ticket payment from the admin dashboard.', 'info');
