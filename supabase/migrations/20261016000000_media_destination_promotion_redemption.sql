@@ -4,6 +4,12 @@ alter table public.media
   add column if not exists media_destination text not null default 'site'
   check (media_destination in ('site', 'portfolio'));
 
+alter table public.ticket_purchases
+  add column if not exists charged_total_cents integer null check (charged_total_cents is null or charged_total_cents >= 50);
+
+comment on column public.ticket_purchases.charged_total_cents is
+  'Final amount charged at checkout after discounts; total_cents remains the original ticket reservation total.';
+
 comment on column public.media.media_destination is
   'Editorial placement: site media or portfolio media. Independent from catalog collection, pricing, and publication state.';
 
