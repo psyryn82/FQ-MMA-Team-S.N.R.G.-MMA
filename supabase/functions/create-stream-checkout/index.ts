@@ -22,10 +22,11 @@ Deno.serve(async (req) => {
   if (!supabaseUrl || !serviceKey || !stripeKey) return respond({ error: "Stream checkout is not configured." }, 503, origin);
   if (!stripeKey.startsWith("sk_test_")) return respond({ error: "Stream checkout is locked to Stripe test mode until end-to-end testing is complete." }, 503, origin);
 
-  let input: { event_id?: unknown; buyer_email?: unknown };
+  let input: { event_id?: unknown; buyer_email?: unknown; promotion_code?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "Choose a stream event and enter your email." }, 400, origin); }
   const eventId = String(input.event_id || "");
   const email = String(input.buyer_email || "").trim().toLowerCase();
+  const promotionCode = String(input.promotion_code || "").trim().toUpperCase();
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(eventId)) return respond({ error: "Choose a valid stream event." }, 400, origin);
   if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return respond({ error: "Enter a valid email address for stream access." }, 400, origin);
 
@@ -40,14 +41,27 @@ Deno.serve(async (req) => {
   if (eventError || !event || !["upcoming", "live"].includes(event.status)) return respond({ error: "Stream checkout is not available for that event." }, 409, origin);
   if (!Number.isInteger(config.stream_price_cents) || config.stream_price_cents < 50) return respond({ error: "Stream price is not configured correctly." }, 503, origin);
 
+  let finalAmountCents = config.stream_price_cents;
+  let redemptionId: string | null = null;
+  if (promotionCode) {
+    const { data: promo, error: promoError } = await db.rpc("reserve_promotion_redemption", {
+      p_code: promotionCode, p_purchase_type: "stream", p_event_id: event.id,
+      p_customer_email: email, p_original_amount_cents: config.stream_price_cents,
+    });
+    if (promoError || !promo) return respond({ error: promoError?.message || "That promotion could not be applied." }, 400, origin);
+    finalAmountCents = Number(promo.final_amount_cents);
+    redemptionId = String(promo.redemption_id);
+  }
+
   const { data: purchase, error: purchaseError } = await db.from("stream_purchases").insert({
     event_id: event.id,
     buyer_email: email,
-    amount_cents: config.stream_price_cents,
+    amount_cents: finalAmountCents,
     currency: config.currency || "USD",
     status: "pending",
   }).select("id").single();
   if (purchaseError || !purchase) {
+    if (redemptionId) await db.rpc("finish_promotion_redemption", { p_redemption_id: redemptionId, p_outcome: "released" });
     console.error("Could not create stream purchase reservation", purchaseError?.message || "unknown error");
     return respond({ error: "Could not reserve stream access. Please try again." }, 500, origin);
   }
@@ -67,12 +81,12 @@ Deno.serve(async (req) => {
         quantity: 1,
         price_data: {
           currency: String(config.currency || "USD").toLowerCase(),
-          unit_amount: config.stream_price_cents,
-          product_data: { name: event.title + " - Live Stream Access", description: eventDetails.slice(0, 500) },
+          unit_amount: finalAmountCents,
+          product_data: { name: event.title + " - Live Stream Access", description: [eventDetails, promotionCode ? "Promotion " + promotionCode : ""].filter(Boolean).join(" • ").slice(0, 500) },
         },
       }],
-      metadata: { purchase_type: "stream", stream_purchase_id: purchase.id, event_id: event.id, event_stream_id: config.id },
-      payment_intent_data: { receipt_email: email, metadata: { purchase_type: "stream", stream_purchase_id: purchase.id, event_id: event.id, event_stream_id: config.id } },
+      metadata: { purchase_type: "stream", stream_purchase_id: purchase.id, event_id: event.id, event_stream_id: config.id, expected_amount_cents: String(finalAmountCents), ...(redemptionId ? { promotion_redemption_id: redemptionId } : {}) },
+      payment_intent_data: { receipt_email: email, metadata: { purchase_type: "stream", stream_purchase_id: purchase.id, event_id: event.id, event_stream_id: config.id, expected_amount_cents: String(finalAmountCents), ...(redemptionId ? { promotion_redemption_id: redemptionId } : {}) } },
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     const { error: updateError } = await db.from("stream_purchases").update({
@@ -86,6 +100,7 @@ Deno.serve(async (req) => {
     return respond({ url: session.url }, 200, origin);
   } catch (error) {
     await db.from("stream_purchases").update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", purchase.id).eq("status", "pending");
+    if (redemptionId) await db.rpc("finish_promotion_redemption", { p_redemption_id: redemptionId, p_outcome: "released" });
     console.error("Stream checkout creation failed", error instanceof Error ? error.message : "unknown error");
     return respond({ error: "Could not start stream checkout. No payment was taken. Please try again." }, 502, origin);
   }

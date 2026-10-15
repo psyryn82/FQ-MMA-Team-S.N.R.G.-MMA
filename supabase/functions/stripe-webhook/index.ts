@@ -44,11 +44,13 @@ Deno.serve(async (req) => {
         const purchaseId = session.metadata.ticket_purchase_id;
         if (!purchaseId || session.mode !== "payment") throw new Error("Ticket checkout metadata is invalid");
         if (session.payment_status === "paid") {
+          if (session.amount_total !== Number(session.metadata.expected_amount_cents || NaN)) throw new Error("Ticket checkout amount does not match expected amount");
           const { data: purchase, error: findError } = await db.from("ticket_purchases")
-            .select("id,status,stripe_checkout_session_id").eq("id", purchaseId).maybeSingle();
+            .select("id,status,stripe_checkout_session_id,total_cents,charged_total_cents").eq("id", purchaseId).maybeSingle();
           if (findError) throw findError;
           if (!purchase) throw new Error("Ticket reservation was not found");
           if (purchase.stripe_checkout_session_id && purchase.stripe_checkout_session_id !== session.id) throw new Error("Ticket reservation/session mismatch");
+          if (session.amount_total !== Number(purchase.charged_total_cents ?? purchase.total_cents)) throw new Error("Ticket checkout amount does not match the saved reservation total");
           if (purchase.status !== "refunded") {
             const { error } = await db.from("ticket_purchases").update({
               status: "paid",
@@ -63,6 +65,7 @@ Deno.serve(async (req) => {
         const purchaseId = session.metadata.stream_purchase_id;
         if (!purchaseId || session.mode !== "payment") throw new Error("Stream checkout metadata is invalid");
         if (session.payment_status === "paid") {
+          if (session.amount_total !== Number(session.metadata.expected_amount_cents || NaN)) throw new Error("Stream checkout amount does not match expected amount");
           const { data: purchase, error: findError } = await db.from("stream_purchases")
             .select("id,event_id,status,amount_cents,currency,stripe_checkout_session_id").eq("id", purchaseId).maybeSingle();
           if (findError) throw findError;
@@ -107,8 +110,20 @@ Deno.serve(async (req) => {
           if (purchaseError) throw purchaseError;
         }
       }
+      if (session.payment_status === "paid" && session.metadata?.promotion_redemption_id) {
+        const redemptionId = session.metadata.promotion_redemption_id;
+        if (!/^[0-9a-f-]{36}$/i.test(redemptionId)) throw new Error("Promotion redemption metadata is invalid");
+        const { data: finished, error: finishError } = await db.rpc("finish_promotion_redemption", { p_redemption_id: redemptionId, p_outcome: "redeemed" });
+        if (finishError || finished !== true) throw new Error("Could not finalize promotion redemption");
+      }
     } else if (event.type === "checkout.session.async_payment_failed" || event.type === "checkout.session.expired") {
       const session = event.data.object as Stripe.Checkout.Session;
+      if (session.metadata?.promotion_redemption_id) {
+        const redemptionId = session.metadata.promotion_redemption_id;
+        if (!/^[0-9a-f-]{36}$/i.test(redemptionId)) throw new Error("Promotion redemption metadata is invalid");
+        const { data: released, error: releaseError } = await db.rpc("finish_promotion_redemption", { p_redemption_id: redemptionId, p_outcome: "released" });
+        if (releaseError || released !== true) throw new Error("Could not release promotion redemption");
+      }
       if (session.metadata?.purchase_type === "ticket" && session.metadata.ticket_purchase_id) {
         const { error } = await db.from("ticket_purchases").update({ status: "failed", updated_at: new Date().toISOString() })
           .eq("id", session.metadata.ticket_purchase_id).eq("status", "pending");
