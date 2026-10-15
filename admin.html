@@ -74,6 +74,30 @@ document.addEventListener('click',async e=>{const edit=e.target.closest('[data-e
   if(!confirm(table==='events'?'Delete this event? If purchases exist, the event will be archived instead so purchase and payment records remain intact.':'Delete this record? This cannot be undone.'))return;
   del.disabled=true;del.textContent='Working…';
   try{
+    if(table==='event_ticket_options'){
+      const purchases=await client.from('ticket_purchases').select('id',{count:'exact',head:true}).eq('ticket_option_id',id);
+      if(purchases.error)throw purchases.error;
+      if((purchases.count||0)>0){
+        const archived=await client.from('event_ticket_options').update({is_available:false,updated_at:new Date().toISOString()}).eq('id',id);
+        if(archived.error)throw archived.error;
+        say('Ticket option disabled instead of deleted because purchase history references it.');
+        await loadTable(table);return;
+      }
+    }
+    if(table==='event_streams'){
+      const linked=await client.from('event_streams').select('event_id').eq('id',id).maybeSingle();
+      if(linked.error)throw linked.error;
+      if(linked.data?.event_id){
+        const purchases=await client.from('stream_purchases').select('id',{count:'exact',head:true}).eq('event_id',linked.data.event_id);
+        if(purchases.error)throw purchases.error;
+        if((purchases.count||0)>0){
+          const disabled=await client.from('event_streams').update({is_enabled:false,updated_at:new Date().toISOString()}).eq('id',id);
+          if(disabled.error)throw disabled.error;
+          say('Paid stream disabled instead of deleted because purchase history references this event.');
+          await loadTable(table);return;
+        }
+      }
+    }
     if(table==='events'){
       const [streamCount,ticketCount]=await Promise.all([
         client.from('stream_purchases').select('id',{count:'exact',head:true}).eq('event_id',id),
