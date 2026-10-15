@@ -1797,10 +1797,13 @@
             };
             if (!window.supabaseReady) return;
             // Load both the homepage JSON and the structured public tables from the same startup path.
-            loadSiteContentFromSupabase().catch(error => {
+            applyingRemote = true;
+            loadSiteContentFromSupabase()
+              .catch(error => {
                 console.warn('Supabase content unavailable; using bundled defaults.', error);
                 originalRender.call(window);
-            });
+              })
+              .finally(() => { applyingRemote = false; });
             window.sb.auth.onAuthStateChange(async (event, session) => {
                 if (!session?.user) { window.__snrgAdminUser = null; isAdminLoggedIn = false; return; }
                 try {
