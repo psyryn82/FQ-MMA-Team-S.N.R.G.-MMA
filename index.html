@@ -22,84 +22,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
 
-    <!-- Optional backend: leave blank for static public mode. Use only a publishable/anon key, never a service_role key. -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-      window.SUPABASE_URL = "https://dmcbbavsxyxrxuuzraiu.supabase.co";
-      window.SUPABASE_ANON_KEY = "sb_publishable_vJAptJ41TpicuxtMspB8tA_AaMFlGEC";
-      window.supabaseReady = false;
-      window.sb = null;
-      window.supabaseInitPromise = null;
-
-      window.ensureSupabaseClient = async function () {
-        if (window.sb && window.supabaseReady) return window.sb;
-        if (window.supabaseInitPromise) return window.supabaseInitPromise;
-
-        window.supabaseInitPromise = (async () => {
-          if (!window.SUPABASE_URL || !window.SUPABASE_URL.startsWith("https://") ||
-              !window.SUPABASE_ANON_KEY || window.SUPABASE_URL.includes("YOUR_") ||
-              window.SUPABASE_ANON_KEY.includes("YOUR_")) {
-            throw new Error("Supabase project URL or publishable key is not configured.");
-          }
-
-          const loadLibrary = (src) => new Promise((resolve, reject) => {
-            const script = document.createElement("script");
-            const timeout = window.setTimeout(() => {
-              script.remove();
-              reject(new Error("Timed out loading Supabase library from " + src));
-            }, 8000);
-            script.src = src;
-            script.async = true;
-            script.onload = () => { window.clearTimeout(timeout); resolve(); };
-            script.onerror = () => {
-              window.clearTimeout(timeout);
-              reject(new Error("Could not load Supabase library from " + src));
-            };
-            document.head.appendChild(script);
-          });
-
-          if (!window.supabase || typeof window.supabase.createClient !== "function") {
-            const sources = [
-              "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
-              "https://unpkg.com/@supabase/supabase-js@2"
-            ];
-            let loaded = false;
-            for (const src of sources) {
-              try {
-                await loadLibrary(src);
-                if (window.supabase && typeof window.supabase.createClient === "function") {
-                  loaded = true;
-                  break;
-                }
-              } catch (loadError) {
-                console.warn("Supabase CDN attempt failed.", loadError);
-              }
-            }
-            if (!loaded && (!window.supabase || typeof window.supabase.createClient !== "function")) {
-              throw new Error("Supabase library could not be loaded. Check the network, browser extensions, or CDN availability.");
-            }
-          }
-
-          window.sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
-            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-          });
-          window.supabaseReady = true;
-          return window.sb;
-        })().catch((error) => {
-          window.sb = null;
-          window.supabaseReady = false;
-          window.supabaseInitPromise = null;
-          throw error;
-        });
-
-        return window.supabaseInitPromise;
-      };
-
-      // Initialize early; callers can await ensureSupabaseClient() if a CDN is slow or blocked.
-      window.ensureSupabaseClient().catch((error) => {
-        console.warn("Supabase is not ready yet; the client will retry when needed.", error);
-      });
-    </script>
+    <!-- Supabase client setup lives in an external file so CSP can permit it without unsafe-inline. -->
+    <script src="./supabase-init.js" defer></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -2127,8 +2051,8 @@
             const button=document.getElementById('mediaPurchaseSubmit'), message=document.getElementById('mediaPurchaseMessage');
             button.disabled=true; button.textContent='Preparing secure checkout…'; message.textContent='';
             try {
-                if(!window.supabaseReady||!window.sb) throw new Error('Secure checkout is temporarily unavailable.');
                 await window.ensureSupabaseClient();
+                if(!window.supabaseReady||!window.sb) throw new Error('Secure checkout is temporarily unavailable.');
                 const {data,error}=await window.sb.functions.invoke('create-media-checkout',{body:{media_id:Number(document.getElementById('mediaPurchaseId').value),buyer_email:document.getElementById('mediaPurchaseEmail').value.trim()}});
                 if(error) throw error;
                 if(!data?.url||!data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error||'Could not open secure checkout.');
