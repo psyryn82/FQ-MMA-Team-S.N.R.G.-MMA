@@ -22,8 +22,10 @@
 <div class="flex gap-2 mb-4"><button id="modeSignIn" class="btn text-sm" type="button">Sign in</button><button id="modeSignUp" class="btn2 text-sm" type="button">Create account</button></div>
 <form id="authForm" class="space-y-3">
 <label class="block text-sm">Email<input id="email" class="field" type="email" autocomplete="email" required></label>
-<label class="block text-sm">Password<input id="password" class="field" type="password" minlength="8" autocomplete="current-password" required></label>
+<label class="block text-sm">Password<input id="password" class="field" type="password" minlength="10" autocomplete="current-password" required></label>
+<label class="flex items-center gap-2 text-sm muted"><input id="showPassword" type="checkbox" class="accent-red-600"> Show password</label>
 <button id="authSubmit" class="btn w-full" type="submit">Sign in</button>
+<button id="forgotPasswordBtn" class="text-sm underline muted w-full text-center" type="button">Forgot password?</button>
 </form>
 <button id="googleBtn" class="btn2 w-full mt-3" type="button">Continue with Google</button>
 <button id="signOutBtn" class="btn2 w-full mt-3 hidden" type="button">Sign out</button>
@@ -56,6 +58,50 @@ function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt
 function msg(s,error=false){$("authMessage").textContent=s;$("authMessage").className="text-sm mt-4 "+(error?"text-red-400":"text-gray-300")}
 function setMode(next){mode=next;$("modeSignIn").className=next==="signin"?"btn text-sm":"btn2 text-sm";$("modeSignUp").className=next==="signup"?"btn text-sm":"btn2 text-sm";$("authSubmit").textContent=next==="signin"?"Sign in":"Create account";$("password").autocomplete=next==="signin"?"current-password":"new-password";msg("")}
 $("modeSignIn").onclick=()=>setMode("signin");$("modeSignUp").onclick=()=>setMode("signup");
+$("showPassword").addEventListener("change",()=>{$("password").type=$("showPassword").checked?"text":"password"});
+$("authForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const email=$("email").value.trim().toLowerCase(),password=$("password").value;
+ if(!email||!password){msg("Enter your email and password.",true);return}
+ if(mode==="signup"&&password.length<10){msg("Use a password with at least 10 characters.",true);return}
+ const submit=$("authSubmit");submit.disabled=true;submit.textContent=mode==="signup"?"Creating account…":"Signing in…";msg("");
+ try{
+  if(mode==="signup"){
+   const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin+"/membership.html"}});
+   if(error)throw error;
+   if(data.session){msg("Account created and signed in.");await refreshSession(data.session)}
+   else msg("Account request received. Check your email for a confirmation link before signing in.");
+  }else{
+   const {data,error}=await client.auth.signInWithPassword({email,password});
+   if(error)throw error;
+   msg("You are signed in.");await refreshSession(data.session);
+  }
+ }catch(error){msg(error?.message||"We could not complete that request. Please try again.",true)}
+ finally{submit.disabled=false;submit.textContent=mode==="signup"?"Create account":"Sign in"}
+});
+$("googleBtn").addEventListener("click",async()=>{
+ const button=$("googleBtn");button.disabled=true;button.textContent="Opening Google…";msg("");
+ try{
+  const {error}=await client.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+"/membership.html"}});
+  if(error)throw error;
+ }catch(error){msg(error?.message||"Google sign-in is unavailable right now.",true);button.disabled=false;button.textContent="Continue with Google"}
+});
+$("forgotPasswordBtn").addEventListener("click",async()=>{
+ const email=$("email").value.trim().toLowerCase();
+ if(!email){msg("Enter your email address first, then choose Forgot password.",true);$("email").focus();return}
+ const button=$("forgotPasswordBtn");button.disabled=true;msg("");
+ try{
+  const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+"/reset-password.html"});
+  if(error)throw error;
+  msg("If an account exists for that email, a password-reset link will arrive shortly. Check your inbox and spam folder.");
+ }catch(error){msg(error?.message||"We could not send a reset email. Please try again.",true)}
+ finally{button.disabled=false}
+});
+$("signOutBtn").addEventListener("click",async()=>{
+ const {error}=await client.auth.signOut();
+ if(error){msg(error.message,true);return}
+ msg("You have signed out.");await refreshSession(null)
+});
 function money(cents,currency){try{return new Intl.NumberFormat("en-US",{style:"currency",currency:currency||"USD"}).format((cents||0)/100)}catch{return "$"+((cents||0)/100).toFixed(2)}}
 async function loadPlans(){$("plans").innerHTML='<div class="panel plan-card"><h3 class="head text-2xl uppercase">Tickets are sold by event</h3><p class="muted text-sm mt-3">Open the main website and choose an event to see available ticket options and fixed prices. You do not need an account to buy tickets.</p><a class="btn inline-block mt-5" href="./index.html#tab-schedule">View events and tickets</a></div>'}
 async function loadMembershipInfo(){if(!currentSession){$("membershipInfo").innerHTML="";$("userChatForm").classList.add("hidden");$("userChatList").innerHTML="";return}$("membershipInfo").innerHTML='<p class="muted text-sm">Event ticket purchases are recorded separately from website accounts. Keep the email and Stripe receipt used at checkout. FQ MMA can verify payment from the admin dashboard.</p>';$("userChatForm").classList.remove("hidden");await loadUserChat()}
