@@ -245,14 +245,36 @@ $('mediaForm').addEventListener('submit',async e=>{
   const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Uploading…';
   let uploadedBucket=null, uploadedPath=null;
   try{
-    const patch={title,description,collection,media_destination:destination,event_id:eventId,price,is_published:published,category:file?(file.type.startsWith('video/')?'Video':'Photo'):undefined};
+    const patch={title,description,collection,media_destination:destination,event_id:eventId,price,is_published:published};
     if(id){
       const existing=records.media?.find(m=>String(m.id)===String(id));if(!existing)throw new Error('Media listing was not found. Refresh the catalog and try again.');
-      if(file)throw new Error('To replace the actual file, delete this listing and upload the replacement. This avoids accidentally exposing paid files.');
-      if((Number(existing.price||0)>0)!==(price>0))throw new Error('Changing between free and paid requires re-uploading the file so its storage privacy matches its price. Leave the price on the same side of $0, or create a replacement listing.');
-      delete patch.category;
+      const oldIsPaid=Number(existing.price||0)>0, newIsPaid=price>0;
+      if(oldIsPaid!==newIsPaid&&!file)throw new Error('Changing between free and paid requires a replacement file so storage privacy matches the price. Choose the replacement file and save again.');
+      if(file){
+        const purchases=await client.from('media_purchases').select('id',{count:'exact',head:true}).eq('media_id',id);
+        if(purchases.error)throw purchases.error;
+        if((purchases.count||0)>0)throw new Error('This item has purchase history. Its file cannot be replaced because that could change what existing buyers receive. You can still edit its details, or create a new listing for a different file.');
+      }
+      let oldBucket=null, oldPath=null;
+      if(file){
+        oldBucket=oldIsPaid?'fqmma-private':'fqmma-media';oldPath=existing.file_path||null;
+        const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
+        const path=collection+'/'+Date.now()+'-'+safeName;
+        const bucket=newIsPaid?'fqmma-private':'fqmma-media';uploadedBucket=bucket;uploadedPath=path;
+        const {error:uploadError}=await client.storage.from(bucket).upload(path,file,{upsert:false,contentType:file.type});
+        if(uploadError)throw uploadError;
+        patch.file_path=path;
+        patch.file_url=newIsPaid?null:client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+        patch.category=file.type.startsWith('video/')?'Video':'Photo';
+      }else{
+        if(oldIsPaid!==newIsPaid)throw new Error('Choose a replacement file when changing the price between free and paid.');
+      }
       const {error}=await client.from('media').update(patch).eq('id',id);if(error)throw error;
-      message.textContent='Listing updated.';
+      uploadedBucket=null;uploadedPath=null;
+      if(file&&oldPath){
+        const removed=await client.storage.from(oldBucket).remove([oldPath]);
+        message.textContent=removed.error?'Listing updated, but the old file could not be removed from storage. Please ask an administrator to clean up the unused file.':'Listing details and uploaded file updated.';
+      }else message.textContent='Listing updated.';
     }else{
       const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
       const path=collection+'/'+Date.now()+'-'+safeName;
@@ -260,8 +282,9 @@ $('mediaForm').addEventListener('submit',async e=>{
       const {error:uploadError}=await client.storage.from(bucket).upload(path,file,{upsert:false,contentType:file.type});
       if(uploadError)throw uploadError;
       const fileUrl=price>0?null:client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-      const {error:insertError}=await client.from('media').insert({...patch,file_path:path,file_url:fileUrl}).select('id').single();
+      const {error:insertError}=await client.from('media').insert({...patch,category:file.type.startsWith('video/')?'Video':'Photo',file_path:path,file_url:fileUrl}).select('id').single();
       if(insertError)throw insertError;
+      uploadedBucket=null;uploadedPath=null;
       message.textContent='File uploaded and catalog listing created.';
     }
     clearMediaForm();await loadMedia();
