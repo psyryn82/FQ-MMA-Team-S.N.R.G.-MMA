@@ -1322,15 +1322,18 @@
                     const isRed = index % 2 === 0;
                     const borderColor = isRed ? 'border-brand-red' : 'border-white';
                     const glowStyle = isRed ? 'shadow-neon-red' : 'shadow-neon-white';
-                    const mediaUrl = getSafeHttpUrl(item.image, true);
-                    const itemUrl = getSafeHttpUrl(item.link, true);
+                    // Only structured records with protected previews may expose public media URLs.
+                    // Legacy portfolio entries can point directly to downloadable originals.
+                    const safePreview = !!(item.mediaId && item.protectedPreview === true);
+                    const mediaUrl = safePreview ? getSafeHttpUrl(item.image, true) : '';
+                    const itemUrl = safePreview ? getSafeHttpUrl(item.link, true) : '';
                     const isVideo = String(item.category || '').toLowerCase() === 'video';
                     const media = mediaUrl
                         ? (isVideo
                             ? `<video controls preload="metadata" src="${escapeHtml(mediaUrl)}" class="w-full max-h-72 rounded-lg bg-black">Your browser does not support video playback.</video>`
                             : `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Media preview')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`)
                         : '';
-                    const action = item.mediaId
+                    const action = safePreview
                         ? (Number(item.priceAmount) > 0
                             ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'Digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase original · ${escapeHtml(item.price || '')}</button>`
                             : `<span class="inline-flex rounded-lg border border-gray-600 px-4 py-2 text-xs font-black uppercase text-gray-300">Watermarked preview · no download</span>`)
@@ -1355,8 +1358,9 @@
                 }).join('');
                 if (!items.length) container.innerHTML = `<p class="text-center text-sm text-gray-400 md:col-span-2">${emptyMessage}</p>`;
             };
-            const mmaMedia = siteData.portfolio.filter(item => item.collection === 'mma_event' || (!item.mediaId && item.collection !== 'sasha_portfolio'));
-            const sashaMedia = siteData.portfolio.filter(item => item.collection === 'sasha_portfolio');
+            // Legacy free-form links stay hidden until they are re-uploaded through the protected media workflow.
+            const mmaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedPreview === true && item.collection !== 'sasha_portfolio');
+            const sashaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedPreview === true && item.collection === 'sasha_portfolio');
             renderMediaCards(mmaMedia, document.getElementById('mma-event-media-container'), 'MMA fight photos and videos will be posted here when available.');
             renderMediaCards(sashaMedia, document.getElementById('sasha-portfolio-container'), 'Sasha’s portfolio photos and videos will be posted here when available.');
 
@@ -1953,8 +1957,8 @@
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
                         priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Preview only',
-                        image: m.preview_path ? (m.file_url || '') : '', link: '',
-                        description: m.description || ''
+                        image: m.preview_path && m.file_url ? m.file_url : '', link: '',
+                        protectedPreview: !!(m.preview_path && m.file_url), description: m.description || ''
                     }));
                     siteData.portfolio = [...databaseMedia, ...siteData.portfolio.filter(p => !p.mediaId)];
                 }
@@ -2099,44 +2103,10 @@
             });
         }
         async function uploadSiteMedia(e) {
-            e.preventDefault(); const status=document.getElementById('media-upload-status');
-            try {
-                if (!window.supabaseReady || !window.__snrgAdminUser) throw new Error('Sign in as an administrator first.');
-                const file=document.getElementById('media-file').files[0]; if(!file) throw new Error('Choose an image or video first.');
-                if (!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)) throw new Error('Choose a JPG, PNG, WebP, GIF, MP4, or WebM file.');
-                if (file.size > 50 * 1024 * 1024) throw new Error('Files must be 50 MB or smaller.');
-                const title=document.getElementById('media-title').value.trim();
-                const collection=document.getElementById('media-collection').value || 'mma_event';
-                const price=Number(document.getElementById('media-price').value || 0);
-                if (!Number.isFinite(price) || price < 0 || price > 9999) throw new Error('Enter a valid price from $0 to $9,999.');
-                const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-                const path=`${Date.now()}-${safeName}`;
-                const isPaid=price>0;
-                const bucket=isPaid?'fqmma-private':'fqmma-media';
-                status.textContent=isPaid?'Uploading privately…':'Uploading…';
-                const { error: uploadError }=await window.sb.storage.from(bucket).upload(path,file,{upsert:false,contentType:file.type});
-                if(uploadError) throw uploadError;
-                const { data: publicData }=isPaid?{data:null}:window.sb.storage.from(bucket).getPublicUrl(path);
-                const { data: mediaRow, error: mediaError }=await window.sb.from('media').insert({
-                    title, category:file.type.startsWith('video/')?'Video':'Photo', collection, event_id:null, description:'',
-                    file_url:isPaid?null:publicData.publicUrl, file_path:path, price,
-                    is_published:true
-                }).select('id,title,category,description,file_url,price').single();
-                if(mediaError) {
-                    await window.sb.storage.from(bucket).remove([path]).catch(()=>undefined);
-                    throw mediaError;
-                }
-                siteData.portfolio.unshift({
-                    id:'media-'+mediaRow.id, mediaId:mediaRow.id, title:mediaRow.title,
-                    category:mediaRow.category, collection, priceAmount:Number(mediaRow.price||0),
-                    price:price>0?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(price):'Free',
-                    image:isPaid?'':(mediaRow.file_url||''), link:isPaid?'':(mediaRow.file_url||'')
-                });
-                renderAdminManagerLists(); window.renderAllContent(); document.getElementById('media-upload-form').reset();
-                document.getElementById('media-price').value='0';
-                status.textContent=isPaid?'Paid media uploaded privately and published.':'Free media uploaded and published.';
-                showNotification('Media uploaded and published.', 'success');
-            } catch(err) { status.textContent=err.message || 'Upload failed.'; showNotification(err.message||'Upload failed.','error'); }
+            e.preventDefault();
+            const status = document.getElementById('media-upload-status');
+            status.textContent = 'This legacy uploader is disabled because it can expose original files. Use admin.html → MMA Media & Sasha’s Portfolio to upload a private original and a watermarked public preview.';
+            showNotification('Use the protected media uploader in admin.html.', 'info');
         }
 
         async function loadAdminTicketPurchases() {
