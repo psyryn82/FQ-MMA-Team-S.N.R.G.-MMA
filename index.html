@@ -1241,6 +1241,7 @@
                 return `
                     <div class="bg-gray-900/95 p-6 rounded-xl border-l-4 ${borderColor} border-y border-r border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg relative group">
                         <div class="space-y-1">
+                            ${isEvent && item.flyerImage ? `<img src="${escapeHtml(item.flyerImage)}" alt="${escapeHtml(item.title)} event flyer" loading="lazy" class="w-full max-w-sm rounded-lg border border-gray-700 mb-3">` : ''}
                             <span class="${badgeStyle} text-xs font-heading font-black px-2.5 py-1 rounded uppercase tracking-wider border">${escapeHtml(item.date)}</span>
                             <h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide mt-1">${escapeHtml(item.title)}</h3>
                             <p class="text-xs text-gray-300">${escapeHtml(item.subtitle)}</p>
@@ -1927,7 +1928,7 @@
             try {
                 const [fightersResult, eventsResult, scheduleResult, productsResult, streamsResult, mediaResult] = await Promise.all([
                     window.sb.from('fighters').select('id,name,nickname,record,bio,image_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
-                    window.sb.from('events').select('id,title,event_date,venue,main_event,description,status,is_published').eq('is_published', true).in('status', ['upcoming','live','completed']).order('event_date', {ascending:true}),
+                    window.sb.from('events').select('id,title,event_date,venue,main_event,description,flyer_image_url,status,is_published').eq('is_published', true).in('status', ['upcoming','live','completed']).order('event_date', {ascending:true}),
                     window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
                     window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.functions.invoke('list-available-streams'),
@@ -1944,7 +1945,7 @@
                     const canSellStream = ['upcoming', 'live'].includes(e.status);
                     const stream = canSellStream ? availableStreams.find(item => item.event_id === e.id) : null;
                     const streamPrice = stream ? new Intl.NumberFormat('en-US',{style:'currency',currency:stream.currency||'USD'}).format((stream.price_cents||0)/100) : '';
-                    return {id:e.id,type:'event',date:e.event_date?formatLongDate(e.event_date):'Date to be announced',eventDate:e.event_date||'',status:e.status,title:e.title,subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:stream?'Live-stream access: '+streamPrice:(canSellStream?'Live-stream access not available yet':'Sales closed'),streamEnabled:!!stream,link:savedEvents.get(String(e.id))?.link || ''};
+                    return {id:e.id,type:'event',date:e.event_date?formatLongDate(e.event_date):'Date to be announced',eventDate:e.event_date||'',status:e.status,title:e.title,flyerImage:getSafeHttpUrl(e.flyer_image_url||''),subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:stream?'Live-stream access: '+streamPrice:(canSellStream?'Live-stream access not available yet':'Sales closed'),streamEnabled:!!stream,link:savedEvents.get(String(e.id))?.link || ''};
                 });
                 const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,type:'class',date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
                 if (!eventsResult.error && !scheduleResult.error) siteData.schedule = [...eventItems,...classItems];

@@ -33,6 +33,7 @@ create table if not exists public.events (
   venue text not null default '',
   main_event text not null default '',
   description text not null default '',
+  flyer_image_url text not null default '',
   status text not null default 'upcoming' check (status in ('draft','upcoming','live','completed','cancelled')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
