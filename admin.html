@@ -259,7 +259,8 @@ async function loadMedia(){
     }
     const section=m.collection==='sasha_portfolio'?'Sasha Portfolio':'Fight Media';
     const eventName=eventsCache.find(ev=>ev.id===m.event_id)?.title||'General media';
-    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(m.preview_path?'Watermarked preview ready':'NEEDS WATERMARKED PREVIEW')+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button><button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
+    const regenerate=(m.category||'').toLowerCase()==='photo'&&m.storage_bucket==='fqmma-private'&&!!m.file_path?'<button class="btn2" data-regenerate-preview="'+esc(m.id)+'">Regenerate watermarked preview</button>':'';
+    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(m.preview_path?'Watermarked preview ready':'NEEDS WATERMARKED PREVIEW')+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button>'+regenerate+'<button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
   }));
   list.innerHTML=cards.join('')||'<p class="muted text-sm">No media listings yet. Upload an item above to create the first listing.</p>';
   message.textContent='Loaded '+sectionRecords.length+' '+(activeMediaCollection==='sasha_portfolio'?'Sasha portfolio':'fight media')+' listing(s).';
@@ -426,6 +427,46 @@ document.addEventListener('click',async e=>{
     $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaPreviewFile').value='';$('mediaFile').required=false;$('mediaApplyWatermark').checked=true;$('mediaSaveButton').textContent='Save changes';
     $('mediaMessage').textContent='Editing listing details. For security, changing a listing from free to paid or paid to free requires re-uploading the file.';
     window.scrollTo({top:0,behavior:'smooth'});return;
+  }
+  const regenerate=e.target.closest('[data-regenerate-preview]');
+  if(regenerate){
+    const id=regenerate.dataset.regeneratePreview,m=records.media?.find(x=>String(x.id)===id);
+    if(!m||m.storage_bucket!=='fqmma-private'||!m.file_path||(m.category||'').toLowerCase()!=='photo'){
+      $('mediaMessage').textContent='Preview regeneration is available only for photos with a private original.';return;
+    }
+    if(!confirm('Create a fresh watermarked preview from the private original for “'+m.title+'”? The private original will not be changed. The current public preview is replaced only after the new preview and database update succeed.'))return;
+    regenerate.disabled=true;const previousLabel=regenerate.textContent;regenerate.textContent='Regenerating…';$('mediaMessage').textContent='Creating a new preview from the private original…';
+    let newPreviewPath=null;
+    try{
+      const signed=await client.storage.from('fqmma-private').createSignedUrl(m.file_path,180);
+      if(signed.error||!signed.data?.signedUrl)throw signed.error||new Error('Could not create a temporary link to the private original.');
+      const response=await fetch(signed.data.signedUrl);
+      if(!response.ok)throw new Error('Could not read the private original (HTTP '+response.status+').');
+      const blob=await response.blob();
+      if(!blob.type.startsWith('image/'))throw new Error('The private original did not return an image file.');
+      const sourceName=(m.file_path.split('/').pop()||'photo').replace(/\.[^.]+$/,'');
+      const sourceFile=new File([blob],sourceName+'.'+(blob.type==='image/png'?'png':blob.type==='image/webp'?'webp':blob.type==='image/gif'?'gif':'jpg'),{type:blob.type});
+      const previewFile=await createImagePreview(sourceFile,true),stamp=Date.now();
+      newPreviewPath=(m.collection||'mma_event')+'/'+stamp+'-preview-regenerated-'+previewFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
+      const upload=await client.storage.from('fqmma-media').upload(newPreviewPath,previewFile,{upsert:false,contentType:'image/jpeg'});
+      if(upload.error)throw upload.error;
+      const newUrl=client.storage.from('fqmma-media').getPublicUrl(newPreviewPath).data.publicUrl;
+      const updated=await client.from('media').update({preview_path:newPreviewPath,file_url:newUrl}).eq('id',m.id);
+      if(updated.error)throw updated.error;
+      const oldPath=m.preview_path;
+      newPreviewPath=null;
+      let cleanupNote='';
+      if(oldPath&&oldPath!==m.file_path){
+        const removed=await client.storage.from('fqmma-media').remove([oldPath]);
+        if(removed.error)cleanupNote=' The old public preview could not be removed, so its previous URL may still work.';
+      }
+      $('mediaMessage').textContent='Watermarked preview regenerated successfully. The private original was not changed.'+cleanupNote;
+      await loadMedia();
+    }catch(err){
+      if(newPreviewPath)await client.storage.from('fqmma-media').remove([newPreviewPath]);
+      $('mediaMessage').textContent='Preview regeneration failed: '+(err?.message||String(err))+' The existing preview and private original were left unchanged.';
+    }finally{regenerate.disabled=false;regenerate.textContent=previousLabel}
+    return;
   }
   const publish=e.target.closest('[data-media-publish]');
   if(publish){
