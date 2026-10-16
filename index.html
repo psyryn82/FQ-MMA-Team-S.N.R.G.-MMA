@@ -1355,7 +1355,7 @@
                 }).join('');
                 if (!items.length) container.innerHTML = `<p class="text-center text-sm text-gray-400 md:col-span-2">${emptyMessage}</p>`;
             };
-            const mmaMedia = siteData.portfolio.filter(item => item.collection === 'mma_event');
+            const mmaMedia = siteData.portfolio.filter(item => item.collection === 'mma_event' || (!item.mediaId && item.collection !== 'sasha_portfolio'));
             const sashaMedia = siteData.portfolio.filter(item => item.collection === 'sasha_portfolio');
             renderMediaCards(mmaMedia, document.getElementById('mma-event-media-container'), 'MMA fight photos and videos will be posted here when available.');
             renderMediaCards(sashaMedia, document.getElementById('sasha-portfolio-container'), 'Sasha’s portfolio photos and videos will be posted here when available.');
