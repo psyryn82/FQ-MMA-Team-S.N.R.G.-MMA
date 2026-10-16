@@ -58,8 +58,9 @@
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
 <label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">$0 means preview-only, not free download. Every original stays private regardless of price.</span></label>
 <label class="block text-sm">Upload original photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Original file. It is always stored privately.</span></label>
-<label class="block text-sm">Video preview (videos only)<input id="mediaPreviewFile" type="file" class="field" accept="video/mp4,video/webm"><span id="mediaPreviewHelp" class="muted text-xs">Required when uploading/replacing a video. If watermarking is enabled, upload a preview with “FQ MMA / Team S.N.R.G. MMA” already burned in. If disabled, upload an unwatermarked preview.</span></label>
-<label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaApplyWatermark" type="checkbox" checked class="mt-1 accent-red-600"><span><b>Apply watermark to public preview</b><span class="muted block text-xs mt-1">When enabled, image previews get the watermark automatically. For videos, provide a preview video with the watermark already embedded. Uncheck to publish an unwatermarked preview. This never makes the original downloadable.</span></span></label>
+<label class="block text-sm">Video preview (videos only)<input id="mediaPreviewFile" type="file" class="field" accept="video/mp4,video/webm"><span id="mediaPreviewHelp" class="muted text-xs">Video previews must already have the FQ MMA / Team S.N.R.G. MMA watermark burned into the video before upload.</span></label>
+<label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaApplyWatermark" type="checkbox" checked disabled class="mt-1 accent-red-600"><span><b>Watermark public image previews (required)</b><span class="muted block text-xs mt-1">Image previews are always watermarked. The original remains private regardless of listing price.</span></span></label>
+<label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaVideoWatermarkConfirm" type="checkbox" class="mt-1 accent-red-600"><span><b>Video watermark confirmation</b><span class="muted block text-xs mt-1">For video uploads, confirm the separate preview video already has a visible “FQ MMA / Team S.N.R.G. MMA” watermark burned into the video.</span></span></label>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
@@ -346,14 +347,15 @@ $('mediaForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const file=$('mediaFile').files[0], previewInput=$('mediaPreviewFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
   const description=$('mediaDescription').value.trim(), collection=$('mediaCollection').value, eventId=$('mediaEvent').value||null;
-  const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, applyWatermark=$('mediaApplyWatermark').checked, message=$('mediaMessage');message.textContent='';
+  const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, applyWatermark=true, message=$('mediaMessage');message.textContent='';
   if(!title){message.textContent='Enter a title.';return}
   if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid price from $0 to $9,999.';return}
   if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
   if(!id&&!file){message.textContent='Choose an original photo or video to upload.';return}
   if(file&&file.size>50*1024*1024){message.textContent='Original file exceeds 50 MB.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
-  if(file&&file.type.startsWith('video/')&&!previewInput){message.textContent='Videos need a separate preview file. If watermarking is enabled, burn “FQ MMA / Team S.N.R.G. MMA” into that preview before uploading.';return}
+  if(file&&file.type.startsWith('video/')&&!previewInput){message.textContent='Videos need a separate preview file with the FQ MMA watermark burned in.';return}
+  if(file&&file.type.startsWith('video/')&&!$('mediaVideoWatermarkConfirm').checked){message.textContent='Confirm that the video preview has the FQ MMA watermark burned into the video.';return}
   if(previewInput&&(!previewInput.type.startsWith('video/')||previewInput.size>50*1024*1024)){message.textContent='Choose an MP4 or WebM preview under 50 MB.';return}
   if(!file&&previewInput){message.textContent='Choose the original file when replacing a watermarked preview.';return}
   const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Creating protected listing…';const uploaded=[];
