@@ -36,7 +36,23 @@
 </section>
 <section id="tab-access_management" class="panel p-5 hidden">
 <h2 class="head text-2xl uppercase mb-1">Access management</h2>
-<p class="muted text-sm mb-4">Read-only view of paid digital-content purchases used to determine access. This screen does not manually grant or revoke access; only confirmed payment records count as paid.</p>
+<p class="muted text-sm mb-4">Grant or revoke staff-approved downloads for private originals. Approved recipients receive a one-time email link that expires in 30 minutes. Paid purchase records below remain separate.</p>
+<div class="rounded-xl border border-gray-700 bg-black/40 p-4 mb-5">
+<h3 class="head text-lg uppercase mb-3">Staff-approved media download</h3>
+<div class="grid md:grid-cols-2 gap-3">
+<label class="block text-sm">Media ID<input id="accessMediaId" class="field" type="number" min="1" step="1" required placeholder="Media record ID"></label>
+<label class="block text-sm">Recipient email<input id="accessEmail" class="field" type="email" maxlength="320" required placeholder="recipient@example.com"></label>
+<label class="block text-sm md:col-span-2">Reason / notes (optional)<input id="accessReason" class="field" maxlength="500" placeholder="Courtesy copy, client approval, press access…"></label>
+</div>
+<div class="flex flex-wrap gap-2 mt-4">
+<button id="accessGrantSend" type="button" class="btn">Approve & email link</button>
+<button id="accessSendExisting" type="button" class="btn2">Send / resend link</button>
+</div>
+<label class="block text-sm mt-4">Approval ID for revocation<input id="accessPermissionId" class="field" maxlength="36" placeholder="Filled automatically after approval"></label>
+<button id="accessRevoke" type="button" class="btn2 mt-3">Revoke approval</button>
+<p id="accessGrantStatus" class="text-sm mt-3" role="status" aria-live="polite"></p>
+<p class="muted text-xs mt-2">Only authorized admin or Sasha accounts can grant, email, or revoke access. Original files remain in the private bucket.</p>
+</div>
 <button id="refreshAccessManagement" type="button" class="btn2 mb-5">Refresh access status</button>
 <div id="accessManagementList" class="space-y-3"></div>
 </section>
@@ -517,6 +533,46 @@ async function loadSales(){
     }).join('')||'<p class="muted text-sm">No media purchases yet.</p>';
   }
 }
+
+async function runMediaAccessAction(action, body) {
+  const {data,error}=await client.functions.invoke('create-protected-media-url',{body:{action,...body}});
+  if(error) throw error;
+  if(data?.error) throw new Error(data.error);
+  return data;
+}
+$('accessGrantSend')?.addEventListener('click',async()=>{
+  const status=$('accessGrantStatus');status.textContent='Saving approval…';
+  const media_id=Number($('accessMediaId').value), authorized_email=$('accessEmail').value.trim().toLowerCase(), reason=$('accessReason').value.trim();
+  if(!Number.isSafeInteger(media_id)||media_id<1||!authorized_email){status.textContent='Enter a valid media ID and recipient email.';return}
+  const button=$('accessGrantSend');button.disabled=true;
+  try{
+    const grant=await runMediaAccessAction('grant',{media_id,authorized_email,reason});
+    $('accessPermissionId').value=grant.permission?.id||'';
+    status.textContent='Approval saved. Sending the one-time email link…';
+    await runMediaAccessAction('send_download_link',{media_id,authorized_email});
+    status.textContent='Approval saved and one-time email link sent. The link expires in 30 minutes.';
+  }catch(err){status.textContent=err.message||'Could not approve or email this download.'}
+  finally{button.disabled=false}
+});
+$('accessSendExisting')?.addEventListener('click',async()=>{
+  const status=$('accessGrantStatus');status.textContent='Sending one-time link…';
+  const media_id=Number($('accessMediaId').value), authorized_email=$('accessEmail').value.trim().toLowerCase();
+  if(!Number.isSafeInteger(media_id)||media_id<1||!authorized_email){status.textContent='Enter a valid media ID and recipient email.';return}
+  const button=$('accessSendExisting');button.disabled=true;
+  try{await runMediaAccessAction('send_download_link',{media_id,authorized_email});status.textContent='One-time email link sent. It expires in 30 minutes.'}
+  catch(err){status.textContent=err.message||'Could not send the download link.'}
+  finally{button.disabled=false}
+});
+$('accessRevoke')?.addEventListener('click',async()=>{
+  const status=$('accessGrantStatus'),permission_id=$('accessPermissionId').value.trim();
+  const media_id=Number($('accessMediaId').value),authorized_email=$('accessEmail').value.trim().toLowerCase();
+  if(!permission_id&&(!Number.isSafeInteger(media_id)||media_id<1||!authorized_email)){status.textContent='Enter an approval ID or the media ID and approved email.';return}
+  if(!confirm('Revoke this approval? Any unused download links will stop working.'))return;
+  const button=$('accessRevoke');button.disabled=true;status.textContent='Revoking approval…';
+  try{await runMediaAccessAction('revoke',permission_id?{permission_id}:{media_id,authorized_email});$('accessPermissionId').value='';status.textContent='Approval revoked. Any unused one-time links are no longer valid.'}
+  catch(err){status.textContent=err.message||'Could not revoke the approval.'}
+  finally{button.disabled=false}
+});
 
 async function loadAccessManagement(){
   const list=$('accessManagementList');
