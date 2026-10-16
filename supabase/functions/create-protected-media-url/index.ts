@@ -24,6 +24,18 @@ function validEmail(value: string) {
   return value.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char] || char);
+}
+async function sha256Hex(value: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+function randomToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
   if (req.method === "OPTIONS") {
@@ -49,6 +61,7 @@ Deno.serve(async (req) => {
     permission_id?: unknown;
     reason?: unknown;
     expires_at?: unknown;
+    token?: unknown;
   };
   try {
     input = await req.json();
@@ -147,6 +160,49 @@ Deno.serve(async (req) => {
     return respond({ permission, updated: false }, 200, origin);
   }
 
+
+  if (action === "send_download_link") {
+    const staff = await requireStaff();
+    if ("error" in staff) return respond({ error: staff.error }, staff.status, origin);
+    const mediaId = Number(input.media_id);
+    const email = String(input.authorized_email || "").trim().toLowerCase();
+    if (!Number.isSafeInteger(mediaId) || mediaId < 1 || !validEmail(email)) return respond({ error: "A valid media item and approved email are required." }, 400, origin);
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const from = Deno.env.get("CONTACT_FROM_EMAIL") || "FQ MMA <downloads@fq-snrg-mma.com>";
+    if (!resendKey) return respond({ error: "Email delivery is not configured. Add RESEND_API_KEY in Supabase secrets." }, 503, origin);
+    const { data: permission, error: permissionError } = await db.from("media_download_permissions")
+      .select("id,media_id,authorized_email,expires_at,revoked_at").eq("media_id", mediaId).eq("authorized_email", email).is("revoked_at", null).maybeSingle();
+    if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) return respond({ error: "No active download approval was found for this media item and email." }, 404, origin);
+    const { data: media, error: mediaError } = await db.from("media")
+      .select("id,title,file_path,storage_bucket,is_published").eq("id", mediaId).eq("is_published", true).maybeSingle();
+    if (mediaError || !media || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This item is not available for private download." }, 404, origin);
+    const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { count, error: rateError } = await db.from("media_download_tokens")
+      .select("id", { count: "exact", head: true }).eq("permission_id", permission.id).gt("created_at", since);
+    if (rateError) return respond({ error: "Could not verify recent download-link requests." }, 500, origin);
+    if ((count || 0) >= 3) return respond({ error: "For security, only three download links can be sent per approval every five minutes." }, 429, origin);
+    const token = randomToken(), tokenHash = await sha256Hex(token);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    const { data: tokenRow, error: tokenError } = await db.from("media_download_tokens")
+      .insert({ permission_id: permission.id, token_hash: tokenHash, expires_at: expiresAt, sent_by: staff.user.id }).select("id").single();
+    if (tokenError || !tokenRow) return respond({ error: "Could not create a secure download link." }, 500, origin);
+    const link = "https://fq-snrg-mma.com/media-download.html#token=" + token;
+    const safeTitle = escapeHtml(String(media.title || "your approved media"));
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST", headers: { "Authorization": "Bearer " + resendKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from, to: [email], reply_to: "fqsnrgmma.info@gmail.com", subject: "Your FQ MMA media download link",
+        text: "Your download of " + String(media.title || "the approved media") + " has been approved. Open this link within 30 minutes, then select Download file. The link can be used once. If you did not expect this email, contact fqsnrgmma.info@gmail.com.\n\n" + link,
+        html: "<div style=\"font-family:Arial,sans-serif;line-height:1.5;color:#171717\"><h2>Your FQ MMA media download is approved</h2><p>Your download of <strong>" + safeTitle + "</strong> has been approved.</p><p>This link expires in 30 minutes and can be used once. Open the page, then press <strong>Download file</strong> to use the link.</p><p><a href=\"" + link + "\" style=\"display:inline-block;background:#e50914;color:#fff;text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:bold\">Open secure download</a></p><p>If you did not expect this email, contact <a href=\"mailto:fqsnrgmma.info@gmail.com\">fqsnrgmma.info@gmail.com</a>.</p></div>"
+      })
+    });
+    if (!emailResponse.ok) {
+      await db.from("media_download_tokens").delete().eq("id", tokenRow.id);
+      return respond({ error: "The download email could not be sent. Check the Resend sender configuration and try again." }, 502, origin);
+    }
+    return respond({ sent: true, expires_in: 1800, message: "One-time download link sent." }, 200, origin);
+  }
+
   if (action === "revoke") {
     const staff = await requireStaff();
     if ("error" in staff) return respond({ error: staff.error }, staff.status, origin);
@@ -168,6 +224,27 @@ Deno.serve(async (req) => {
   }
 
   if (action !== "download") return respond({ error: "Unsupported action." }, 400, origin);
+
+  const token = String(input.token || "").trim().toLowerCase();
+  if (token) {
+    if (!/^[0-9a-f]{64}$/.test(token)) return respond({ error: "This download link is invalid or has expired. Ask staff to send a new one." }, 400, origin);
+    const tokenHash = await sha256Hex(token), now = new Date().toISOString();
+    const { data: tokenRow, error: tokenError } = await db.from("media_download_tokens")
+      .select("id,permission_id,expires_at,consumed_at").eq("token_hash", tokenHash).gt("expires_at", now).is("consumed_at", null).maybeSingle();
+    if (tokenError || !tokenRow) return respond({ error: "This download link is invalid, expired, or already used. Ask staff to send a new one." }, 403, origin);
+    const { data: permission, error: permissionError } = await db.from("media_download_permissions")
+      .select("id,media_id,authorized_email,expires_at,revoked_at").eq("id", tokenRow.permission_id).is("revoked_at", null).maybeSingle();
+    if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) return respond({ error: "This approval is no longer active. Contact FQ MMA support." }, 403, origin);
+    const { data: media, error: mediaError } = await db.from("media")
+      .select("id,title,file_path,storage_bucket,is_published").eq("id", permission.media_id).eq("is_published", true).maybeSingle();
+    if (mediaError || !media || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This media is not configured for private delivery." }, 404, origin);
+    const { data: consumed, error: consumeError } = await db.from("media_download_tokens")
+      .update({ consumed_at: now }).eq("id", tokenRow.id).is("consumed_at", null).gt("expires_at", now).select("id").maybeSingle();
+    if (consumeError || !consumed) return respond({ error: "This download link has already been used. Ask staff to send a new one." }, 403, origin);
+    const { data: signed, error: signedError } = await db.storage.from("fqmma-private").createSignedUrl(media.file_path, 900, { download: true });
+    if (signedError || !signed?.signedUrl) return respond({ error: "The download is temporarily unavailable. Ask staff to send a new link." }, 502, origin);
+    return respond({ url: signed.signedUrl, title: media.title, expires_in: 900 }, 200, origin);
+  }
 
   const mediaId = Number(input.media_id);
   const email = String(input.buyer_email || "").trim().toLowerCase();
@@ -233,28 +310,7 @@ Deno.serve(async (req) => {
       return respond({ error: "The payment record is still syncing. Wait a few seconds and try again." }, 403, origin);
     }
   } else {
-    const authorization = req.headers.get("Authorization") || "";
-    const match = authorization.match(/^Bearer\s+(.+)$/i);
-    if (!match) {
-      return respond({ error: "For approved downloads, sign in with the verified email address that received approval." }, 401, origin);
-    }
-    const { data: authData, error: authError } = await db.auth.getUser(match[1]);
-    const user = authData?.user;
-    const accountEmail = String(user?.email || "").trim().toLowerCase();
-    if (authError || !user || !user.email_confirmed_at || !accountEmail || accountEmail !== email) {
-      return respond({ error: "Sign in with the verified email address that received approval." }, 403, origin);
-    }
-
-    const { data: permission, error: permissionError } = await db
-      .from("media_download_permissions")
-      .select("id,expires_at")
-      .eq("media_id", mediaId)
-      .eq("authorized_email", email)
-      .is("revoked_at", null)
-      .maybeSingle();
-    if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) {
-      return respond({ error: "No active download approval was found for this email and media item." }, 403, origin);
-    }
+    return respond({ error: "For approved downloads, use the one-time link sent to your email." }, 401, origin);
   }
 
   const { data: signed, error: signedError } = await db.storage
