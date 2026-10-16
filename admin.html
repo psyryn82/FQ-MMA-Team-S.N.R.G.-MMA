@@ -287,7 +287,7 @@ $('mediaForm').addEventListener('submit',async e=>{
       uploadedBucket=null;uploadedPath=null;
       message.textContent='File uploaded and catalog listing created.';
     }
-    clearMediaForm();await loadMedia();
+    const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
   }catch(err){
     if(uploadedBucket&&uploadedPath)await client.storage.from(uploadedBucket).remove([uploadedPath]);
     message.textContent=err?.message||String(err);
