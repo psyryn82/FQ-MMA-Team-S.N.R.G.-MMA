@@ -244,6 +244,9 @@
                 <button onclick="setActiveTab('schedule')" id="nav-schedule" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
                     Events
                 </button>
+                <button onclick="setActiveTab('event-media')" id="nav-event-media" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
+                    Fight Media
+                </button>
                 <button onclick="setActiveTab('fighters')" id="nav-fighters" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
                     Roster
                 </button>
@@ -264,6 +267,7 @@
             <nav class="lg:hidden flex items-center gap-2 overflow-x-auto pb-3" aria-label="Mobile navigation">
                 <button onclick="setActiveTab('live')" data-tab="live" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">LIVE STREAM PPV</button>
                 <button onclick="setActiveTab('schedule')" data-tab="schedule" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Events</button>
+                <button onclick="setActiveTab('event-media')" data-tab="event-media" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Fight Media</button>
                 <button onclick="setActiveTab('fighters')" data-tab="fighters" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Roster</button>
                 <button onclick="setActiveTab('disciplines')" data-tab="disciplines" aria-current="page" class="nav-btn shrink-0 rounded-md border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-bold uppercase text-brand-red">Disciplines</button>
                 <button onclick="setActiveTab('store')" data-tab="store" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Media</button>
@@ -385,6 +389,16 @@
             <div id="schedule-container" class="max-w-3xl mx-auto space-y-4"></div>
         </div>
 
+        <!-- TAB: MMA EVENT MEDIA -->
+        <div id="tab-event-media" class="tab-content hidden space-y-6">
+            <div class="text-center space-y-2 mb-6">
+                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">FQ MMA Event Catalog</span>
+                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">MMA EVENTS <span class="text-brand-red">MEDIA</span></h2>
+                <p class="text-sm text-gray-400 max-w-xl mx-auto">Fight photos, recorded fights, and media connected to FQ MMA events. This catalog is separate from Sasha’s portfolio.</p>
+            </div>
+            <div id="mma-event-media-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto"></div>
+        </div>
+
         <!-- TAB 4: ROSTER -->
         <div id="tab-fighters" class="tab-content hidden space-y-6">
             <div class="text-center space-y-2 mb-6">
@@ -468,19 +482,14 @@
             </div>
         </div>
 
-        <!-- TAB 8: PORTFOLIO -->
+        <!-- TAB 8: SASHA PORTFOLIO -->
         <div id="tab-portfolio" class="tab-content hidden space-y-6">
             <div class="text-center space-y-2 mb-6">
-                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">PORTFOLIO</h2>
-                <p class="text-sm text-gray-400 max-w-xl mx-auto">Official fight photos and videos from FQ MMA and Team S.N.R.G.</p>
+                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">SASHA’S PORTFOLIO</h2>
+                <p class="text-sm text-gray-400 max-w-xl mx-auto">Browse Sasha’s portfolio work, photos, and videos. FQ MMA fight media has its own separate section.</p>
             </div>
             <div class="max-w-5xl mx-auto space-y-10">
               <section class="space-y-4">
-                <div class="border-b border-gray-800 pb-3"><h3 class="font-heading text-2xl font-black uppercase text-brand-red">MMA Events · Live Streams & Event Media</h3><p class="text-sm text-gray-400 mt-1">Event photos, recorded fights, and purchases connected to FQ MMA events.</p></div>
-                <div id="portfolio-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-              </section>
-              <section class="space-y-4">
-                <div class="border-b border-gray-800 pb-3"><h3 class="font-heading text-2xl font-black uppercase text-white">Sasha’s Portfolio</h3><p class="text-sm text-gray-400 mt-1">A separate collection of Sasha’s photos and videos available to browse and purchase.</p></div>
                 <div id="sasha-portfolio-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
               </section>
               <section class="rounded-2xl border border-gray-800 bg-gray-900/70 p-5 space-y-4">
@@ -1369,7 +1378,7 @@
                 ? item.mediaDestination === 'portfolio' && item.collection === 'sasha_portfolio'
                 : item.collection === 'sasha_portfolio');
             renderMediaCards(siteMedia, document.getElementById('site-media-container'), 'Site media will be posted here when available.');
-            renderMediaCards(mmaMedia, document.getElementById('portfolio-container'), 'MMA event photos and videos will be posted here when available.');
+            renderMediaCards(mmaMedia, document.getElementById('mma-event-media-container'), 'MMA event photos and videos will be posted here when available.');
             renderMediaCards(sashaMedia, document.getElementById('sasha-portfolio-container'), 'Sasha’s portfolio photos and videos will be posted here when available.');
 
         }
