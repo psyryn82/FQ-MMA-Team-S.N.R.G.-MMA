@@ -47,7 +47,7 @@ create policy "FQ MMA admins delete site assets"
   using ((select public.is_fqmma_admin()));
 
 -- Default privileges in this project are broad, so explicitly narrow this table.
-revoke all privileges on table public.site_assets from anon, authenticated;
+revoke all privileges on table public.site_assets from public, anon, authenticated;
 grant select, insert, update, delete on table public.site_assets to authenticated;
 
 comment on table public.site_assets is
@@ -60,3 +60,6 @@ comment on column public.site_assets.public_url is
   'Public URL for the intentionally published copy only; never an original-file URL.';
 
 commit;
+
+-- Prompt PostgREST to refresh its schema cache after the table is created.
+notify pgrst, 'reload schema';
