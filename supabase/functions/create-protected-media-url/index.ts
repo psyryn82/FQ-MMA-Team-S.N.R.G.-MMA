@@ -246,13 +246,12 @@ Deno.serve(async (req) => {
 
     const { data: permission, error: permissionError } = await db
       .from("media_download_permissions")
-      .select("id")
+      .select("id,expires_at")
       .eq("media_id", mediaId)
       .eq("authorized_email", email)
       .is("revoked_at", null)
-      .or("expires_at.is.null,expires_at.gt.now()")
       .maybeSingle();
-    if (permissionError || !permission) {
+    if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) {
       return respond({ error: "No active download approval was found for this email and media item." }, 403, origin);
     }
   }
