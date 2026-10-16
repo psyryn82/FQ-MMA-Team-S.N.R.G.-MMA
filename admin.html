@@ -48,7 +48,7 @@
 </section>
 <section id="tab-media" class="panel p-5 hidden">
 <h2 class="head text-2xl uppercase mb-1">Media Catalog & Uploads</h2>
-<p class="muted text-sm mb-4">Manage two separate catalogs. Free previews are public; paid files are uploaded to private storage and delivered only after Stripe confirms payment. Maximum file size: 50 MB.</p>
+<p class="muted text-sm mb-4">Manage two separate catalogs. Free watermarked previews are public; every original is stored privately and downloads require a verified paid purchase. Image previews are watermarked automatically. For videos, upload a separate watermarked preview video. Maximum file size: 50 MB.</p>
 <form id="mediaForm" class="space-y-4">
 <input id="mediaRecordId" type="hidden">
 <div class="grid md:grid-cols-2 gap-4">
@@ -56,8 +56,9 @@
 <label class="block text-sm">Media destination<select id="mediaDestination" class="field" required><option value="site">Site media · website content</option><option value="portfolio">Portfolio media · showcase/work</option></select><span class="muted text-xs">This controls editorial placement only, not price, publication, or access.</span></label>\n<label class="block text-sm">Related MMA event (optional)<select id="mediaEvent" class="field"><option value="">General MMA media / not event-specific</option></select></label>
 <label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
-<label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">0 = free public preview. Any price above $0 uses private storage.</span></label>
-<label class="block text-sm">Upload photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Required for a new listing. Leave empty when editing details.</span></label>
+<label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">$0 means preview-only, not free download. Every original stays private regardless of price.</span></label>
+<label class="block text-sm">Upload original photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Original file. It is always stored privately.</span></label>
+<label class="block text-sm">Watermarked video preview (videos only)<input id="mediaPreviewFile" type="file" class="field" accept="video/mp4,video/webm"><span class="muted text-xs">Required when uploading/replacing a video. Burn the FQ MMA / TEAM S.N.R.G. watermark into this preview file. Image previews are watermarked automatically.</span></label>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
@@ -201,7 +202,7 @@ async function loadMedia(){
   const message=$('mediaMessage'), list=$('mediaList');
   list.innerHTML='<p class="muted text-sm">Loading media catalog…</p>';
   const [mediaResult,eventResult]=await Promise.all([
-    client.from('media').select('id,title,category,description,file_url,file_path,price,is_published,collection,media_destination,event_id,created_at').order('created_at',{ascending:false}).limit(250),
+    client.from('media').select('id,title,category,description,file_url,file_path,preview_path,storage_bucket,price,is_published,collection,media_destination,event_id,created_at').order('created_at',{ascending:false}).limit(250),
     client.from('events').select('id,title,event_date,status').order('created_at',{ascending:false})
   ]);
   if(mediaResult.error){list.innerHTML='<p class="text-red-400 text-sm">Could not load media catalog: '+esc(mediaResult.error.message)+'</p>';return}
@@ -213,85 +214,84 @@ async function loadMedia(){
   records.media=mediaResult.data||[];
   const cards=await Promise.all(records.media.map(async m=>{
     let preview='';
-    if(Number(m.price||0)>0&&m.file_path){
+    if(m.preview_path&&m.file_url){
+      preview='<a class="text-red-400 underline text-xs" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open watermarked preview</a>';
+    }else if(m.storage_bucket==='fqmma-private'&&m.file_path){
       const signed=await client.storage.from('fqmma-private').createSignedUrl(m.file_path,180);
-      if(signed.data?.signedUrl)preview='<a class="text-red-400 underline text-xs" target="_blank" rel="noopener" href="'+esc(signed.data.signedUrl)+'">Temporary preview</a>';
+      if(signed.data?.signedUrl)preview='<a class="text-yellow-300 underline text-xs" target="_blank" rel="noopener" href="'+esc(signed.data.signedUrl)+'">LEGACY: no watermarked preview yet</a>';
     }else if(m.file_url){
-      preview='<a class="text-red-400 underline text-xs" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open public file</a>';
+      preview='<span class="text-red-400 text-xs font-bold">LEGACY PUBLIC ORIGINAL: replace this file to secure it</span>';
     }
     const section=m.collection==='sasha_portfolio'?'Sasha’s Portfolio':'MMA Events';const destination=m.media_destination==='portfolio'?'Portfolio media':'Site media';
     const eventName=eventsCache.find(ev=>ev.id===m.event_id)?.title||'General media';
-    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(destination)+' · '+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(Number(m.price||0)>0?'Private paid file':'Public/free file')+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button><button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
+    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(destination)+' · '+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(m.preview_path?'Watermarked preview ready':'NEEDS WATERMARKED PREVIEW')+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button><button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
   }));
   list.innerHTML=cards.join('')||'<p class="muted text-sm">No media listings yet. Upload an item above to create the first listing.</p>';
   message.textContent='Loaded '+records.media.length+' media listing(s).';
 }
 function clearMediaForm(){
-  $('mediaForm').reset();$('mediaRecordId').value='';$('mediaDestination').value='site';$('mediaPrice').value='0';$('mediaPublished').checked=true;$('mediaSaveButton').textContent='Upload & publish listing';$('mediaFile').required=false;
+  $('mediaForm').reset();$('mediaRecordId').value='';$('mediaDestination').value='site';$('mediaPrice').value='0';$('mediaPublished').checked=true;$('mediaSaveButton').textContent='Upload & publish listing';$('mediaFile').required=false;$('mediaPreviewFile').value='';
 }
 $('mediaClearButton').onclick=clearMediaForm;
+async function createWatermarkedImagePreview(file){
+  const bitmap=await createImageBitmap(file), max=1600, scale=Math.min(1,max/bitmap.width,max/bitmap.height);
+  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Could not create a watermarked image preview.');
+  ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);const size=Math.max(22,Math.round(canvas.width*.045));
+  ctx.save();ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(-Math.PI/7);ctx.font='900 '+size+'px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=Math.max(2,size*.08);ctx.strokeStyle='rgba(0,0,0,.58)';ctx.fillStyle='rgba(255,255,255,.58)';
+  const mark='FQ MMA • TEAM S.N.R.G.', spacing=Math.max(canvas.width*.72,ctx.measureText(mark).width+40);
+  for(let y=-canvas.height;y<=canvas.height;y+=size*3.2)for(let x=-canvas.width;x<=canvas.width;x+=spacing){ctx.strokeText(mark,x,y);ctx.fillText(mark,x,y)}
+  ctx.restore();bitmap.close?.();
+  const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Could not export the watermarked image preview.')),'image/jpeg',.84));
+  return new File([blob],file.name.replace(/\.[^.]+$/,'')+'-watermarked-preview.jpg',{type:'image/jpeg'});
+}
 $('mediaForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const file=$('mediaFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
+  const file=$('mediaFile').files[0], previewInput=$('mediaPreviewFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
   const description=$('mediaDescription').value.trim(), collection=$('mediaCollection').value, destination=$('mediaDestination').value, eventId=$('mediaEvent').value||null;
-  const price=Number($('mediaPrice').value), published=$('mediaPublished').checked;
-  const message=$('mediaMessage');message.textContent='';
+  const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, message=$('mediaMessage');message.textContent='';
   if(!title){message.textContent='Enter a title.';return}
   if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid price from $0 to $9,999.';return}
   if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
-  if(!id&&!file){message.textContent='Choose a photo or video to upload.';return}
-  if(file&&file.size>50*1024*1024){message.textContent='File exceeds 50 MB.';return}
-  if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM file.';return}
-  const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Uploading…';
-  let uploadedBucket=null, uploadedPath=null;
+  if(!id&&!file){message.textContent='Choose an original photo or video to upload.';return}
+  if(file&&file.size>50*1024*1024){message.textContent='Original file exceeds 50 MB.';return}
+  if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
+  if(file&&file.type.startsWith('video/')&&!previewInput){message.textContent='Videos need a separate watermarked preview file. Add the preview with the watermark burned into it.';return}
+  if(previewInput&&(!previewInput.type.startsWith('video/')||previewInput.size>50*1024*1024)){message.textContent='Choose a watermarked MP4 or WebM preview under 50 MB.';return}
+  if(!file&&previewInput){message.textContent='Choose the original file when replacing a watermarked preview.';return}
+  const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Creating protected listing…';const uploaded=[];
   try{
-    const patch={title,description,collection,media_destination:destination,event_id:eventId,price,is_published:published};
+    const patch={title,description,collection,media_destination:destination,event_id:eventId,price,is_published:published};let existing=null;
     if(id){
-      const existing=records.media?.find(m=>String(m.id)===String(id));if(!existing)throw new Error('Media listing was not found. Refresh the catalog and try again.');
-      const oldIsPaid=Number(existing.price||0)>0, newIsPaid=price>0;
-      if(oldIsPaid!==newIsPaid&&!file)throw new Error('Changing between free and paid requires a replacement file so storage privacy matches the price. Choose the replacement file and save again.');
-      if(file){
-        const purchases=await client.from('media_purchases').select('id',{count:'exact',head:true}).eq('media_id',id);
-        if(purchases.error)throw purchases.error;
-        if((purchases.count||0)>0)throw new Error('This item has purchase history. Its file cannot be replaced because that could change what existing buyers receive. You can still edit its details, or create a new listing for a different file.');
-      }
-      let oldBucket=null, oldPath=null;
-      if(file){
-        oldBucket=oldIsPaid?'fqmma-private':'fqmma-media';oldPath=existing.file_path||null;
-        const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
-        const path=collection+'/'+Date.now()+'-'+safeName;
-        const bucket=newIsPaid?'fqmma-private':'fqmma-media';uploadedBucket=bucket;uploadedPath=path;
-        const {error:uploadError}=await client.storage.from(bucket).upload(path,file,{upsert:false,contentType:file.type});
-        if(uploadError)throw uploadError;
-        patch.file_path=path;
-        patch.file_url=newIsPaid?null:client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-        patch.category=file.type.startsWith('video/')?'Video':'Photo';
-      }else{
-        if(oldIsPaid!==newIsPaid)throw new Error('Choose a replacement file when changing the price between free and paid.');
-      }
+      existing=records.media?.find(m=>String(m.id)===String(id));if(!existing)throw new Error('Media listing was not found. Refresh the catalog and try again.');
+      const purchases=await client.from('media_purchases').select('id',{count:'exact',head:true}).eq('media_id',id);
+      if(purchases.error)throw purchases.error;
+      if(file&&(purchases.count||0)>0)throw new Error('This item has purchase history. Its original cannot be replaced because that could change what existing buyers receive. Edit details only, or create a new listing for a different original.');
+    }
+    if(file){
+      const previewFile=file.type.startsWith('image/')?await createWatermarkedImagePreview(file):previewInput;
+      const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),stamp=Date.now(),originalPath=collection+'/'+stamp+'-original-'+safeName;
+      const {error:originalError}=await client.storage.from('fqmma-private').upload(originalPath,file,{upsert:false,contentType:file.type});if(originalError)throw originalError;
+      uploaded.push({bucket:'fqmma-private',path:originalPath});
+      const previewPath=collection+'/'+stamp+'-preview-'+previewFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
+      const {error:previewError}=await client.storage.from('fqmma-media').upload(previewPath,previewFile,{upsert:false,contentType:previewFile.type});if(previewError)throw previewError;
+      uploaded.push({bucket:'fqmma-media',path:previewPath});
+      Object.assign(patch,{category:file.type.startsWith('video/')?'Video':'Photo',file_path:originalPath,file_url:client.storage.from('fqmma-media').getPublicUrl(previewPath).data.publicUrl,preview_path:previewPath,storage_bucket:'fqmma-private'});
+    }
+    if(id){
       const {error}=await client.from('media').update(patch).eq('id',id);if(error)throw error;
-      uploadedBucket=null;uploadedPath=null;
-      if(file&&oldPath){
-        const removed=await client.storage.from(oldBucket).remove([oldPath]);
-        message.textContent=removed.error?'Listing updated, but the old file could not be removed from storage. Please ask an administrator to clean up the unused file.':'Listing details and uploaded file updated.';
-      }else message.textContent='Listing updated.';
+      const oldObjects=[];
+      if(file&&existing?.file_path)oldObjects.push({bucket:existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media'),path:existing.file_path});
+      if(file&&existing?.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path});
+      uploaded.length=0;const cleanup=await Promise.all(oldObjects.map(x=>client.storage.from(x.bucket).remove([x.path])));
+      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':'Listing updated. Original secured in private storage; watermarked preview published.';
     }else{
-      const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
-      const path=collection+'/'+Date.now()+'-'+safeName;
-      const bucket=price>0?'fqmma-private':'fqmma-media';uploadedBucket=bucket;uploadedPath=path;
-      const {error:uploadError}=await client.storage.from(bucket).upload(path,file,{upsert:false,contentType:file.type});
-      if(uploadError)throw uploadError;
-      const fileUrl=price>0?null:client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-      const {error:insertError}=await client.from('media').insert({...patch,category:file.type.startsWith('video/')?'Video':'Photo',file_path:path,file_url:fileUrl}).select('id').single();
-      if(insertError)throw insertError;
-      uploadedBucket=null;uploadedPath=null;
-      message.textContent='File uploaded and catalog listing created.';
+      const {error:insertError}=await client.from('media').insert({...patch}).select('id').single();if(insertError)throw insertError;
+      uploaded.length=0;message.textContent='Listing created. Original secured in private storage; watermarked preview published.';
     }
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
-  }catch(err){
-    if(uploadedBucket&&uploadedPath)await client.storage.from(uploadedBucket).remove([uploadedPath]);
-    message.textContent=err?.message||String(err);
-  }finally{button.disabled=false;button.textContent=$('mediaRecordId').value?'Save changes':'Upload & publish listing'}
+  }catch(err){for(const item of uploaded)await client.storage.from(item.bucket).remove([item.path]);message.textContent=err?.message||String(err)}
+  finally{button.disabled=false;button.textContent=$('mediaRecordId').value?'Save changes':'Upload & publish listing'}
 });
 document.addEventListener('click',async e=>{
   const edit=e.target.closest('[data-media-edit]');
@@ -299,7 +299,7 @@ document.addEventListener('click',async e=>{
     const m=records.media?.find(x=>String(x.id)===edit.dataset.mediaEdit);if(!m)return;
     $('mediaRecordId').value=m.id;$('mediaCollection').value=m.collection||'mma_event';$('mediaDestination').value=m.media_destination||'site';$('mediaEvent').value=m.event_id||'';
     $('mediaTitle').value=m.title||'';$('mediaDescription').value=m.description||'';$('mediaPrice').value=Number(m.price||0).toFixed(2);
-    $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
+    $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaPreviewFile').value='';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
     $('mediaMessage').textContent='Editing listing details. For security, changing a listing from free to paid or paid to free requires re-uploading the file.';
     window.scrollTo({top:0,behavior:'smooth'});return;
   }
@@ -324,8 +324,9 @@ document.addEventListener('click',async e=>{
         $('mediaMessage').textContent='Listing unpublished instead of deleted because purchase history exists.';
       }else{
         const {error}=await client.from('media').delete().eq('id',id);if(error)throw error;
-        const bucket=Number(m.price||0)>0?'fqmma-private':'fqmma-media';
+        const bucket=m.storage_bucket||(Number(m.price||0)>0?'fqmma-private':'fqmma-media');
         if(m.file_path){const removed=await client.storage.from(bucket).remove([m.file_path]);if(removed.error)throw removed.error}
+        if(m.preview_path){const removedPreview=await client.storage.from('fqmma-media').remove([m.preview_path]);if(removedPreview.error)throw removedPreview.error}
         $('mediaMessage').textContent='Media listing deleted.';
       }
       await loadMedia();
