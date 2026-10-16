@@ -1954,7 +1954,7 @@
                 if (mediaResult.error) console.warn('Could not load published media from Supabase.', mediaResult.error);
                 else {
                     const eventTitleMap = new Map((eventsResult.data || []).map(e => [e.id, e.title]));
-                    const databaseMedia = (mediaResult.data || []).map(m => ({
+                    const databaseMedia = (mediaResult.data || []).filter(m => m.collection !== 'sasha_portfolio' && m.media_destination !== 'portfolio').map(m => ({
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
                         priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Preview only',
