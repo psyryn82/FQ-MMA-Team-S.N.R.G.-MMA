@@ -202,22 +202,29 @@ document.addEventListener('click',async e=>{const edit=e.target.closest('[data-e
       }
     }
     if(table==='events'){
-      const [streamCount,ticketCount]=await Promise.all([
+      // Events are referenced by sales, media, promotions, and stream/ticket settings.
+      // Preserve any linked records by archiving the event rather than cascading deletes.
+      const checks=await Promise.all([
         client.from('stream_purchases').select('id',{count:'exact',head:true}).eq('event_id',id),
-        client.from('ticket_purchases').select('id',{count:'exact',head:true}).eq('event_id',id)
+        client.from('ticket_purchases').select('id',{count:'exact',head:true}).eq('event_id',id),
+        client.from('media').select('id',{count:'exact',head:true}).eq('event_id',id),
+        client.from('promotions').select('id',{count:'exact',head:true}).eq('event_id',id),
+        client.from('promotion_redemptions').select('id',{count:'exact',head:true}).eq('event_id',id)
       ]);
-      if(streamCount.error)throw streamCount.error;
-      if(ticketCount.error)throw ticketCount.error;
-      const hasHistory=(streamCount.count||0)>0||(ticketCount.count||0)>0;
-      if(hasHistory){
-        const [disableTickets,disableStream,archive]=await Promise.all([
+      const failedCheck=checks.find(result=>result.error);
+      if(failedCheck)throw failedCheck.error;
+      const hasDependents=checks.some(result=>(result.count||0)>0);
+      if(hasDependents){
+        const [disableTickets,disableStream,disablePromotions,hideMedia,archive]=await Promise.all([
           client.from('event_ticket_options').update({is_available:false,updated_at:new Date().toISOString()}).eq('event_id',id),
           client.from('event_streams').update({is_enabled:false,updated_at:new Date().toISOString()}).eq('event_id',id),
+          client.from('promotions').update({is_active:false,updated_at:new Date().toISOString()}).eq('event_id',id),
+          client.from('media').update({is_published:false}).eq('event_id',id),
           client.from('events').update({status:'cancelled',is_published:false,updated_at:new Date().toISOString()}).eq('id',id)
         ]);
-        const failure=disableTickets.error||disableStream.error||archive.error;
+        const failure=disableTickets.error||disableStream.error||disablePromotions.error||hideMedia.error||archive.error;
         if(failure)throw failure;
-        say('Event archived and hidden. Existing ticket/stream purchase history was preserved.');
+        say('Event archived and hidden. Linked sales, media, promotions, and purchase history were preserved.');
         await loadTable('events');return;
       }
       const removeTickets=await client.from('event_ticket_options').delete().eq('event_id',id);
