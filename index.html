@@ -401,17 +401,11 @@
                 <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
                     MEDIA
                 </h2>
-                <p class="text-sm text-gray-400 max-w-xl mx-auto">Browse official FQ MMA event media, Sasha’s portfolio, and published media or purchase links. Each collection stays separate.</p>
+                <p class="text-sm text-gray-400 max-w-xl mx-auto">Browse official FQ MMA fight photos and videos, plus Sasha’s separate professional portfolio.</p>
             </div>
 
             <div id="store-container" class="max-w-3xl mx-auto space-y-4"></div>
-            <section class="max-w-5xl mx-auto space-y-4 mt-10">
-                <div class="border-b border-gray-800 pb-3">
-                    <h3 class="font-heading text-2xl font-black uppercase text-brand-red">Photos & Videos</h3>
-                    <p class="text-sm text-gray-400 mt-1">Published media selected for the main site appears here.</p>
-                </div>
-                <div id="site-media-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-            </section>
+            
             <section class="max-w-5xl mx-auto space-y-4 mt-10">
                 <div class="border-b border-gray-800 pb-3">
                     <h3 class="font-heading text-2xl font-black uppercase text-brand-red">MMA Event Media</h3>
@@ -1361,15 +1355,9 @@
                 }).join('');
                 if (!items.length) container.innerHTML = `<p class="text-center text-sm text-gray-400 md:col-span-2">${emptyMessage}</p>`;
             };
-            const siteMedia = siteData.portfolio.filter(item => item.mediaId && item.mediaDestination !== 'portfolio');
-            const mmaMedia = siteData.portfolio.filter(item => item.mediaId
-                ? item.mediaDestination === 'portfolio' && item.collection !== 'sasha_portfolio'
-                : item.collection !== 'sasha_portfolio');
-            const sashaMedia = siteData.portfolio.filter(item => item.mediaId
-                ? item.mediaDestination === 'portfolio' && item.collection === 'sasha_portfolio'
-                : item.collection === 'sasha_portfolio');
-            renderMediaCards(siteMedia, document.getElementById('site-media-container'), 'Site media will be posted here when available.');
-            renderMediaCards(mmaMedia, document.getElementById('mma-event-media-container'), 'MMA event photos and videos will be posted here when available.');
+            const mmaMedia = siteData.portfolio.filter(item => item.collection === 'mma_event');
+            const sashaMedia = siteData.portfolio.filter(item => item.collection === 'sasha_portfolio');
+            renderMediaCards(mmaMedia, document.getElementById('mma-event-media-container'), 'MMA fight photos and videos will be posted here when available.');
             renderMediaCards(sashaMedia, document.getElementById('sasha-portfolio-container'), 'Sasha’s portfolio photos and videos will be posted here when available.');
 
         }
