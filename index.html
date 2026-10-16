@@ -29,12 +29,69 @@
       window.SUPABASE_ANON_KEY = "sb_publishable_vJAptJ41TpicuxtMspB8tA_AaMFlGEC";
       window.supabaseReady = false;
       window.sb = null;
-      if (window.supabase && window.SUPABASE_URL.startsWith("https://") && !window.SUPABASE_URL.includes("YOUR_") && !window.SUPABASE_ANON_KEY.includes("YOUR_")) {
-        window.sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
-          auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      window.supabaseInitPromise = null;
+
+      window.ensureSupabaseClient = async function () {
+        if (window.sb && window.supabaseReady) return window.sb;
+        if (window.supabaseInitPromise) return window.supabaseInitPromise;
+
+        window.supabaseInitPromise = (async () => {
+          if (!window.SUPABASE_URL || !window.SUPABASE_URL.startsWith("https://") ||
+              !window.SUPABASE_ANON_KEY || window.SUPABASE_URL.includes("YOUR_") ||
+              window.SUPABASE_ANON_KEY.includes("YOUR_")) {
+            throw new Error("Supabase project URL or publishable key is not configured.");
+          }
+
+          const loadLibrary = (src) => new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = src;
+            script.async = true;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error("Could not load Supabase library from " + src));
+            document.head.appendChild(script);
+          });
+
+          if (!window.supabase || typeof window.supabase.createClient !== "function") {
+            const sources = [
+              "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+              "https://unpkg.com/@supabase/supabase-js@2"
+            ];
+            let loaded = false;
+            for (const src of sources) {
+              try {
+                await loadLibrary(src);
+                if (window.supabase && typeof window.supabase.createClient === "function") {
+                  loaded = true;
+                  break;
+                }
+              } catch (loadError) {
+                console.warn("Supabase CDN attempt failed.", loadError);
+              }
+            }
+            if (!loaded && (!window.supabase || typeof window.supabase.createClient !== "function")) {
+              throw new Error("Supabase library could not be loaded. Check the network, browser extensions, or CDN availability.");
+            }
+          }
+
+          window.sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+          });
+          window.supabaseReady = true;
+          return window.sb;
+        })().catch((error) => {
+          window.sb = null;
+          window.supabaseReady = false;
+          window.supabaseInitPromise = null;
+          throw error;
         });
-        window.supabaseReady = true;
-      }
+
+        return window.supabaseInitPromise;
+      };
+
+      // Initialize early; callers can await ensureSupabaseClient() if a CDN is slow or blocked.
+      window.ensureSupabaseClient().catch((error) => {
+        console.warn("Supabase is not ready yet; the client will retry when needed.", error);
+      });
     </script>
     <script>
         tailwind.config = {
@@ -2064,6 +2121,7 @@
             button.disabled=true; button.textContent='Preparing secure checkout…'; message.textContent='';
             try {
                 if(!window.supabaseReady||!window.sb) throw new Error('Secure checkout is temporarily unavailable.');
+                await window.ensureSupabaseClient();
                 const {data,error}=await window.sb.functions.invoke('create-media-checkout',{body:{media_id:Number(document.getElementById('mediaPurchaseId').value),buyer_email:document.getElementById('mediaPurchaseEmail').value.trim()}});
                 if(error) throw error;
                 if(!data?.url||!data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error||'Could not open secure checkout.');
@@ -2076,6 +2134,7 @@
             const button=document.getElementById('mediaDeliverySubmit'),message=document.getElementById('mediaDeliveryMessage');
             button.disabled=true;button.textContent='Verifying purchase…';message.textContent='';
             try {
+                await window.ensureSupabaseClient();
                 const {data,error}=await window.sb.functions.invoke('create-protected-media-url',{body:{media_id:Number(document.getElementById('mediaDeliveryId').value),buyer_email:document.getElementById('mediaDeliveryEmail').value.trim(),session_id:document.getElementById('mediaDeliverySessionId').value}});
                 if(error) throw error;
                 if(!data?.url||!data.url.startsWith('https://')) throw new Error(data?.error||'Download link could not be created.');
