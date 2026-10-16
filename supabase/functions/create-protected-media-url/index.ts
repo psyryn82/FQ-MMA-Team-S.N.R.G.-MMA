@@ -18,8 +18,8 @@ Deno.serve(async (req) => {
   const email = String(input.buyer_email || "").trim().toLowerCase();
   if (!Number.isSafeInteger(mediaId) || mediaId < 1 || email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return respond({ error: "Enter the email used at checkout and choose your media." }, 400, origin);
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: media, error: mediaError } = await db.from("media").select("id,title,file_path,is_published,price").eq("id", mediaId).eq("is_published", true).maybeSingle();
-  if (mediaError || !media || Number(media.price) <= 0 || !media.file_path) return respond({ error: "This media is not configured for paid delivery." }, 404, origin);
+  const { data: media, error: mediaError } = await db.from("media").select("id,title,file_path,storage_bucket,is_published,price").eq("id", mediaId).eq("is_published", true).maybeSingle();
+  if (mediaError || !media || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This media is not configured for private paid delivery." }, 404, origin);
   const { data: purchase, error: purchaseError } = await db.from("media_purchases").select("id").eq("media_id", mediaId).eq("customer_email", email).eq("payment_status", "paid").limit(1).maybeSingle();
   if (purchaseError || !purchase) return respond({ error: "We could not find a confirmed paid purchase for that email. If you just paid, wait a moment and try again." }, 403, origin);
   const { data: signed, error: signedError } = await db.storage.from("fqmma-private").createSignedUrl(media.file_path, 900, { download: true });
