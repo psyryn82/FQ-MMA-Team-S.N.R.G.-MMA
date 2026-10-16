@@ -244,9 +244,6 @@
                 <button onclick="setActiveTab('schedule')" id="nav-schedule" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
                     Events
                 </button>
-                <button onclick="setActiveTab('event-media')" id="nav-event-media" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                    Fight Media
-                </button>
                 <button onclick="setActiveTab('fighters')" id="nav-fighters" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
                     Roster
                 </button>
@@ -259,20 +256,15 @@
                 <button onclick="setActiveTab('contact')" id="nav-contact" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
                     Contact
                 </button>
-                <button onclick="setActiveTab('portfolio')" id="nav-portfolio" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                    Portfolio
-                </button>
             </nav>
 
             <nav class="lg:hidden flex items-center gap-2 overflow-x-auto pb-3" aria-label="Mobile navigation">
                 <button onclick="setActiveTab('live')" data-tab="live" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">LIVE STREAM PPV</button>
                 <button onclick="setActiveTab('schedule')" data-tab="schedule" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Events</button>
-                <button onclick="setActiveTab('event-media')" data-tab="event-media" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Fight Media</button>
                 <button onclick="setActiveTab('fighters')" data-tab="fighters" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Roster</button>
                 <button onclick="setActiveTab('disciplines')" data-tab="disciplines" aria-current="page" class="nav-btn shrink-0 rounded-md border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-bold uppercase text-brand-red">Disciplines</button>
                 <button onclick="setActiveTab('store')" data-tab="store" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Media</button>
                 <button onclick="setActiveTab('contact')" data-tab="contact" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Contact</button>
-                <button onclick="setActiveTab('portfolio')" data-tab="portfolio" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Portfolio</button>
             </nav>
         </div>
     </header>
@@ -389,16 +381,6 @@
             <div id="schedule-container" class="max-w-3xl mx-auto space-y-4"></div>
         </div>
 
-        <!-- TAB: MMA EVENT MEDIA -->
-        <div id="tab-event-media" class="tab-content hidden space-y-6">
-            <div class="text-center space-y-2 mb-6">
-                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">FQ MMA Event Catalog</span>
-                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">MMA EVENTS <span class="text-brand-red">MEDIA</span></h2>
-                <p class="text-sm text-gray-400 max-w-xl mx-auto">Fight photos, recorded fights, and media connected to FQ MMA events. This catalog is separate from Sasha’s portfolio.</p>
-            </div>
-            <div id="mma-event-media-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto"></div>
-        </div>
-
         <!-- TAB 4: ROSTER -->
         <div id="tab-fighters" class="tab-content hidden space-y-6">
             <div class="text-center space-y-2 mb-6">
@@ -415,11 +397,11 @@
         <!-- TAB 5: STORE -->
         <div id="tab-store" class="tab-content hidden space-y-6">
             <div class="text-center space-y-2 mb-6">
-                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Digital Marketplace</span>
+                <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Photos, Videos &amp; Portfolio</span>
                 <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
-                    MEDIA <span class="text-brand-red">STORE</span>
+                    MEDIA
                 </h2>
-                <p class="text-sm text-gray-400 max-w-xl mx-auto">Official media and purchase links will be posted here when available.</p>
+                <p class="text-sm text-gray-400 max-w-xl mx-auto">Browse official FQ MMA event media, Sasha’s portfolio, and published media or purchase links. Each collection stays separate.</p>
             </div>
 
             <div id="store-container" class="max-w-3xl mx-auto space-y-4"></div>
@@ -429,6 +411,45 @@
                     <p class="text-sm text-gray-400 mt-1">Published media selected for the main site appears here.</p>
                 </div>
                 <div id="site-media-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </section>
+            <section class="max-w-5xl mx-auto space-y-4 mt-10">
+                <div class="border-b border-gray-800 pb-3">
+                    <h3 class="font-heading text-2xl font-black uppercase text-brand-red">MMA Event Media</h3>
+                    <p class="text-sm text-gray-400 mt-1">Fight photos, recorded fights, and media connected to FQ MMA events.</p>
+                </div>
+                <div id="mma-event-media-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </section>
+            <section class="max-w-5xl mx-auto space-y-4 mt-10">
+                <div class="border-b border-gray-800 pb-3">
+                    <h3 class="font-heading text-2xl font-black uppercase text-brand-red">Sasha’s Portfolio</h3>
+                    <p class="text-sm text-gray-400 mt-1">Portfolio work and booking requests are separate from MMA event media.</p>
+                </div>
+                <div class="max-w-5xl mx-auto space-y-10">
+              <section class="space-y-4">
+                <div id="sasha-portfolio-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+              </section>
+              <section class="rounded-2xl border border-gray-800 bg-gray-900/70 p-5 space-y-4">
+                <div class="border-b border-gray-800 pb-3">
+                  <h3 class="font-heading text-2xl font-black uppercase text-brand-red">Request a Sasha Portfolio Booking</h3>
+                  <p class="text-sm text-gray-400 mt-1">Send a booking request first. The team will review your request and, if approved, email you a payment or deposit link. Submitting a request does not reserve a date or require payment.</p>
+                </div>
+                <form id="booking-request-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label class="block text-sm text-gray-300">Your name<input id="booking-name" required maxlength="120" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="name"></label>
+                  <label class="block text-sm text-gray-300">Email address<input id="booking-email" required type="email" maxlength="254" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="email"></label>
+                  <label class="block text-sm text-gray-300">Phone (optional)<input id="booking-phone" type="tel" maxlength="40" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="tel"></label>
+                  <label class="block text-sm text-gray-300">What are you booking?<select id="booking-service" required class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"><option value="">Choose a service</option><option>Photography session</option><option>Event photography</option><option>Portrait session</option><option>Video service</option><option>Other / discuss options</option></select></label>
+                  <label class="block text-sm text-gray-300">Preferred date (optional)<input id="booking-date" type="date" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"></label>
+                  <label class="block text-sm text-gray-300">Preferred time (optional)<input id="booking-time" maxlength="80" placeholder="Morning, afternoon, or a time range" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"></label>
+                  <label class="block text-sm text-gray-300 md:col-span-2">Location or venue (optional)<input id="booking-location" maxlength="250" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" placeholder="Where would you like the session?"></label>
+                  <label class="block text-sm text-gray-300 md:col-span-2">Tell us what you need<textarea id="booking-details" rows="4" maxlength="3000" required class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" placeholder="Describe the session, event, timing, or questions."></textarea></label>
+                  <div class="hidden" aria-hidden="true"><label>Leave this field empty<input id="booking-company" tabindex="-1" autocomplete="off"></label></div>
+                  <div class="md:col-span-2 flex flex-wrap items-center gap-3">
+                    <button id="booking-submit" type="submit" class="rounded-xl bg-brand-red px-5 py-3 font-heading text-sm font-black uppercase text-white hover:bg-red-700">Send booking request</button>
+                    <p id="booking-status" class="text-sm text-gray-400" role="status" aria-live="polite">No payment is collected when you submit this form.</p>
+                  </div>
+                </form>
+              </section>
+            </div>
             </section>
         </div>
 
@@ -483,38 +504,6 @@
         </div>
 
         <!-- TAB 8: SASHA PORTFOLIO -->
-        <div id="tab-portfolio" class="tab-content hidden space-y-6">
-            <div class="text-center space-y-2 mb-6">
-                <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">SASHA’S PORTFOLIO</h2>
-                <p class="text-sm text-gray-400 max-w-xl mx-auto">Browse Sasha’s portfolio work, photos, and videos. FQ MMA fight media has its own separate section.</p>
-            </div>
-            <div class="max-w-5xl mx-auto space-y-10">
-              <section class="space-y-4">
-                <div id="sasha-portfolio-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-              </section>
-              <section class="rounded-2xl border border-gray-800 bg-gray-900/70 p-5 space-y-4">
-                <div class="border-b border-gray-800 pb-3">
-                  <h3 class="font-heading text-2xl font-black uppercase text-brand-red">Request a Sasha Portfolio Booking</h3>
-                  <p class="text-sm text-gray-400 mt-1">Send a booking request first. The team will review your request and, if approved, email you a payment or deposit link. Submitting a request does not reserve a date or require payment.</p>
-                </div>
-                <form id="booking-request-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <label class="block text-sm text-gray-300">Your name<input id="booking-name" required maxlength="120" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="name"></label>
-                  <label class="block text-sm text-gray-300">Email address<input id="booking-email" required type="email" maxlength="254" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="email"></label>
-                  <label class="block text-sm text-gray-300">Phone (optional)<input id="booking-phone" type="tel" maxlength="40" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="tel"></label>
-                  <label class="block text-sm text-gray-300">What are you booking?<select id="booking-service" required class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"><option value="">Choose a service</option><option>Photography session</option><option>Event photography</option><option>Portrait session</option><option>Video service</option><option>Other / discuss options</option></select></label>
-                  <label class="block text-sm text-gray-300">Preferred date (optional)<input id="booking-date" type="date" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"></label>
-                  <label class="block text-sm text-gray-300">Preferred time (optional)<input id="booking-time" maxlength="80" placeholder="Morning, afternoon, or a time range" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"></label>
-                  <label class="block text-sm text-gray-300 md:col-span-2">Location or venue (optional)<input id="booking-location" maxlength="250" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" placeholder="Where would you like the session?"></label>
-                  <label class="block text-sm text-gray-300 md:col-span-2">Tell us what you need<textarea id="booking-details" rows="4" maxlength="3000" required class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" placeholder="Describe the session, event, timing, or questions."></textarea></label>
-                  <div class="hidden" aria-hidden="true"><label>Leave this field empty<input id="booking-company" tabindex="-1" autocomplete="off"></label></div>
-                  <div class="md:col-span-2 flex flex-wrap items-center gap-3">
-                    <button id="booking-submit" type="submit" class="rounded-xl bg-brand-red px-5 py-3 font-heading text-sm font-black uppercase text-white hover:bg-red-700">Send booking request</button>
-                    <p id="booking-status" class="text-sm text-gray-400" role="status" aria-live="polite">No payment is collected when you submit this form.</p>
-                  </div>
-                </form>
-              </section>
-            </div>
-        </div>
 
     </main>
 
