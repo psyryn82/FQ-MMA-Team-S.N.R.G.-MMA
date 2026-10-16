@@ -48,7 +48,7 @@
 </section>
 <section id="tab-media" class="panel p-5 hidden">
 <h2 class="head text-2xl uppercase mb-1">Media Catalog & Uploads</h2>
-<p class="muted text-sm mb-4">Manage two separate catalogs. Free watermarked previews are public; every original is stored privately and downloads require a verified paid purchase. Image previews are watermarked automatically. For videos, upload a separate watermarked preview video. Maximum file size: 50 MB.</p>
+<p class="muted text-sm mb-4">Manage two separate catalogs. Public previews can be watermarked per upload; every original stays private and downloads require a verified paid purchase. Images are resized automatically. Videos require a separate preview file. Maximum file size: 50 MB.</p>
 <form id="mediaForm" class="space-y-4">
 <input id="mediaRecordId" type="hidden">
 <div class="grid md:grid-cols-2 gap-4">
@@ -58,7 +58,8 @@
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
 <label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">$0 means preview-only, not free download. Every original stays private regardless of price.</span></label>
 <label class="block text-sm">Upload original photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Original file. It is always stored privately.</span></label>
-<label class="block text-sm">Watermarked video preview (videos only)<input id="mediaPreviewFile" type="file" class="field" accept="video/mp4,video/webm"><span class="muted text-xs">Required when uploading/replacing a video. Burn the FQ MMA / TEAM S.N.R.G. watermark into this preview file. Image previews are watermarked automatically.</span></label>
+<label class="block text-sm">Video preview (videos only)<input id="mediaPreviewFile" type="file" class="field" accept="video/mp4,video/webm"><span id="mediaPreviewHelp" class="muted text-xs">Required when uploading/replacing a video. If watermarking is enabled, upload a preview with “FQ MMA / Team S.N.R.G. MMA” already burned in. If disabled, upload an unwatermarked preview.</span></label>
+<label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaApplyWatermark" type="checkbox" checked class="mt-1 accent-red-600"><span><b>Apply watermark to public preview</b><span class="muted block text-xs mt-1">When enabled, image previews get the watermark automatically. For videos, provide a preview video with the watermark already embedded. Uncheck to publish an unwatermarked preview. This never makes the original downloadable.</span></span></label>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
@@ -230,34 +231,38 @@ async function loadMedia(){
   message.textContent='Loaded '+records.media.length+' media listing(s).';
 }
 function clearMediaForm(){
-  $('mediaForm').reset();$('mediaRecordId').value='';$('mediaDestination').value='site';$('mediaPrice').value='0';$('mediaPublished').checked=true;$('mediaSaveButton').textContent='Upload & publish listing';$('mediaFile').required=false;$('mediaPreviewFile').value='';
+  $('mediaForm').reset();$('mediaRecordId').value='';$('mediaDestination').value='site';$('mediaPrice').value='0';$('mediaPublished').checked=true;$('mediaApplyWatermark').checked=true;$('mediaSaveButton').textContent='Upload & publish listing';$('mediaFile').required=false;$('mediaPreviewFile').value='';
 }
 $('mediaClearButton').onclick=clearMediaForm;
-async function createWatermarkedImagePreview(file){
+async function createImagePreview(file,applyWatermark){
   const bitmap=await createImageBitmap(file), max=1600, scale=Math.min(1,max/bitmap.width,max/bitmap.height);
   const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
-  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Could not create a watermarked image preview.');
-  ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);const size=Math.max(22,Math.round(canvas.width*.045));
-  ctx.save();ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(-Math.PI/7);ctx.font='900 '+size+'px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=Math.max(2,size*.08);ctx.strokeStyle='rgba(0,0,0,.58)';ctx.fillStyle='rgba(255,255,255,.58)';
-  const mark='FQ MMA • TEAM S.N.R.G.', spacing=Math.max(canvas.width*.72,ctx.measureText(mark).width+40);
-  for(let y=-canvas.height;y<=canvas.height;y+=size*3.2)for(let x=-canvas.width;x<=canvas.width;x+=spacing){ctx.strokeText(mark,x,y);ctx.fillText(mark,x,y)}
-  ctx.restore();bitmap.close?.();
-  const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Could not export the watermarked image preview.')),'image/jpeg',.84));
-  return new File([blob],file.name.replace(/\.[^.]+$/,'')+'-watermarked-preview.jpg',{type:'image/jpeg'});
+  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Could not create an image preview.');
+  ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+  if(applyWatermark){
+    const size=Math.max(22,Math.round(canvas.width*.045));
+    ctx.save();ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(-Math.PI/7);ctx.font='900 '+size+'px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=Math.max(2,size*.08);ctx.strokeStyle='rgba(0,0,0,.62)';ctx.fillStyle='rgba(255,255,255,.68)';
+    const mark='FQ MMA / Team S.N.R.G. MMA', spacing=Math.max(canvas.width*.72,ctx.measureText(mark).width+40);
+    for(let y=-canvas.height;y<=canvas.height;y+=size*3.2)for(let x=-canvas.width;x<=canvas.width;x+=spacing){ctx.strokeText(mark,x,y);ctx.fillText(mark,x,y)}
+    ctx.restore();
+  }
+  bitmap.close?.();
+  const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Could not export the image preview.')),'image/jpeg',.84));
+  return new File([blob],file.name.replace(/\.[^.]+$/,'')+(applyWatermark?'-watermarked-preview.jpg':'-preview.jpg'),{type:'image/jpeg'});
 }
 $('mediaForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const file=$('mediaFile').files[0], previewInput=$('mediaPreviewFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
   const description=$('mediaDescription').value.trim(), collection=$('mediaCollection').value, destination=$('mediaDestination').value, eventId=$('mediaEvent').value||null;
-  const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, message=$('mediaMessage');message.textContent='';
+  const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, applyWatermark=$('mediaApplyWatermark').checked, message=$('mediaMessage');message.textContent='';
   if(!title){message.textContent='Enter a title.';return}
   if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid price from $0 to $9,999.';return}
   if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
   if(!id&&!file){message.textContent='Choose an original photo or video to upload.';return}
   if(file&&file.size>50*1024*1024){message.textContent='Original file exceeds 50 MB.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
-  if(file&&file.type.startsWith('video/')&&!previewInput){message.textContent='Videos need a separate watermarked preview file. Add the preview with the watermark burned into it.';return}
-  if(previewInput&&(!previewInput.type.startsWith('video/')||previewInput.size>50*1024*1024)){message.textContent='Choose a watermarked MP4 or WebM preview under 50 MB.';return}
+  if(file&&file.type.startsWith('video/')&&!previewInput){message.textContent='Videos need a separate preview file. If watermarking is enabled, burn “FQ MMA / Team S.N.R.G. MMA” into that preview before uploading.';return}
+  if(previewInput&&(!previewInput.type.startsWith('video/')||previewInput.size>50*1024*1024)){message.textContent='Choose an MP4 or WebM preview under 50 MB.';return}
   if(!file&&previewInput){message.textContent='Choose the original file when replacing a watermarked preview.';return}
   const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Creating protected listing…';const uploaded=[];
   try{
@@ -269,7 +274,7 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(file&&(purchases.count||0)>0)throw new Error('This item has purchase history. Its original cannot be replaced because that could change what existing buyers receive. Edit details only, or create a new listing for a different original.');
     }
     if(file){
-      const previewFile=file.type.startsWith('image/')?await createWatermarkedImagePreview(file):previewInput;
+      const previewFile=file.type.startsWith('image/')?await createImagePreview(file,applyWatermark):previewInput;
       const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),stamp=Date.now(),originalPath=collection+'/'+stamp+'-original-'+safeName;
       const {error:originalError}=await client.storage.from('fqmma-private').upload(originalPath,file,{upsert:false,contentType:file.type});if(originalError)throw originalError;
       uploaded.push({bucket:'fqmma-private',path:originalPath});
@@ -284,10 +289,10 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(file&&existing?.file_path)oldObjects.push({bucket:existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media'),path:existing.file_path});
       if(file&&existing?.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path});
       uploaded.length=0;const cleanup=await Promise.all(oldObjects.map(x=>client.storage.from(x.bucket).remove([x.path])));
-      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':'Listing updated. Original secured in private storage; watermarked preview published.';
+      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':'Listing updated. Original secured in private storage; '+(applyWatermark?'watermarked':'unwatermarked')+' preview published.';
     }else{
       const {error:insertError}=await client.from('media').insert({...patch}).select('id').single();if(insertError)throw insertError;
-      uploaded.length=0;message.textContent='Listing created. Original secured in private storage; watermarked preview published.';
+      uploaded.length=0;message.textContent='Listing created. Original secured in private storage; '+(applyWatermark?'watermarked':'unwatermarked')+' preview published.';
     }
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
   }catch(err){for(const item of uploaded)await client.storage.from(item.bucket).remove([item.path]);message.textContent=err?.message||String(err)}
@@ -299,7 +304,7 @@ document.addEventListener('click',async e=>{
     const m=records.media?.find(x=>String(x.id)===edit.dataset.mediaEdit);if(!m)return;
     $('mediaRecordId').value=m.id;$('mediaCollection').value=m.collection||'mma_event';$('mediaDestination').value=m.media_destination||'site';$('mediaEvent').value=m.event_id||'';
     $('mediaTitle').value=m.title||'';$('mediaDescription').value=m.description||'';$('mediaPrice').value=Number(m.price||0).toFixed(2);
-    $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaPreviewFile').value='';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
+    $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaPreviewFile').value='';$('mediaFile').required=false;$('mediaApplyWatermark').checked=true;$('mediaSaveButton').textContent='Save changes';
     $('mediaMessage').textContent='Editing listing details. For security, changing a listing from free to paid or paid to free requires re-uploading the file.';
     window.scrollTo({top:0,behavior:'smooth'});return;
   }
