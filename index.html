@@ -44,10 +44,17 @@
 
           const loadLibrary = (src) => new Promise((resolve, reject) => {
             const script = document.createElement("script");
+            const timeout = window.setTimeout(() => {
+              script.remove();
+              reject(new Error("Timed out loading Supabase library from " + src));
+            }, 8000);
             script.src = src;
             script.async = true;
-            script.onload = resolve;
-            script.onerror = () => reject(new Error("Could not load Supabase library from " + src));
+            script.onload = () => { window.clearTimeout(timeout); resolve(); };
+            script.onerror = () => {
+              window.clearTimeout(timeout);
+              reject(new Error("Could not load Supabase library from " + src));
+            };
             document.head.appendChild(script);
           });
 
@@ -2247,7 +2254,8 @@
             subscribeLiveChat();
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
+            await window.ensureSupabaseClient().catch(() => null);
             window.renderAllContent();
             cleanupExpiredPromos();
             if (window.location.hash === '#tab-schedule') {
