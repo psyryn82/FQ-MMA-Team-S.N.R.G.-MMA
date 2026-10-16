@@ -565,10 +565,11 @@ $('accessSendExisting')?.addEventListener('click',async()=>{
 });
 $('accessRevoke')?.addEventListener('click',async()=>{
   const status=$('accessGrantStatus'),permission_id=$('accessPermissionId').value.trim();
-  if(!permission_id){status.textContent='Enter an approval ID or grant access first.';return}
+  const media_id=Number($('accessMediaId').value),authorized_email=$('accessEmail').value.trim().toLowerCase();
+  if(!permission_id&&(!Number.isSafeInteger(media_id)||media_id<1||!authorized_email)){status.textContent='Enter an approval ID or the media ID and approved email.';return}
   if(!confirm('Revoke this approval? Any unused download links will stop working.'))return;
   const button=$('accessRevoke');button.disabled=true;status.textContent='Revoking approval…';
-  try{await runMediaAccessAction('revoke',{permission_id});status.textContent='Approval revoked. Any unused one-time links are no longer valid.'}
+  try{await runMediaAccessAction('revoke',permission_id?{permission_id}:{media_id,authorized_email});$('accessPermissionId').value='';status.textContent='Approval revoked. Any unused one-time links are no longer valid.'}
   catch(err){status.textContent=err.message||'Could not revoke the approval.'}
   finally{button.disabled=false}
 });
