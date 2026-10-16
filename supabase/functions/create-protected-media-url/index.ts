@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
 
     const { data: existing, error: existingError } = await db
       .from("media_download_permissions")
-      .select("id")
+      .select("id,expires_at")
       .eq("media_id", mediaId)
       .eq("authorized_email", email)
       .is("revoked_at", null)
@@ -120,15 +120,16 @@ Deno.serve(async (req) => {
     if (existingError) return respond({ error: "Could not check existing download approval." }, 500, origin);
 
     if (existing) {
-      const { data: updated, error: updateError } = await db
+      const stillActive = !existing.expires_at || new Date(existing.expires_at).getTime() > Date.now();
+      if (stillActive) {
+        return respond({ error: "An active approval already exists. Revoke it before creating a replacement." }, 409, origin);
+      }
+      const { error: expireError } = await db
         .from("media_download_permissions")
-        .update({ reason: reason || null, expires_at: expiresAt })
+        .update({ revoked_at: new Date().toISOString(), revoked_by: staff.user.id })
         .eq("id", existing.id)
-        .is("revoked_at", null)
-        .select("id,media_id,authorized_email,reason,created_at,expires_at")
-        .single();
-      if (updateError || !updated) return respond({ error: "Could not update the existing approval." }, 500, origin);
-      return respond({ permission: updated, updated: true }, 200, origin);
+        .is("revoked_at", null);
+      if (expireError) return respond({ error: "Could not close the expired approval before replacing it." }, 500, origin);
     }
 
     const { data: permission, error: insertError } = await db
