@@ -93,9 +93,9 @@ Deno.serve(async (req) => {
         }
         if (session.payment_status === "paid") {
           const { data: media, error: mediaError } = await db.from("media")
-            .select("id,is_published,price,file_path").eq("id", mediaId).maybeSingle();
+            .select("id,is_published,price,file_path,storage_bucket").eq("id", mediaId).maybeSingle();
           if (mediaError) throw mediaError;
-          if (!media || !media.is_published || Number(media.price) <= 0 || !media.file_path) {
+          if (!media || !media.is_published || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") {
             throw new Error("Paid media is unavailable or not configured for private delivery");
           }
           const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
