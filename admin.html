@@ -47,13 +47,13 @@
 <section><h3 class="head text-xl uppercase mb-3">MMA event live-stream purchases</h3><div id="streamSalesList" class="space-y-3"></div></section>
 </section>
 <section id="tab-media" class="panel p-5 hidden">
-<h2 class="head text-2xl uppercase mb-1">Media Catalog & Uploads</h2>
-<p class="muted text-sm mb-4">Manage two separate catalogs. Public previews can be watermarked per upload; every original stays private and downloads require a verified paid purchase. Images are resized automatically. Videos require a separate preview file. Maximum file size: 50 MB.</p>
+<h2 class="head text-2xl uppercase mb-1">MMA Media & Sasha’s Portfolio</h2>
+<p class="muted text-sm mb-4">Manage public MMA fight/event media and Sasha’s professional portfolio here. Staff-only logos, graphics, and website photos belong in the separate Site Media library. Public previews can be watermarked per upload; every original stays private. Images are resized automatically. Videos require a separate preview file. Maximum file size: 50 MB.</p>
 <form id="mediaForm" class="space-y-4">
 <input id="mediaRecordId" type="hidden">
 <div class="grid md:grid-cols-2 gap-4">
 <label class="block text-sm">Catalog<select id="mediaCollection" class="field" required><option value="mma_event">MMA Events · live-stream/event media</option><option value="sasha_portfolio">Sasha’s Portfolio</option></select></label>
-<label class="block text-sm">Media destination<select id="mediaDestination" class="field" required><option value="site">Site media · website content</option><option value="portfolio">Portfolio media · showcase/work</option></select><span class="muted text-xs">This controls editorial placement only, not price, publication, or access.</span></label>\n<label class="block text-sm">Related MMA event (optional)<select id="mediaEvent" class="field"><option value="">General MMA media / not event-specific</option></select></label>
+<label class="block text-sm">Related MMA event (optional)<select id="mediaEvent" class="field"><option value="">General MMA media / not event-specific</option></select></label>
 <label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
 <label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">$0 means preview-only, not free download. Every original stays private regardless of price.</span></label>
@@ -238,9 +238,9 @@ async function loadMedia(){
     }else if(m.file_url){
       preview='<span class="text-red-400 text-xs font-bold">LEGACY PUBLIC ORIGINAL: replace this file to secure it</span>';
     }
-    const section=m.collection==='sasha_portfolio'?'Sasha’s Portfolio':'MMA Events';const destination=m.media_destination==='portfolio'?'Portfolio media':'Site media';
+    const section=m.collection==='sasha_portfolio'?'Sasha’s Portfolio':'MMA Events';
     const eventName=eventsCache.find(ev=>ev.id===m.event_id)?.title||'General media';
-    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(destination)+' · '+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(m.preview_path?'Watermarked preview ready':'NEEDS WATERMARKED PREVIEW')+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button><button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
+    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(m.preview_path?'Watermarked preview ready':'NEEDS WATERMARKED PREVIEW')+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button><button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
   }));
   list.innerHTML=cards.join('')||'<p class="muted text-sm">No media listings yet. Upload an item above to create the first listing.</p>';
   message.textContent='Loaded '+records.media.length+' media listing(s).';
@@ -323,7 +323,7 @@ document.addEventListener('click',async e=>{
  }
 });
 function clearMediaForm(){
-  $('mediaForm').reset();$('mediaRecordId').value='';$('mediaDestination').value='site';$('mediaPrice').value='0';$('mediaPublished').checked=true;$('mediaApplyWatermark').checked=true;$('mediaSaveButton').textContent='Upload & publish listing';$('mediaFile').required=false;$('mediaPreviewFile').value='';
+  $('mediaForm').reset();$('mediaRecordId').value='';$('mediaPrice').value='0';$('mediaPublished').checked=true;$('mediaApplyWatermark').checked=true;$('mediaSaveButton').textContent='Upload & publish listing';$('mediaFile').required=false;$('mediaPreviewFile').value='';
 }
 $('mediaClearButton').onclick=clearMediaForm;
 async function createImagePreview(file,applyWatermark){
@@ -345,7 +345,7 @@ async function createImagePreview(file,applyWatermark){
 $('mediaForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const file=$('mediaFile').files[0], previewInput=$('mediaPreviewFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
-  const description=$('mediaDescription').value.trim(), collection=$('mediaCollection').value, destination=$('mediaDestination').value, eventId=$('mediaEvent').value||null;
+  const description=$('mediaDescription').value.trim(), collection=$('mediaCollection').value, eventId=$('mediaEvent').value||null;
   const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, applyWatermark=$('mediaApplyWatermark').checked, message=$('mediaMessage');message.textContent='';
   if(!title){message.textContent='Enter a title.';return}
   if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid price from $0 to $9,999.';return}
@@ -358,7 +358,7 @@ $('mediaForm').addEventListener('submit',async e=>{
   if(!file&&previewInput){message.textContent='Choose the original file when replacing a watermarked preview.';return}
   const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Creating protected listing…';const uploaded=[];
   try{
-    const patch={title,description,collection,media_destination:destination,event_id:eventId,price,is_published:published};let existing=null;
+    const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,is_published:published};let existing=null;
     if(id){
       existing=records.media?.find(m=>String(m.id)===String(id));if(!existing)throw new Error('Media listing was not found. Refresh the catalog and try again.');
       const purchases=await client.from('media_purchases').select('id',{count:'exact',head:true}).eq('media_id',id);
