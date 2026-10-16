@@ -98,6 +98,10 @@ Deno.serve(async (req) => {
           if (!media || !media.is_published || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") {
             throw new Error("Paid media is unavailable or not configured for private delivery");
           }
+          const expectedAmountCents = Math.round(Number(media.price) * 100);
+          if (session.amount_total !== expectedAmountCents || String(session.currency || "").toLowerCase() !== "usd") {
+            throw new Error("Media checkout amount or currency does not match the published media price");
+          }
           const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
           const { error: purchaseError } = await db.from("media_purchases").upsert({
             media_id: mediaId,
@@ -105,6 +109,8 @@ Deno.serve(async (req) => {
             payment_intent_id: paymentIntentId,
             customer_email: session.customer_details?.email ?? session.customer_email ?? null,
             payment_status: "paid",
+            amount_cents: session.amount_total,
+            currency: String(session.currency || "usd").toUpperCase(),
             updated_at: new Date().toISOString(),
           }, { onConflict: "checkout_session_id" });
           if (purchaseError) throw purchaseError;
