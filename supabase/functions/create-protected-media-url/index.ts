@@ -200,6 +200,9 @@ Deno.serve(async (req) => {
       await db.from("media_download_tokens").delete().eq("id", tokenRow.id);
       return respond({ error: "The download email could not be sent. Check the Resend sender configuration and try again." }, 502, origin);
     }
+    await db.from("media_download_tokens")
+      .update({ consumed_at: new Date().toISOString() })
+      .eq("permission_id", permission.id).is("consumed_at", null).neq("id", tokenRow.id);
     return respond({ sent: true, expires_in: 1800, message: "One-time download link sent." }, 200, origin);
   }
 
@@ -207,9 +210,17 @@ Deno.serve(async (req) => {
     const staff = await requireStaff();
     if ("error" in staff) return respond({ error: staff.error }, staff.status, origin);
 
-    const permissionId = String(input.permission_id || "").trim();
+    let permissionId = String(input.permission_id || "").trim();
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(permissionId)) {
-      return respond({ error: "A valid approval ID is required." }, 400, origin);
+      const mediaId = Number(input.media_id);
+      const email = String(input.authorized_email || "").trim().toLowerCase();
+      if (!Number.isSafeInteger(mediaId) || mediaId < 1 || !validEmail(email)) {
+        return respond({ error: "Provide an approval ID or a valid media ID and approved email." }, 400, origin);
+      }
+      const { data: existing, error: lookupError } = await db.from("media_download_permissions")
+        .select("id").eq("media_id", mediaId).eq("authorized_email", email).is("revoked_at", null).maybeSingle();
+      if (lookupError || !existing) return respond({ error: "Active approval not found for this media and email." }, 404, origin);
+      permissionId = existing.id;
     }
     const { data: permission, error } = await db
       .from("media_download_permissions")
