@@ -402,6 +402,29 @@ async function createImagePreview(file,applyWatermark){
   const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Could not export the image preview.')),'image/jpeg',.84));
   return new File([blob],file.name.replace(/\.[^.]+$/,'')+(applyWatermark?'-watermarked-preview.jpg':'-preview.jpg'),{type:'image/jpeg'});
 }
+async function createVideoThumbnail(file){
+  const video=document.createElement('video');
+  video.preload='metadata';
+  video.muted=true;
+  video.playsInline=true;
+  const url=URL.createObjectURL(file);
+  try{
+    await new Promise((resolve,reject)=>{
+      video.onloadeddata=resolve;
+      video.onerror=()=>reject(new Error('Could not read this video to create its preview image.'));
+      video.src=url;
+    });
+    if(video.readyState<2) await new Promise((resolve,reject)=>{video.onloadeddata=resolve;video.onerror=()=>reject(new Error('Could not read this video to create its preview image.'));});
+    try{video.currentTime=Math.min(1,Math.max(0,(video.duration||1)*0.1));await new Promise(resolve=>{video.onseeked=resolve;setTimeout(resolve,1200);});}catch{}
+    const canvas=document.createElement('canvas');
+    canvas.width=video.videoWidth||640;canvas.height=video.videoHeight||360;
+    const ctx=canvas.getContext('2d');
+    if(!ctx||!canvas.width||!canvas.height)throw new Error('Could not create a thumbnail from this video.');
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Could not export the video preview image.')),'image/jpeg',.84));
+    return new File([blob],file.name.replace(/\.[^.]+$/,'')+'-preview.jpg',{type:'image/jpeg'});
+  }finally{URL.revokeObjectURL(url);video.removeAttribute('src');video.load();}
+}
 $('mediaForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const file=$('mediaFile').files[0], previewInput=$('mediaPreviewFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
@@ -413,10 +436,8 @@ $('mediaForm').addEventListener('submit',async e=>{
   if(!id&&!file){message.textContent='Choose an original photo or video to upload.';return}
   if(file&&file.size>1024*1024*1024){message.textContent='Original file exceeds the 1 GB upload limit.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
-  if(file&&file.type.startsWith('video/')&&!previewInput){message.textContent='Videos need a separate preview file.';return}
-  
   if(previewInput&&(!previewInput.type.startsWith('video/')||previewInput.size>50*1024*1024)){message.textContent='Choose an MP4 or WebM preview under 50 MB.';return}
-  if(!file&&previewInput){message.textContent='Choose the original file when replacing a watermarked preview.';return}
+  if(!file&&previewInput){message.textContent='Choose the original file when replacing a preview.';return}
   const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Creating protected listing…';const uploaded=[];
   try{
     const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,is_published:published};let existing=null;
@@ -427,7 +448,7 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(file&&(purchases.count||0)>0)throw new Error('This item has purchase history. Its original cannot be replaced because that could change what existing buyers receive. Edit details only, or create a new listing for a different original.');
     }
     if(file){
-      const previewFile=file.type.startsWith('image/')?await createImagePreview(file,applyWatermark):previewInput;
+      const previewFile=file.type.startsWith('image/')?await createImagePreview(file,applyWatermark):(previewInput||await createVideoThumbnail(file));
       const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),stamp=Date.now(),originalPath=collection+'/'+stamp+'-original-'+safeName;
       const {error:originalError}=await client.storage.from('fqmma-private').upload(originalPath,file,{upsert:false,contentType:file.type});if(originalError)throw originalError;
       uploaded.push({bucket:'fqmma-private',path:originalPath});
