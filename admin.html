@@ -620,7 +620,20 @@ async function loadSales(){
 
 async function runMediaAccessAction(action, body) {
   const {data,error}=await client.functions.invoke('create-protected-media-url',{body:{action,...body}});
-  if(error) throw error;
+  if(error) {
+    // Supabase wraps non-2xx responses in FunctionsHttpError. Read the actual
+    // JSON response so the admin sees the actionable server-side reason.
+    let detail='';
+    try {
+      const response=error.context;
+      if(response && typeof response.clone==='function') {
+        const payload=await response.clone().json();
+        detail=payload?.error||payload?.message||'';
+      }
+    } catch {}
+    const status=Number(error.context?.status)||0;
+    throw new Error(detail || (status ? 'Download request failed (HTTP '+status+'). Check the Edge Function logs.' : error.message) || 'Download request failed.');
+  }
   if(data?.error) throw new Error(data.error);
   return data;
 }
