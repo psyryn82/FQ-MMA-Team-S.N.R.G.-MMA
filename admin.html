@@ -80,6 +80,11 @@
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
 </form>
+<div id="mediaProgress" class="hidden mt-4 rounded-lg border border-gray-700 bg-black/40 p-4" role="status" aria-live="polite">
+  <div class="flex items-center justify-between gap-3 text-sm"><span id="mediaProgressLabel" class="font-semibold">Preparing upload…</span><span id="mediaProgressPercent" class="font-bold tabular-nums">0%</span></div>
+  <div class="mt-2 h-3 w-full overflow-hidden rounded-full bg-gray-800"><div id="mediaProgressBar" class="h-full rounded-full bg-red-600 transition-[width] duration-200" style="width:0%"></div></div>
+  <div class="mt-2 flex items-center justify-between gap-3 text-xs muted"><span id="mediaProgressDetail">Please keep this page open.</span><span id="mediaProgressElapsed" class="tabular-nums">Elapsed 0:00</span></div>
+</div>
 <div id="mediaMessage" class="text-sm mt-3" role="status"></div>
 <div id="mediaList" class="mt-5 space-y-3"></div>
 </section>
@@ -125,6 +130,50 @@
 </section>
 </main>
 <script>
+let mediaProgressStarted=0,mediaProgressTimer=null;
+function updateMediaProgress(label,percent=null,detail='Please keep this page open.'){
+  $('mediaProgress').classList.remove('hidden');
+  $('mediaProgressLabel').textContent=label;
+  $('mediaProgressDetail').textContent=detail;
+  if(percent===null){$('mediaProgressPercent').textContent='';$('mediaProgressBar').style.width='100%';$('mediaProgressBar').classList.add('animate-pulse');}
+  else{$('mediaProgressBar').classList.remove('animate-pulse');const value=Math.max(0,Math.min(100,Math.round(percent)));$('mediaProgressPercent').textContent=value+'%';$('mediaProgressBar').style.width=value+'%';}
+}
+function startMediaProgress(){
+  mediaProgressStarted=Date.now();$('mediaProgressElapsed').textContent='Elapsed 0:00';
+  clearInterval(mediaProgressTimer);
+  mediaProgressTimer=setInterval(()=>{const seconds=Math.floor((Date.now()-mediaProgressStarted)/1000);$('mediaProgressElapsed').textContent='Elapsed '+Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');},1000);
+  updateMediaProgress('Preparing upload…',0,'Starting safely. Your original remains private.');
+}
+function stopMediaProgress(){
+  clearInterval(mediaProgressTimer);mediaProgressTimer=null;
+  $('mediaProgress').classList.add('hidden');$('mediaProgressBar').classList.remove('animate-pulse');
+}
+async function uploadStorageFileWithProgress(bucket,path,file,label){
+  const {data:{session},error:sessionError}=await client.auth.getSession();
+  if(sessionError)throw sessionError;
+  if(!session?.access_token)throw new Error('Your admin session expired. Sign in again and retry the upload.');
+  const url=CONFIG.supabaseUrl+'/storage/v1/object/'+encodeURIComponent(bucket)+'/'+path.split('/').map(encodeURIComponent).join('/');
+  return await new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();
+    xhr.open('POST',url,true);
+    xhr.setRequestHeader('Authorization','Bearer '+session.access_token);
+    xhr.setRequestHeader('apikey',CONFIG.supabaseKey);
+    xhr.setRequestHeader('Content-Type',file.type||'application/octet-stream');
+    xhr.setRequestHeader('x-upsert','false');
+    xhr.upload.onprogress=event=>{
+      if(event.lengthComputable)updateMediaProgress(label,Math.round(event.loaded/event.total*100),(event.loaded/1048576).toFixed(1)+' MB of '+(event.total/1048576).toFixed(1)+' MB uploaded');
+      else updateMediaProgress(label,null,'Uploading file…');
+    };
+    xhr.onload=()=>{
+      let payload={};try{payload=JSON.parse(xhr.responseText||'{}')}catch{}
+      if(xhr.status>=200&&xhr.status<300)resolve(payload);
+      else reject(new Error(payload.message||payload.error||payload.error_description||('Storage upload failed (HTTP '+xhr.status+').')));
+    };
+    xhr.onerror=()=>reject(new Error('Network error while uploading. Check your connection and try again.'));
+    xhr.onabort=()=>reject(new Error('Upload was cancelled.'));
+    xhr.send(file);
+  });
+}
 const CONFIG={supabaseUrl:'https://dmcbbavsxyxrxuuzraiu.supabase.co',supabaseKey:'sb_publishable_vJAptJ41TpicuxtMspB8tA_AaMFlGEC'};
 const $=id=>document.getElementById(id);
 const client=window.supabase.createClient(CONFIG.supabaseUrl,CONFIG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
@@ -438,7 +487,7 @@ $('mediaForm').addEventListener('submit',async e=>{
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
   if(previewInput&&(!previewInput.type.startsWith('video/')||previewInput.size>50*1024*1024)){message.textContent='Choose an MP4 or WebM preview under 50 MB.';return}
   if(!file&&previewInput){message.textContent='Choose the original file when replacing a preview.';return}
-  const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Creating protected listing…';const uploaded=[];
+  const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Creating protected listing…';const uploaded=[];startMediaProgress();
   try{
     const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,is_published:published};let existing=null;
     if(id){
@@ -448,15 +497,20 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(file&&(purchases.count||0)>0)throw new Error('This item has purchase history. Its original cannot be replaced because that could change what existing buyers receive. Edit details only, or create a new listing for a different original.');
     }
     if(file){
-      const previewFile=file.type.startsWith('image/')?await createImagePreview(file,applyWatermark):(previewInput||await createVideoThumbnail(file));
+      let previewFile;
+      if(file.type.startsWith('image/')){updateMediaProgress('Preparing image preview…',5,'Creating a listing preview.');previewFile=await createImagePreview(file,applyWatermark);}
+      else if(previewInput)previewFile=previewInput;
+      else{updateMediaProgress('Creating video thumbnail…',5,'Reading the video to create its listing image.');previewFile=await createVideoThumbnail(file);}
       const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),stamp=Date.now(),originalPath=collection+'/'+stamp+'-original-'+safeName;
-      const {error:originalError}=await client.storage.from('fqmma-private').upload(originalPath,file,{upsert:false,contentType:file.type});if(originalError)throw originalError;
+      updateMediaProgress('Uploading original file…',0,'Original files are stored privately.');
+      await uploadStorageFileWithProgress('fqmma-private',originalPath,file,'Uploading original file…');
       uploaded.push({bucket:'fqmma-private',path:originalPath});
       const previewPath=collection+'/'+stamp+'-preview-'+previewFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
-      const {error:previewError}=await client.storage.from('fqmma-media').upload(previewPath,previewFile,{upsert:false,contentType:previewFile.type});if(previewError)throw previewError;
+      await uploadStorageFileWithProgress('fqmma-media',previewPath,previewFile,'Uploading listing preview…');
       uploaded.push({bucket:'fqmma-media',path:previewPath});
       Object.assign(patch,{category:file.type.startsWith('video/')?'Video':'Photo',file_path:originalPath,file_url:client.storage.from('fqmma-media').getPublicUrl(previewPath).data.publicUrl,preview_path:previewPath,storage_bucket:'fqmma-private'});
     }
+    updateMediaProgress('Saving listing…',null,'The files are uploaded. Saving the listing details now.');
     if(id){
       const {error}=await client.from('media').update(patch).eq('id',id);if(error)throw error;
       const oldObjects=[];
@@ -468,9 +522,10 @@ $('mediaForm').addEventListener('submit',async e=>{
       const {error:insertError}=await client.from('media').insert({...patch}).select('id').single();if(insertError)throw insertError;
       uploaded.length=0;message.textContent='Listing created. Original secured in private storage; '+(applyWatermark?'watermarked':'unwatermarked')+' preview published.';
     }
+    updateMediaProgress('Refreshing media catalog…',null,'Finishing up and refreshing the list.');
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
   }catch(err){for(const item of uploaded)await client.storage.from(item.bucket).remove([item.path]);message.textContent=err?.message||String(err)}
-  finally{button.disabled=false;button.textContent=$('mediaRecordId').value?'Save changes':'Upload & publish listing'}
+  finally{stopMediaProgress();button.disabled=false;button.textContent=$('mediaRecordId').value?'Save changes':'Upload & publish listing'}
 });
 document.addEventListener('click',async e=>{
   const edit=e.target.closest('[data-media-edit]');
