@@ -543,15 +543,30 @@
                     const isRed = index % 2 === 0;
                     const borderColor = isRed ? 'border-brand-red' : 'border-white';
                     const glowStyle = isRed ? 'shadow-neon-red' : 'shadow-neon-white';
-                    // Structured media records may expose a separate photo listing image.
-                    // Uploaded videos are never embedded or played on public listing cards.
+                    // Only the dedicated public preview path may be embedded on the public site.
+                    // Never use file_path or a private file URL for public playback.
                     const safeListing = !!(item.mediaId && item.protectedMedia === true);
                     const mediaUrl = safeListing ? getSafeHttpUrl(item.image, true) : '';
                     const itemUrl = safeListing ? getSafeHttpUrl(item.link, true) : '';
                     const isVideo = String(item.category || '').toLowerCase() === 'video';
-                    const media = mediaUrl && !isVideo
-                        ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`
-                        : '';
+                    let previewUrl = '';
+                    const previewPath = String(item.previewPath || '').trim();
+                    if (safeListing && isVideo && previewPath) {
+                        const publicBucketPrefix = 'https://dmcbbavsxyxrxuuzraiu.supabase.co/storage/v1/object/public/fqmma-media/';
+                        if (previewPath.startsWith(publicBucketPrefix)) {
+                            previewUrl = getSafeHttpUrl(previewPath, true);
+                        } else if (!/^https?:\\/\\//i.test(previewPath)) {
+                            const safePath = previewPath.replace(/^\\/?fqmma-media\\//i, '').replace(/^\\/+/, '');
+                            if (safePath && !safePath.split('/').some(part => part === '..') && window.sb?.storage) {
+                                previewUrl = window.sb.storage.from('fqmma-media').getPublicUrl(safePath).data.publicUrl;
+                            }
+                        }
+                    }
+                    const media = isVideo && previewUrl
+                        ? `<video controls playsinline preload="metadata" controlslist="nodownload" aria-label="Video preview: ${escapeHtml(item.title || 'Fight video')}" class="w-full max-h-72 rounded-lg bg-black"><source src="${escapeHtml(previewUrl)}">Your browser does not support embedded video.</video>`
+                        : (mediaUrl && !isVideo
+                            ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`
+                            : '');
                     const action = safeListing
                         ? (Number(item.priceAmount) > 0
                             ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'Digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase original · ${escapeHtml(item.price || '')}</button>`
@@ -1176,7 +1191,7 @@
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
                         priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'No download included',
-                        image: String(m.category || '').toLowerCase() !== 'video' && m.preview_path && m.file_url ? m.file_url : '', link: '',
+                        image: String(m.category || '').toLowerCase() !== 'video' && m.preview_path && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', link: '',
                         protectedMedia: true, description: m.description || ''
                     }));
                     siteData.portfolio = [...databaseMedia, ...siteData.portfolio.filter(p => !p.mediaId)];
