@@ -75,6 +75,7 @@
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
 <label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">$0 does not include a free download. Every original stays private regardless of price.</span></label>
 <label class="block text-sm">Upload original photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Original file. It is always stored privately.</span></label>
+<label class="block text-sm">Public video playback preview (optional)<input id="mediaVideoPreviewFile" type="file" class="field" accept="video/mp4,video/webm"><span class="muted text-xs">Choose a separate, web-optimized preview copy (MP4/WebM, up to 500 MB). This copy is publicly reachable for playback, so do not upload the paid/high-resolution original here. The player hides download controls, but public video URLs cannot be made impossible to copy.</span></label>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
@@ -450,15 +451,19 @@ async function createImagePreview(file){
 }
 $('mediaForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const file=$('mediaFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
+  const file=$('mediaFile').files[0], previewFile=$('mediaVideoPreviewFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
   const description=$('mediaDescription').value.trim(), collection=activeMediaCollection, eventId=collection==='sasha_portfolio'?null:($('mediaEvent').value||null);
   const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, message=$('mediaMessage');message.textContent='';
   if(!title){message.textContent='Enter a title.';return}
   if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid price from $0 to $9,999.';return}
   if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
-  if(!id&&!file){message.textContent='Choose an original photo or video to upload.';return}
+  if(!id&&!file){message.textContent='Choose an original photo or video to upload for a new listing.';return}
   if(file&&file.size>2*1024*1024*1024){message.textContent='Original file exceeds the 2 GB upload limit.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
+  if(previewFile&&!['video/mp4','video/webm'].includes(previewFile.type)){message.textContent='The public playback preview must be an MP4 or WebM video.';return}
+  if(previewFile&&previewFile.size>500*1024*1024){message.textContent='Public video preview exceeds the 500 MB limit. Please choose a smaller web-optimized preview.';return}
+  if(previewFile&&file&&file.type.startsWith('image/')){message.textContent='A video playback preview can only be attached to a video listing.';return}
+  if(previewFile&&id){const existingPreviewRecord=records.media?.find(m=>String(m.id)===String(id));if(existingPreviewRecord&&String(existingPreviewRecord.category||'').toLowerCase()!=='video'&&file?.type.startsWith('image/')){message.textContent='A video preview cannot be attached to a photo listing.';return}}
   const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Creating protected listing…';const uploaded=[];startMediaProgress();
   try{
     const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,is_published:published};let existing=null;
@@ -488,17 +493,26 @@ $('mediaForm').addEventListener('submit',async e=>{
         Object.assign(patch,{category:'Video',file_path:originalPath,file_url:'',preview_path:null,storage_bucket:'fqmma-private'});
       }
     }
+    if(previewFile){
+      const existingForPreview=id?records.media?.find(m=>String(m.id)===String(id)):null;
+      if(!file&&existingForPreview&&String(existingForPreview.category||'').toLowerCase()!=='video')throw new Error('Public playback previews can only be attached to video listings.');
+      const previewName=previewFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),previewPath=collection+'/'+Date.now()+'-public-preview-'+previewName;
+      updateMediaProgress('Uploading public playback preview…',null,'Uploading a separate web-optimized preview. The original remains private.');
+      await uploadStorageFileWithProgress('fqmma-media',previewPath,previewFile,'Uploading public video preview…');
+      uploaded.push({bucket:'fqmma-media',path:previewPath});
+      Object.assign(patch,{category:'Video',preview_path:previewPath,file_url:''});
+    }
     updateMediaProgress('Saving listing…',null,'The files are uploaded. Saving the listing details now.');
     if(id){
       const {error}=await client.from('media').update(patch).eq('id',id);if(error)throw error;
       const oldObjects=[];
       if(file&&existing?.file_path)oldObjects.push({bucket:existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media'),path:existing.file_path});
-      if(file&&existing?.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path});
+      if((file||previewFile)&&existing?.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path});
       uploaded.length=0;const cleanup=await Promise.all(oldObjects.map(x=>client.storage.from(x.bucket).remove([x.path])));
-      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':(file&&file.type.startsWith('video/')?'Video listing updated. Original secured in private storage; no public playback is shown.':'Listing updated. Original secured in private storage and photo listing image published.');
+      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':(previewFile?'Video listing updated with a separate public playback preview. Original remains private; public preview download protection is limited.':(file&&file.type.startsWith('video/')?'Video listing updated. Original secured in private storage; no public playback is shown.':'Listing updated. Original secured in private storage and photo listing image published.'));
     }else{
       const {error:insertError}=await client.from('media').insert({...patch}).select('id').single();if(insertError)throw insertError;
-      uploaded.length=0;message.textContent=file.type.startsWith('video/')?'Video listing created. Original secured in private storage; no public playback is shown.':'Listing created. Original secured in private storage and photo listing image published.';
+      uploaded.length=0;message.textContent=file.type.startsWith('video/')?(previewFile?'Video listing created with a separate public playback preview. Original remains private; public preview download protection is limited.':'Video listing created. Original secured in private storage; add a separate playback preview to show it publicly.'):'Listing created. Original secured in private storage and photo listing image published.';
     }
     updateMediaProgress('Refreshing media catalog…',null,'Finishing up and refreshing the list.');
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
@@ -511,7 +525,7 @@ document.addEventListener('click',async e=>{
     const m=records.media?.find(x=>String(x.id)===edit.dataset.mediaEdit);if(!m)return;
     $('mediaRecordId').value=m.id;$('mediaCollection').value=m.collection||'mma_event';$('mediaEvent').value=activeMediaCollection==='sasha_portfolio'?'':(m.event_id||'');$('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';
     $('mediaTitle').value=m.title||'';$('mediaDescription').value=m.description||'';$('mediaPrice').value=Number(m.price||0).toFixed(2);
-    $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
+    $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaFile').required=false;$('mediaVideoPreviewFile').value='';$('mediaSaveButton').textContent='Save changes';
     $('mediaMessage').textContent='Editing listing details. For security, changing a listing from free to paid or paid to free requires re-uploading the file.';
     window.scrollTo({top:0,behavior:'smooth'});return;
   }
