@@ -132,6 +132,66 @@
       }
     </style>
 
+
+    <style>
+      /* Mobile-first polish: keep the existing desktop layout and branding intact. */
+      @media (max-width: 767px) {
+        body { overflow-x: clip; }
+        #header-ticker-text { line-height: 1.35; letter-spacing: .12em; }
+        section[aria-label="FQ MMA and Team S.N.R.G. event banner"] img {
+          width: 100%;
+          height: auto;
+          max-height: none;
+          object-fit: contain;
+        }
+        section.bg-gray-950.border-b.border-red-900\/40.py-6.px-4 { padding: 1.25rem 1rem; }
+        #countdown-event-title { font-size: clamp(1.1rem, 5vw, 1.5rem); line-height: 1.2; }
+        header.sticky { position: relative; }
+        header.sticky > div { padding-left: .75rem; padding-right: .75rem; }
+        header.sticky a .font-heading { font-size: clamp(.85rem, 4vw, 1.1rem); line-height: 1.2; }
+        header.sticky a > div { max-width: 100%; padding: .65rem .75rem; }
+        header.sticky button[onclick="togglePaywallModal()"] { min-height: 44px; padding: .7rem 1rem; }
+        header nav[aria-label="Mobile navigation"] {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: .4rem;
+          overflow: visible;
+          padding: 0 0 .75rem;
+        }
+        header nav[aria-label="Mobile navigation"] .nav-btn {
+          min-width: 0;
+          min-height: 42px;
+          padding: .55rem .35rem;
+          justify-content: center;
+          text-align: center;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          font-size: .65rem;
+          line-height: 1.15;
+        }
+        #main-content { padding: 1.25rem .875rem 2rem; }
+        #main-content .tab-content { min-width: 0; }
+        #tab-live > div:first-child h1 { font-size: clamp(2rem, 9vw, 2.75rem); line-height: 1.05; }
+        #tab-live .grid.grid-cols-1.lg\:grid-cols-3 { gap: 1rem; }
+        #tab-live .glass-panel.rounded-2xl.border-2.border-brand-red {
+          height: auto;
+          min-height: 260px;
+          max-height: 360px;
+        }
+        #chat-feed { min-height: 90px; }
+        #embed-locked-overlay { padding: 1rem; }
+        #embed-locked-overlay h3 { font-size: clamp(1.45rem, 7vw, 2rem); line-height: 1.1; }
+        #embed-locked-overlay .flex.flex-wrap { width: 100%; }
+        #embed-locked-overlay button { width: 100%; font-size: 1rem; padding: .8rem 1rem; }
+        #main-content img { max-width: 100%; height: auto; }
+        #streamCheckoutModal, #ticketCheckoutModal { padding: .75rem; }
+      }
+      @media (min-width: 768px) and (max-width: 1023px) {
+        #main-content { padding-left: 1.25rem; padding-right: 1.25rem; }
+        header.sticky { position: relative; }
+      }
+    </style>
+
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-red selection:text-white">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-black focus:px-4 focus:py-3 focus:text-white">Skip to main content</a>
