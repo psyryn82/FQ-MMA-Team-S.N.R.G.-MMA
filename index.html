@@ -192,6 +192,96 @@
       }
     </style>
 
+
+    <!-- Mobile-first layout refinements; desktop layout remains unchanged. -->
+    <style>
+      @media (max-width: 767px) {
+        html, body {
+          max-width: 100%;
+          overflow-x: hidden;
+        }
+
+        #main-content {
+          padding-left: 1rem;
+          padding-right: 1rem;
+          padding-top: 1.25rem;
+          padding-bottom: 1.5rem;
+        }
+
+        /* Keep every section of the mobile navigation visible without a clipped strip. */
+        header nav[aria-label="Mobile navigation"] {
+          display: flex;
+          flex-wrap: wrap;
+          overflow-x: visible;
+          gap: 0.35rem;
+          padding: 0 0.75rem 0.75rem;
+        }
+
+        header nav[aria-label="Mobile navigation"] .nav-btn {
+          flex: 1 1 auto;
+          min-width: 0;
+          white-space: normal;
+          text-align: center;
+          line-height: 1.2;
+          padding: 0.55rem 0.65rem;
+        }
+
+        #event-countdown {
+          gap: 0.4rem;
+        }
+
+        #event-countdown > div {
+          padding: 0.55rem 0.25rem;
+          min-width: 0;
+        }
+
+        #event-countdown [id^="countdown-"] {
+          font-size: clamp(1.25rem, 6vw, 1.8rem);
+        }
+
+        #countdown-event-title {
+          font-size: clamp(1.2rem, 5vw, 1.65rem);
+          line-height: 1.2;
+          overflow-wrap: anywhere;
+        }
+
+        #tab-live h1 {
+          font-size: clamp(1.8rem, 8vw, 2.6rem);
+          line-height: 1.08;
+          overflow-wrap: anywhere;
+        }
+
+        #tab-live .aspect-video {
+          border-radius: 0.85rem;
+        }
+
+        #tab-live .aspect-video h2,
+        #tab-live .aspect-video h3 {
+          font-size: clamp(1.25rem, 6vw, 1.8rem);
+          line-height: 1.15;
+        }
+
+        /* Keep chat available, but stop it consuming most of a phone screen. */
+        #tab-live .h-\[520px\] {
+          height: 340px;
+          min-height: 300px;
+        }
+
+        #tab-live .grid {
+          gap: 1rem;
+        }
+
+        #tab-live .aspect-video button {
+          max-width: 100%;
+          white-space: normal;
+        }
+
+        img, video, iframe {
+          max-width: 100%;
+        }
+      }
+    </style>
+
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-red selection:text-white">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-black focus:px-4 focus:py-3 focus:text-white">Skip to main content</a>
