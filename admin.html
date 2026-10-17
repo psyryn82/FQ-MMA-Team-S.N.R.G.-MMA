@@ -494,7 +494,7 @@ document.addEventListener('click',async e=>{
   const edit=e.target.closest('[data-media-edit]');
   if(edit){
     const m=records.media?.find(x=>String(x.id)===edit.dataset.mediaEdit);if(!m)return;
-    $('mediaRecordId').value=m.id;$('mediaCollection').value=m.collection||'mma_event';$('mediaDestination').value=m.media_destination||'site';$('mediaEvent').value=m.event_id||'';$('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';
+    $('mediaRecordId').value=m.id;$('mediaCollection').value=m.collection||'mma_event';$('mediaEvent').value=activeMediaCollection==='sasha_portfolio'?'':(m.event_id||'');$('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';
     $('mediaTitle').value=m.title||'';$('mediaDescription').value=m.description||'';$('mediaPrice').value=Number(m.price||0).toFixed(2);
     $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
     $('mediaMessage').textContent='Editing listing details. For security, changing a listing from free to paid or paid to free requires re-uploading the file.';
