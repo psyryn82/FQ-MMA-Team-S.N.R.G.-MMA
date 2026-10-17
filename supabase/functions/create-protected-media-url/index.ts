@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
       .select("id,media_id,authorized_email,expires_at,revoked_at").eq("id", tokenRow.permission_id).is("revoked_at", null).maybeSingle();
     if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) return respond({ error: "This approval is no longer active. Contact FQ MMA support." }, 403, origin);
     const { data: media, error: mediaError } = await db.from("media")
-      .select("id,title,file_path,storage_bucket,is_published").eq("id", permission.media_id).eq("is_published", true).maybeSingle();
+      .select("id,title,category,file_path,storage_bucket,is_published").eq("id", permission.media_id).eq("is_published", true).maybeSingle();
     if (mediaError || !media || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This media is not configured for private delivery." }, 404, origin);
     if (action === "playback" && String(media.category || "").toLowerCase() !== "video") return respond({ error: "This link is not for video playback." }, 400, origin);
     const { data: stillApproved, error: recheckError } = await db.from("media_download_permissions").select("id").eq("id", permission.id).is("revoked_at", null).maybeSingle();
