@@ -33,14 +33,23 @@ const message = document.getElementById("streamMessage");
 const playerWrap = document.getElementById("playerWrap");
 const hlsPlayer = document.getElementById("hlsPlayer");
 let hlsInstance = null;
-const sessionId = new URLSearchParams(window.location.search).get("session_id");
+const params = new URLSearchParams(window.location.search);
+const sessionId = params.get("session_id");
+const freeEventId = params.get("free_event_id");
 async function startPlayback() {
-  if (!sessionId || !/^cs_(test|live)_[A-Za-z0-9_]+$/.test(sessionId)) {
+  const freeMode = Boolean(freeEventId);
+  if (freeMode && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(freeEventId)) {
+    message.textContent = "The free stream link is invalid.";
+    return;
+  }
+  if (!freeMode && (!sessionId || !/^cs_(test|live)_[A-Za-z0-9_]+$/.test(sessionId))) {
     message.textContent = "A valid completed checkout link is required. If you paid, use the link from your checkout confirmation.";
     return;
   }
   try {
-    const { data, error } = await client.functions.invoke("create-livepeer-stream-playback", { body: { session_id: sessionId } });
+    const { data, error } = freeMode
+      ? await client.functions.invoke("create-free-stream-playback", { body: { event_id: freeEventId } })
+      : await client.functions.invoke("create-livepeer-stream-playback", { body: { session_id: sessionId } });
     if (error) throw error;
     if (!data?.playback_url) throw new Error(data?.error || "Secure playback is not available yet.");
     document.getElementById("eventTitle").textContent = data.event_title || "FQ MMA Live Stream";
@@ -63,7 +72,7 @@ async function startPlayback() {
     } else {
       throw new Error("The Livepeer playback address was not recognized as a secure stream.");
     }
-    message.textContent = "Payment verified. Press play when you are ready.";
+    message.textContent = freeMode ? "Free stream access confirmed. Press play when you are ready." : "Payment verified. Press play when you are ready.";
   } catch (error) {
     message.textContent = error?.message || "Secure playback could not be started. If you just paid, wait a moment and refresh.";
   }
