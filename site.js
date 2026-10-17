@@ -62,19 +62,19 @@
                     const option = document.createElement('option');
                     option.value = stream.event_id;
                     const dateText = stream.event_date ? ' · ' + formatLongDateTime(stream.event_date) : ' · Date to be announced';
-                    const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: stream.currency || 'USD' }).format((stream.price_cents || 0) / 100);
+                    const amount = Number(stream.price_cents || 0) <= 0 ? 'FREE' : new Intl.NumberFormat('en-US', { style: 'currency', currency: stream.currency || 'USD' }).format(stream.price_cents / 100);
                     option.textContent = (stream.title || 'FQ MMA event') + dateText + ' · ' + amount;
                     select.appendChild(option);
                 }
                 const updatePrice = () => {
                     const selected = availableStreamOptions.find((stream) => stream.event_id === select.value);
                     if (!selected) return;
-                    price.textContent = 'One-time access: ' + new Intl.NumberFormat('en-US', { style: 'currency', currency: selected.currency || 'USD' }).format((selected.price_cents || 0) / 100);
+                    price.textContent = Number(selected.price_cents || 0) <= 0 ? 'Temporary free access' : 'One-time access: ' + new Intl.NumberFormat('en-US', { style: 'currency', currency: selected.currency || 'USD' }).format((selected.price_cents || 0) / 100);
                 };
                 select.onchange = updatePrice;
                 updatePrice();
                 submit.disabled = false;
-                message.textContent = 'Enter your email to continue to secure checkout.';
+                message.textContent = Number(availableStreamOptions.find((stream) => stream.event_id === select.value)?.price_cents || 0) <= 0 ? 'Enter your email to open the free live stream.' : 'Enter your email to continue to secure checkout.';
             } catch (error) {
                 availableStreamOptions = [];
                 submit.disabled = true;
@@ -94,13 +94,14 @@
                 return;
             }
             submit.disabled = true;
-            submit.textContent = 'Preparing secure checkout…';
+            submit.textContent = 'Preparing stream access…';
             message.textContent = '';
             try {
                 const { data, error } = await window.sb.functions.invoke('create-stream-checkout', {
                     body: { event_id: select.value, buyer_email: email, promotion_code: document.getElementById('streamCheckoutPromotionCode').value.trim() }
                 });
                 if (error) throw error;
+                if (data?.free_url && data.free_url.startsWith('https://fq-snrg-mma.com/watch.html?free_event_id=')) { window.location.assign(data.free_url); return; }
                 if (!data?.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
                 window.location.assign(data.url);
             } catch (error) {
