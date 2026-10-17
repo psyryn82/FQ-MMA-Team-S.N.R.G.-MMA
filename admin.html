@@ -442,7 +442,7 @@ $('mediaForm').addEventListener('submit',async e=>{
   if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid price from $0 to $9,999.';return}
   if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
   if(!id&&!file){message.textContent='Choose an original photo or video to upload.';return}
-  if(file&&file.size>1024*1024*1024){message.textContent='Original file exceeds the 1 GB upload limit.';return}
+  if(file&&file.size>2*1024*1024*1024){message.textContent='Original file exceeds the 2 GB upload limit.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
   const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Creating protected listing…';const uploaded=[];startMediaProgress();
   try{
