@@ -563,18 +563,15 @@
                             }
                         }
                     }
-                    const media = isVideo && previewUrl
-                        ? `<video controls playsinline preload="metadata" controlslist="nodownload" aria-label="Video preview: ${escapeHtml(item.title || 'Fight video')}" class="w-full max-h-72 rounded-lg bg-black"><source src="${escapeHtml(previewUrl)}">Your browser does not support embedded video.</video>`
+                    const media = isVideo && (previewUrl || itemUrl)
+                        ? `<video controls playsinline preload="metadata" aria-label="Video: ${escapeHtml(item.title || 'Fight video')}" class="w-full max-h-72 rounded-lg bg-black"><source src="${escapeHtml(previewUrl || itemUrl)}">Your browser does not support embedded video.</video>`
                         : (mediaUrl && !isVideo
                             ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`
                             : '');
-                    const action = safeListing
-                        ? (Number(item.priceAmount) > 0
-                            ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'Digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase original · ${escapeHtml(item.price || '')}</button>`
-                            : `<span class="inline-flex rounded-lg border border-gray-600 px-4 py-2 text-xs font-black uppercase text-gray-300">No download included</span>`)
-                        : (itemUrl
-                            ? `<a href="${escapeHtml(itemUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">${item.price && item.price !== 'Free' ? 'Purchase' : 'View media'}</a>`
-                            : '');
+                    const downloadUrl = safeListing ? getSafeHttpUrl(item.link, true) : itemUrl;
+                    const action = downloadUrl
+                        ? `<a href="${escapeHtml(downloadUrl)}" target="_blank" rel="noopener noreferrer" download class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}"><i class="fa-solid fa-download mr-2" aria-hidden="true"></i>Download original</a>`
+                        : `<span class="inline-flex rounded-lg border border-gray-600 px-4 py-2 text-xs font-black uppercase text-gray-300">Download unavailable for this item</span>`;
                     return `
                         <article class="bg-gray-900/95 p-5 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 space-y-3 ${glowStyle}">
                             ${media}
@@ -1202,7 +1199,7 @@
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
                         priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'No download included',
-                        image: String(m.category || '').toLowerCase() !== 'video' && m.preview_path && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', link: '',
+                        image: String(m.category || '').toLowerCase() !== 'video' && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', link: m.file_url || '',
                         protectedMedia: true, description: m.description || ''
                     }));
                     siteData.portfolio = [...databaseMedia, ...siteData.portfolio.filter(p => !p.mediaId)];
