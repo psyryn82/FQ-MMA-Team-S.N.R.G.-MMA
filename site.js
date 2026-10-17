@@ -543,21 +543,19 @@
                     const isRed = index % 2 === 0;
                     const borderColor = isRed ? 'border-brand-red' : 'border-white';
                     const glowStyle = isRed ? 'shadow-neon-red' : 'shadow-neon-white';
-                    // Only structured records with protected previews may expose public media URLs.
-                    // Legacy portfolio entries can point directly to downloadable originals.
-                    const safePreview = !!(item.mediaId && item.protectedPreview === true);
-                    const mediaUrl = safePreview ? getSafeHttpUrl(item.image, true) : '';
-                    const itemUrl = safePreview ? getSafeHttpUrl(item.link, true) : '';
+                    // Structured media records may expose a separate photo listing image.
+                    // Uploaded videos are never embedded or played on public listing cards.
+                    const safeListing = !!(item.mediaId && item.protectedMedia === true);
+                    const mediaUrl = safeListing ? getSafeHttpUrl(item.image, true) : '';
+                    const itemUrl = safeListing ? getSafeHttpUrl(item.link, true) : '';
                     const isVideo = String(item.category || '').toLowerCase() === 'video';
-                    const media = mediaUrl
-                        ? (isVideo
-                            ? `<video controls preload="metadata" src="${escapeHtml(mediaUrl)}" class="w-full max-h-72 rounded-lg bg-black">Your browser does not support video playback.</video>`
-                            : `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Media preview')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`)
+                    const media = mediaUrl && !isVideo
+                        ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`
                         : '';
-                    const action = safePreview
+                    const action = safeListing
                         ? (Number(item.priceAmount) > 0
                             ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'Digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase original · ${escapeHtml(item.price || '')}</button>`
-                            : `<span class="inline-flex rounded-lg border border-gray-600 px-4 py-2 text-xs font-black uppercase text-gray-300">Watermarked preview · no download</span>`)
+                            : `<span class="inline-flex rounded-lg border border-gray-600 px-4 py-2 text-xs font-black uppercase text-gray-300">No download included</span>`)
                         : (itemUrl
                             ? `<a href="${escapeHtml(itemUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">${item.price && item.price !== 'Free' ? 'Purchase' : 'View media'}</a>`
                             : '');
@@ -1152,7 +1150,7 @@
                     window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
                     window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.functions.invoke('list-available-streams'),
-                    window.sb.from('media').select('id,title,category,description,file_url,preview_path,price,is_published,collection,media_destination,event_id').eq('is_published', true).not('preview_path','is',null).order('created_at', {ascending:false})
+                    window.sb.from('media').select('id,title,category,description,file_url,preview_path,price,is_published,collection,media_destination,event_id').eq('is_published', true).order('created_at', {ascending:false})
                 ]);
                 if (fightersResult.error) console.warn('Could not load published fighters from Supabase.', fightersResult.error);
                 else siteData.fighters = (fightersResult.data || []).map(f => ({id:f.id,name:f.name,record:f.record||'',desc:f.bio||f.nickname||'',initials:(f.name||'').substring(0,2).toUpperCase(),image:f.image_url||''}));
@@ -1177,9 +1175,9 @@
                     const databaseMedia = (mediaResult.data || []).filter(m => m.collection !== 'sasha_portfolio' && m.media_destination !== 'portfolio').map(m => ({
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
-                        priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Preview only',
-                        image: m.preview_path && m.file_url ? m.file_url : '', link: '',
-                        protectedPreview: !!(m.preview_path && m.file_url), description: m.description || ''
+                        priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'No download included',
+                        image: String(m.category || '').toLowerCase() !== 'video' && m.preview_path && m.file_url ? m.file_url : '', link: '',
+                        protectedMedia: true, description: m.description || ''
                     }));
                     siteData.portfolio = [...databaseMedia, ...siteData.portfolio.filter(p => !p.mediaId)];
                 }
@@ -1328,7 +1326,7 @@
         async function uploadSiteMedia(e) {
             e.preventDefault();
             const status = document.getElementById('media-upload-status');
-            status.textContent = 'This legacy uploader is disabled because it can expose original files. Use admin.html → MMA Media & Sasha’s Portfolio to upload a private original and a watermarked public preview.';
+            status.textContent = 'This legacy uploader is disabled. Use admin.html → MMA Media & Sasha’s Portfolio to upload private originals. Uploaded videos are not played publicly.';
             showNotification('Use the protected media uploader in admin.html.', 'info');
         }
 

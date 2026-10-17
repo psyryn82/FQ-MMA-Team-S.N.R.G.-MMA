@@ -65,7 +65,7 @@
 </section>
 <section id="tab-media" class="panel p-5 hidden">
 <h2 id="mediaSectionTitle" class="head text-2xl uppercase mb-1">Fight Media</h2>
-<p id="mediaSectionDescription" class="muted text-sm mb-4">Manage MMA fight and event photos/videos here. Sasha’s portfolio is managed separately. Staff-only logos and website graphics belong in Site Media. Original files stay private. Maximum original file size: 1 GB. Video thumbnails are generated automatically for listings.</p>
+<p id="mediaSectionDescription" class="muted text-sm mb-4">Manage MMA fight and event photos/videos here. Sasha’s portfolio is managed separately. Staff-only logos and website graphics belong in Site Media. Original files stay private. Maximum original file size: 1 GB. Videos are listed without public playback. Photos may have a separate listing image.</p>
 <form id="mediaForm" class="space-y-4">
 <input id="mediaRecordId" type="hidden">
 <div class="grid md:grid-cols-2 gap-4">
@@ -73,7 +73,7 @@
 <label class="block text-sm">Related MMA event (optional)<select id="mediaEvent" class="field"><option value="">General MMA media / not event-specific</option></select></label>
 <label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
-<label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">$0 means preview-only, not free download. Every original stays private regardless of price.</span></label>
+<label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">$0 does not include a free download. Every original stays private regardless of price.</span></label>
 <label class="block text-sm">Upload original photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Original file. It is always stored privately.</span></label>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
@@ -333,15 +333,12 @@ async function loadMedia(){
     let preview='';
     if(m.preview_path&&m.file_url){
       preview='<a class="text-red-400 underline text-xs" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open listing image</a>';
-    }else if(m.storage_bucket==='fqmma-private'&&m.file_path){
-      const signed=await client.storage.from('fqmma-private').createSignedUrl(m.file_path,180);
-      if(signed.data?.signedUrl)preview='<a class="text-yellow-300 underline text-xs" target="_blank" rel="noopener" href="'+esc(signed.data.signedUrl)+'">Legacy private original</a>';
     }else if(m.file_url){
-      preview='<span class="text-red-400 text-xs font-bold">LEGACY PUBLIC ORIGINAL: replace this file to secure it</span>';
+      preview='<span class="text-red-400 text-xs font-bold">Legacy public file URL: review storage security</span>';
     }
     const section=m.collection==='sasha_portfolio'?'Sasha Portfolio':'Fight Media';
     const eventName=eventsCache.find(ev=>ev.id===m.event_id)?.title||'General media';
-    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(m.preview_path?'Listing image ready':'No listing image')+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button>'<button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
+    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(m.preview_path?'Listing image ready':'No listing image')+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button><button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
   }));
   list.innerHTML=cards.join('')||'<p class="muted text-sm">No media listings yet. Upload an item above to create the first listing.</p>';
   message.textContent='Loaded '+sectionRecords.length+' '+(activeMediaCollection==='sasha_portfolio'?'Sasha portfolio':'fight media')+' listing(s).';
@@ -436,29 +433,6 @@ async function createImagePreview(file){
   const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Could not export the image preview.')),'image/jpeg',.84));
   return new File([blob],file.name.replace(/\.[^.]+$/,'')+'-listing-image.jpg',{type:'image/jpeg'});
 }
-async function createVideoThumbnail(file){
-  const video=document.createElement('video');
-  video.preload='metadata';
-  video.muted=true;
-  video.playsInline=true;
-  const url=URL.createObjectURL(file);
-  try{
-    await new Promise((resolve,reject)=>{
-      video.onloadeddata=resolve;
-      video.onerror=()=>reject(new Error('Could not read this video to create its preview image.'));
-      video.src=url;
-    });
-    if(video.readyState<2) await new Promise((resolve,reject)=>{video.onloadeddata=resolve;video.onerror=()=>reject(new Error('Could not read this video to create its preview image.'));});
-    try{video.currentTime=Math.min(1,Math.max(0,(video.duration||1)*0.1));await new Promise(resolve=>{video.onseeked=resolve;setTimeout(resolve,1200);});}catch{}
-    const canvas=document.createElement('canvas');
-    canvas.width=video.videoWidth||640;canvas.height=video.videoHeight||360;
-    const ctx=canvas.getContext('2d');
-    if(!ctx||!canvas.width||!canvas.height)throw new Error('Could not create a thumbnail from this video.');
-    ctx.drawImage(video,0,0,canvas.width,canvas.height);
-    const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Could not export the video preview image.')),'image/jpeg',.84));
-    return new File([blob],file.name.replace(/\.[^.]+$/,'')+'-preview.jpg',{type:'image/jpeg'});
-  }finally{URL.revokeObjectURL(url);video.removeAttribute('src');video.load();}
-}
 $('mediaForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const file=$('mediaFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
@@ -480,17 +454,24 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(file&&(purchases.count||0)>0)throw new Error('This item has purchase history. Its original cannot be replaced because that could change what existing buyers receive. Edit details only, or create a new listing for a different original.');
     }
     if(file){
-      let previewFile;
-      if(file.type.startsWith('image/')){updateMediaProgress('Preparing listing image…',5,'Creating the listing image.');previewFile=await createImagePreview(file);}
-      else{updateMediaProgress('Creating video thumbnail…',5,'Reading the video to create its listing image.');previewFile=await createVideoThumbnail(file);}
+      const isPhoto=file.type.startsWith('image/');
+      let listingImageFile=null;
+      if(isPhoto){
+        updateMediaProgress('Preparing photo listing image…',5,'Creating a listing image from the photo.');
+        listingImageFile=await createImagePreview(file);
+      }
       const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),stamp=Date.now(),originalPath=collection+'/'+stamp+'-original-'+safeName;
       updateMediaProgress('Uploading original file…',0,'Original files are stored privately.');
       await uploadStorageFileWithProgress('fqmma-private',originalPath,file,'Uploading original file…');
       uploaded.push({bucket:'fqmma-private',path:originalPath});
-      const previewPath=collection+'/'+stamp+'-preview-'+previewFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
-      await uploadStorageFileWithProgress('fqmma-media',previewPath,previewFile,'Uploading listing preview…');
-      uploaded.push({bucket:'fqmma-media',path:previewPath});
-      Object.assign(patch,{category:file.type.startsWith('video/')?'Video':'Photo',file_path:originalPath,file_url:client.storage.from('fqmma-media').getPublicUrl(previewPath).data.publicUrl,preview_path:previewPath,storage_bucket:'fqmma-private'});
+      if(listingImageFile){
+        const listingImagePath=collection+'/'+stamp+'-listing-'+listingImageFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
+        await uploadStorageFileWithProgress('fqmma-media',listingImagePath,listingImageFile,'Uploading photo listing image…');
+        uploaded.push({bucket:'fqmma-media',path:listingImagePath});
+        Object.assign(patch,{category:'Photo',file_path:originalPath,file_url:client.storage.from('fqmma-media').getPublicUrl(listingImagePath).data.publicUrl,preview_path:listingImagePath,storage_bucket:'fqmma-private'});
+      }else{
+        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:'',preview_path:null,storage_bucket:'fqmma-private'});
+      }
     }
     updateMediaProgress('Saving listing…',null,'The files are uploaded. Saving the listing details now.');
     if(id){
@@ -499,10 +480,10 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(file&&existing?.file_path)oldObjects.push({bucket:existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media'),path:existing.file_path});
       if(file&&existing?.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path});
       uploaded.length=0;const cleanup=await Promise.all(oldObjects.map(x=>client.storage.from(x.bucket).remove([x.path])));
-      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':'Listing updated. Original secured in private storage and listing image published.';
+      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':(file&&file.type.startsWith('video/')?'Video listing updated. Original secured in private storage; no public playback is shown.':'Listing updated. Original secured in private storage and photo listing image published.');
     }else{
       const {error:insertError}=await client.from('media').insert({...patch}).select('id').single();if(insertError)throw insertError;
-      uploaded.length=0;message.textContent='Listing created. Original secured in private storage and listing image published.';
+      uploaded.length=0;message.textContent=file.type.startsWith('video/')?'Video listing created. Original secured in private storage; no public playback is shown.':'Listing created. Original secured in private storage and photo listing image published.';
     }
     updateMediaProgress('Refreshing media catalog…',null,'Finishing up and refreshing the list.');
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
