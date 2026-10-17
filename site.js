@@ -555,8 +555,8 @@
                         const publicBucketPrefix = 'https://dmcbbavsxyxrxuuzraiu.supabase.co/storage/v1/object/public/fqmma-media/';
                         if (previewPath.startsWith(publicBucketPrefix)) {
                             previewUrl = getSafeHttpUrl(previewPath, true);
-                        } else if (!/^https?:\\/\\//i.test(previewPath)) {
-                            const safePath = previewPath.replace(/^\\/?fqmma-media\\//i, '').replace(/^\\/+/, '');
+                        } else if (!/^https?:\/\//i.test(previewPath)) {
+                            const safePath = previewPath.replace(/^\/?fqmma-media\//i, '').replace(/^\/+/, '');
                             if (safePath && !safePath.split('/').some(part => part === '..') && window.sb?.storage) {
                                 previewUrl = window.sb.storage.from('fqmma-media').getPublicUrl(safePath).data.publicUrl;
                             }
