@@ -318,13 +318,17 @@ document.addEventListener('click',async e=>{const edit=e.target.closest('[data-e
 async function loadMedia(){
   const message=$('mediaMessage'), list=$('mediaList');
   list.innerHTML='<p class="muted text-sm">Loading media catalog…</p>';
-  const [mediaResult,eventResult]=await Promise.all([
+  const queryResults=await Promise.allSettled([
     client.from('media').select('id,title,category,description,file_url,file_path,preview_path,storage_bucket,price,is_published,collection,media_destination,event_id,created_at').order('created_at',{ascending:false}).limit(250),
     client.from('events').select('id,title,event_date,status').order('created_at',{ascending:false})
   ]);
-  if(mediaResult.error){list.innerHTML='<p class="text-red-400 text-sm">Could not load media catalog: '+esc(mediaResult.error.message)+'</p>';return}
-  if(eventResult.error){message.textContent='Could not load event names: '+eventResult.error.message;return}
-  eventsCache=eventResult.data||[];
+  const mediaSettled=queryResults[0], eventSettled=queryResults[1];
+  const mediaResult=mediaSettled.status==='fulfilled'?mediaSettled.value:{data:null,error:mediaSettled.reason};
+  const eventResult=eventSettled.status==='fulfilled'?eventSettled.value:{data:null,error:eventSettled.reason};
+  if(mediaResult.error){list.innerHTML='<p class="text-red-400 text-sm">Could not load media catalog: '+esc(mediaResult.error.message||String(mediaResult.error))+'</p>';return}
+  // Event metadata is optional for rendering media. Keep the catalog visible if this query fails.
+  eventsCache=eventResult.error?[]:(eventResult.data||[]);
+  if(eventResult.error) message.textContent='Media loaded; event names could not be loaded: '+esc(eventResult.error.message||String(eventResult.error));
   const eventSelect=$('mediaEvent'), currentEvent=eventSelect.value;
   eventSelect.innerHTML='<option value="">General MMA media / not event-specific</option>'+eventsCache.map(ev=>'<option value="'+esc(ev.id)+'">'+esc(ev.title)+(ev.event_date?' · '+formatDateShort(ev.event_date):'')+'</option>').join('');
   if(eventsCache.some(ev=>ev.id===currentEvent))eventSelect.value=currentEvent;

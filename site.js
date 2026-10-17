@@ -1159,7 +1159,7 @@
             if (data?.content_value) applySiteContent(data.content_value);
             // Keep the public roster, event schedule, and product list connected to their structured tables.
             try {
-                const [fightersResult, eventsResult, scheduleResult, productsResult, streamsResult, mediaResult] = await Promise.all([
+                const structuredResults = await Promise.allSettled([
                     window.sb.from('fighters').select('id,name,nickname,record,bio,image_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.from('events').select('id,title,event_date,venue,main_event,description,flyer_image_url,status,is_published').eq('is_published', true).in('status', ['upcoming','live','completed']).order('event_date', {ascending:true}),
                     window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
@@ -1167,6 +1167,16 @@
                     window.sb.functions.invoke('list-available-streams'),
                     window.sb.from('media').select('id,title,category,description,file_url,preview_path,price,is_published,collection,media_destination,event_id').eq('is_published', true).order('created_at', {ascending:false})
                 ]);
+                // A stream-function/network failure must not prevent unrelated content, especially videos, from rendering.
+                const settledValue = (result, label) => {
+                    if (result.status === 'rejected') {
+                        console.warn(label + ' request failed.', result.reason);
+                        return { data: null, error: result.reason };
+                    }
+                    return result.value;
+                };
+                const [fightersResult, eventsResult, scheduleResult, productsResult, streamsResult, mediaResult] =
+                    structuredResults.map((result, index) => settledValue(result, ['fighters','events','schedule','products','live streams','media'][index]));
                 if (fightersResult.error) console.warn('Could not load published fighters from Supabase.', fightersResult.error);
                 else siteData.fighters = (fightersResult.data || []).map(f => ({id:f.id,name:f.name,record:f.record||'',desc:f.bio||f.nickname||'',initials:(f.name||'').substring(0,2).toUpperCase(),image:f.image_url||''}));
                 if (eventsResult.error) console.warn('Could not load events from Supabase.', eventsResult.error);
