@@ -331,14 +331,29 @@ async function loadMedia(){
   const sectionRecords=records.media.filter(m=>(m.collection||'mma_event')===activeMediaCollection);
   const cards=await Promise.all(sectionRecords.map(async m=>{
     let preview='';
-    if(String(m.category||'').toLowerCase()!=='video'&&m.preview_path&&m.file_url){
+    const isVideo=String(m.category||'').toLowerCase()==='video';
+    if(isVideo){
+      // Admin-only preview: mint a short-lived URL from the private bucket.
+      // Never use file_url or expose the original video through the public catalog.
+      if(m.file_path&&m.storage_bucket==='fqmma-private'){
+        const {data:signed,error:signedError}=await client.storage.from('fqmma-private').createSignedUrl(m.file_path,300);
+        if(!signedError&&signed?.signedUrl){
+          preview='<video class="mt-2 w-full max-h-96 rounded-lg bg-black" controls playsinline preload="metadata" controlslist="nodownload" src="'+esc(signed.signedUrl)+'">Your browser does not support embedded video playback.</video><p class="muted text-xs mt-1">Private admin preview · link expires in 5 minutes.</p>';
+        }else{
+          preview='<p class="text-amber-300 text-xs mt-2">Private video preview unavailable. Check staff storage permissions or refresh the page.</p>';
+          console.warn('Private admin video preview URL could not be created for media ID '+m.id,signedError);
+        }
+      }else{
+        preview='<p class="text-amber-300 text-xs mt-2">No private video file reference found. The original was not opened.</p>';
+      }
+    }else if(m.preview_path&&m.file_url){
       preview='<a class="text-red-400 underline text-xs" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open listing image</a>';
-    }else if(String(m.category||'').toLowerCase()!=='video'&&m.file_url){
+    }else if(m.file_url){
       preview='<span class="text-red-400 text-xs font-bold">Legacy public file URL: review storage security</span>';
     }
     const section=m.collection==='sasha_portfolio'?'Sasha Portfolio':'Fight Media';
     const eventName=eventsCache.find(ev=>ev.id===m.event_id)?.title||'General media';
-    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(String(m.category||'').toLowerCase()==='video'?'Video stored privately':(m.preview_path?'Photo listing image ready':'No photo listing image'))+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button><button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
+    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(String(m.category||'').toLowerCase()==='video'?'Private video preview':(m.preview_path?'Photo listing image ready':'No photo listing image'))+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button><button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
   }));
   list.innerHTML=cards.join('')||'<p class="muted text-sm">No media listings yet. Upload an item above to create the first listing.</p>';
   message.textContent='Loaded '+sectionRecords.length+' '+(activeMediaCollection==='sasha_portfolio'?'Sasha portfolio':'fight media')+' listing(s).';
