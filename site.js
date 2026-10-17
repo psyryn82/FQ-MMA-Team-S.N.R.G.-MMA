@@ -578,8 +578,8 @@
                 if (!items.length) container.innerHTML = `<p class="text-center text-sm text-gray-400 md:col-span-2">${emptyMessage}</p>`;
             };
             // Legacy free-form links stay hidden until they are re-uploaded through the protected media workflow.
-            const mmaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedPreview === true && item.collection !== 'sasha_portfolio');
-            const sashaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedPreview === true && item.collection === 'sasha_portfolio');
+            const mmaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedMedia === true && item.collection !== 'sasha_portfolio');
+            const sashaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedMedia === true && item.collection === 'sasha_portfolio');
             renderMediaCards(mmaMedia, document.getElementById('mma-event-media-container'), 'MMA fight photos and videos will be posted here when available.');
             renderMediaCards(sashaMedia, document.getElementById('sasha-portfolio-container'), 'Sasha’s portfolio photos and videos will be posted here when available.');
 
@@ -1172,7 +1172,7 @@
                 if (mediaResult.error) console.warn('Could not load published media from Supabase.', mediaResult.error);
                 else {
                     const eventTitleMap = new Map((eventsResult.data || []).map(e => [e.id, e.title]));
-                    const databaseMedia = (mediaResult.data || []).filter(m => m.collection !== 'sasha_portfolio' && m.media_destination !== 'portfolio').map(m => ({
+                    const databaseMedia = (mediaResult.data || []).map(m => ({
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
                         priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'No download included',
