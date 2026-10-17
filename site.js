@@ -1435,7 +1435,16 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            // Always load structured public content after the Supabase client finishes initializing.
+            // The content bridge may run before Supabase is ready and skip its initial load.
             await window.ensureSupabaseClient().catch(() => null);
+            if (window.supabaseReady && window.sb) {
+                try {
+                    await loadSiteContentFromSupabase();
+                } catch (error) {
+                    console.warn('Supabase public content load failed after client initialization.', error);
+                }
+            }
             window.renderAllContent();
             cleanupExpiredPromos();
             if (window.location.hash === '#tab-schedule') {
