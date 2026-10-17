@@ -45,14 +45,26 @@
   $('year').textContent=new Date().getFullYear();
   const status=$('portfolio-status');
   const safeText=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function mediaCard(m){
+  function mediaCard(m,client){
     const isVideo=String(m.category||'').toLowerCase()==='video';
     const url=String(m.file_url||'');
-    const image=!isVideo&&/^https:\/\//i.test(url)
-      ? '<img class="w-full aspect-[4/3] object-cover bg-black" loading="lazy" src="'+safeText(url)+'" alt="'+safeText(m.title||'Portfolio photo')+'">'
-      : '<div class="w-full aspect-[4/3] flex items-center justify-center bg-black text-zinc-300 font-bold uppercase tracking-widest">'+(isVideo?'Video listing':'Photo')+'</div>';
+    const previewPath=String(m.preview_path||'').trim();
+    let previewUrl='';
+    if(isVideo&&previewPath){
+      if(/^https:\/\/dmcbbavsxyxrxuuzraiu\.supabase\.co\/storage\/v1\/object\/public\/fqmma-media\//i.test(previewPath)){
+        previewUrl=previewPath;
+      }else if(!/^https?:\/\//i.test(previewPath)){
+        const safePath=previewPath.replace(/^\/?fqmma-media\//i,'').replace(/^\/+/, '');
+        if(safePath&&!safePath.split('/').some(part=>part==='..')) previewUrl=client.storage.from('fqmma-media').getPublicUrl(safePath).data.publicUrl;
+      }
+    }
+    const mediaVisual=isVideo&&previewUrl
+      ? '<video class="w-full aspect-[4/3] object-contain bg-black" controls playsinline preload="metadata" controlslist="nodownload" aria-label="Video preview: '+safeText(m.title||'Portfolio video')+'"><source src="'+safeText(previewUrl)+'">Your browser does not support embedded video.</video>'
+      : (!isVideo&&/^https:\/\//i.test(url)
+        ? '<img class="w-full aspect-[4/3] object-cover bg-black" loading="lazy" src="'+safeText(url)+'" alt="'+safeText(m.title||'Portfolio photo')+'">'
+        : '<div class="w-full aspect-[4/3] flex items-center justify-center bg-black text-zinc-300 font-bold uppercase tracking-widest">'+(isVideo?'Video preview unavailable':'Photo')+'</div>');
     const price=Number(m.price||0);
-    return '<article class="panel overflow-hidden">'+image+'<div class="p-4"><h3 class="font-bold">'+safeText(m.title||'Portfolio item')+'</h3>'+(m.description?'<p class="muted text-sm mt-2">'+safeText(m.description)+'</p>':'')+(price>0?'<p class="accent text-sm font-bold mt-3">One-time price: $'+price.toFixed(2)+'</p><button type="button" class="btn mt-3 w-full" data-buy-media="'+Number(m.id)+'" data-media-title="'+safeText(m.title||'digital media')+'" data-media-price="'+price.toFixed(2)+'">Purchase digital media</button>':'<p class="muted text-xs mt-3">Listing only. Original file is not publicly accessible.</p>')+'</div></article>';
+    return '<article class="panel overflow-hidden">'+mediaVisual+'<div class="p-4"><h3 class="font-bold">'+safeText(m.title||'Portfolio item')+'</h3>'+(m.description?'<p class="muted text-sm mt-2">'+safeText(m.description)+'</p>':'')+(price>0?'<p class="accent text-sm font-bold mt-3">One-time price: $'+price.toFixed(2)+'</p><button type="button" class="btn mt-3 w-full" data-buy-media="'+Number(m.id)+'" data-media-title="'+safeText(m.title||'digital media')+'" data-media-price="'+price.toFixed(2)+'">Purchase digital media</button>':'<p class="muted text-xs mt-3">'+(isVideo&&previewUrl?'Public preview only. The original video remains private.':'Listing only. Original file is not publicly accessible.')+'</p>')+'</div></article>';
   }
   function openMediaCheckout(id,title,price){
     $('media-checkout-id').value=String(id);
@@ -73,7 +85,7 @@
       .limit(100);
     if(error){status.textContent='We could not load the portfolio right now. Please try again later.';console.error('Sasha portfolio load failed:',error);return}
     const rows=(data||[]).filter(m=>m.collection==='sasha_portfolio'||m.media_destination==='portfolio');
-    $('portfolio-grid').innerHTML=rows.map(mediaCard).join('')||'<p class="muted">The portfolio is being prepared. Please check back soon.</p>';
+    $('portfolio-grid').innerHTML=rows.map(m=>mediaCard(m,client)).join('')||'<p class="muted">The portfolio is being prepared. Please check back soon.</p>';
     status.textContent=rows.length?'Showing '+rows.length+' published portfolio item(s).':'';
   }
   $('booking-form').addEventListener('submit',async e=>{
