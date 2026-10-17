@@ -65,7 +65,7 @@
 </section>
 <section id="tab-media" class="panel p-5 hidden">
 <h2 id="mediaSectionTitle" class="head text-2xl uppercase mb-1">Fight Media</h2>
-<p id="mediaSectionDescription" class="muted text-sm mb-4">Manage MMA fight and event photos/videos here. Sasha’s portfolio is managed separately. Staff-only logos and website graphics belong in Site Media. Public previews are watermarked; originals stay private. Maximum file size: 50 MB.</p>
+<p id="mediaSectionDescription" class="muted text-sm mb-4">Manage MMA fight and event photos/videos here. Sasha’s portfolio is managed separately. Staff-only logos and website graphics belong in Site Media. Public previews are watermarked; originals stay private. Maximum original file size: 1 GB. Video preview files must be 50 MB or smaller.</p>
 <form id="mediaForm" class="space-y-4">
 <input id="mediaRecordId" type="hidden">
 <div class="grid md:grid-cols-2 gap-4">
@@ -91,7 +91,7 @@
 <form id="siteAssetForm" class="space-y-4">
 <div class="grid md:grid-cols-2 gap-4">
 <label class="block text-sm">Asset title<input id="siteAssetTitle" class="field" maxlength="200" required placeholder="FQ MMA logo"></label>
-<label class="block text-sm">Image file<input id="siteAssetFile" class="field" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required><span class="muted text-xs">JPG, PNG, WebP, or GIF. Maximum 20 MB.</span></label>
+<label class="block text-sm">Image file<input id="siteAssetFile" class="field" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required><span class="muted text-xs">JPG, PNG, WebP, or GIF. Maximum 1 GB.</span></label>
 <label class="block text-sm md:col-span-2">Description / intended use<textarea id="siteAssetDescription" class="field" rows="2" maxlength="1000" placeholder="Where this asset is intended to appear"></textarea></label>
 <label class="text-sm flex items-start gap-2 md:col-span-2"><input id="siteAssetPublic" type="checkbox" class="mt-1 accent-red-600"><span><b>Also publish a separate public copy</b><span class="muted block text-xs mt-1">Leave unchecked for private staff-only storage. When checked, a separate copy is placed in public storage and its URL is shown below. Do not use this option for paid originals or confidential assets.</span></span></label>
 </div>
@@ -316,7 +316,7 @@ $('siteAssetForm').addEventListener('submit',async e=>{
  const file=$('siteAssetFile').files[0],title=$('siteAssetTitle').value.trim(),description=$('siteAssetDescription').value.trim(),makePublic=$('siteAssetPublic').checked,message=$('siteAssetMessage'),button=$('siteAssetSave');
  message.textContent='';
  if(!file){message.textContent='Choose an image file.';return}
- if(file.size>20*1024*1024){message.textContent='Image exceeds 20 MB.';return}
+ if(file.size>1024*1024*1024){message.textContent='Image exceeds the 1 GB upload limit.';return}
  if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, or GIF image.';return}
  button.disabled=true;button.textContent='Uploading privately…';
  const stamp=Date.now(),safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),privatePath='site-assets/'+stamp+'-'+safeName,publicPath=makePublic?'site-assets/'+stamp+'-'+safeName:null;
@@ -413,7 +413,7 @@ $('mediaForm').addEventListener('submit',async e=>{
   if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid price from $0 to $9,999.';return}
   if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
   if(!id&&!file){message.textContent='Choose an original photo or video to upload.';return}
-  if(file&&file.size>50*1024*1024){message.textContent='Original file exceeds 50 MB.';return}
+  if(file&&file.size>1024*1024*1024){message.textContent='Original file exceeds the 1 GB upload limit.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
   if(file&&file.type.startsWith('video/')&&!previewInput){message.textContent='Videos need a separate preview file with the FQ MMA watermark burned in.';return}
   if(file&&file.type.startsWith('video/')&&!$('mediaVideoWatermarkConfirm').checked){message.textContent='Confirm that the video preview has the FQ MMA watermark burned into the video.';return}
