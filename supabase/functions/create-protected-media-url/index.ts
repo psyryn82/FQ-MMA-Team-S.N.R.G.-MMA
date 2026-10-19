@@ -120,8 +120,8 @@ Deno.serve(async (req) => {
       .eq("id", mediaId)
       .eq("is_published", true)
       .maybeSingle();
-    if (mediaError || !media || media.price_confirmed !== true || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") {
-      return respond({ error: "Only published media with a private original can receive download approval." }, 404, origin);
+    if (mediaError || !media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") {
+      return respond({ error: "Only published media with a confirmed listing and a private original can receive download approval." }, 404, origin);
     }
 
     const { data: existing, error: existingError } = await db
@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
     if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) return respond({ error: "No active download approval was found for this media item and email." }, 404, origin);
     const { data: media, error: mediaError } = await db.from("media")
       .select("id,title,file_path,storage_bucket,is_published,price_confirmed,price").eq("id", mediaId).eq("is_published", true).maybeSingle();
-    if (mediaError || !media || media.price_confirmed !== true || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This item is not available for private download." }, 404, origin);
+    if (mediaError || !media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This item is not available for private download." }, 404, origin);
     const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { count, error: rateError } = await db.from("media_download_tokens")
       .select("id", { count: "exact", head: true }).eq("permission_id", permission.id).gt("created_at", since);
@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
     const { data: media, error: mediaError } = await db.from("media")
       .select("id,title,file_path,storage_bucket,is_published,price_confirmed,price")
       .eq("id", mediaId).eq("is_published", true).maybeSingle();
-    if (mediaError || !media || media.price_confirmed !== true || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") {
+    if (mediaError || !media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") {
       return respond({ error: "This item is not available for private download." }, 404, origin);
     }
     const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -302,7 +302,7 @@ Deno.serve(async (req) => {
     if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) return respond({ error: "This approval is no longer active. Contact FQ MMA support." }, 403, origin);
     const { data: media, error: mediaError } = await db.from("media")
       .select("id,title,file_path,storage_bucket,is_published,price_confirmed,price").eq("id", permission.media_id).eq("is_published", true).maybeSingle();
-    if (mediaError || !media || media.price_confirmed !== true || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This media is not configured for private delivery." }, 404, origin);
+    if (mediaError || !media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This media is not configured for private delivery." }, 404, origin);
     const consumeNow = new Date().toISOString();
     const { data: consumed, error: consumeError } = await db.from("media_download_tokens")
       .update({ consumed_at: consumeNow }).eq("id", tokenRow.id).is("consumed_at", null).gt("expires_at", consumeNow).select("id").maybeSingle();
