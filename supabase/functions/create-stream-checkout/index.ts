@@ -39,7 +39,8 @@ Deno.serve(async (req) => {
   const { data: event, error: eventError } = await db.from("events")
     .select("id,title,event_date,venue,status").eq("id", eventId).maybeSingle();
   if (eventError || !event || !["upcoming", "live"].includes(event.status)) return respond({ error: "Stream checkout is not available for that event." }, 409, origin);
-  if (!Number.isInteger(config.stream_price_cents) || config.stream_price_cents < 50) return respond({ error: "Stream price is not configured correctly." }, 503, origin);
+  if (!Number.isInteger(config.stream_price_cents) || config.stream_price_cents < 0) return respond({ error: "Stream price is not configured correctly." }, 503, origin);
+  if (config.stream_price_cents === 0) return respond({ free_url: siteUrl + "/watch.html?free_event_id=" + encodeURIComponent(event.id), free: true }, 200, origin);
 
   let finalAmountCents = config.stream_price_cents;
   let redemptionId: string | null = null;
