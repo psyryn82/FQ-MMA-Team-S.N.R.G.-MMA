@@ -547,7 +547,7 @@ document.addEventListener('click',async e=>{
     $('mediaRecordId').value=m.id;$('mediaCollection').value=m.collection||'mma_event';$('mediaEvent').value=activeMediaCollection==='sasha_portfolio'?'':(m.event_id||'');$('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';
     $('mediaTitle').value=m.title||'';$('mediaDescription').value=m.description||'';$('mediaPrice').value=Number(m.price||0).toFixed(2);$('mediaPriceConfirmed').checked=m.price_confirmed===true;
     $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
-    $('mediaMessage').textContent=m.price_confirmed===true?'Editing listing details. Price was previously confirmed. Verify it again before saving.':'PRICE NEEDS REVIEW: the stored 
+    $('mediaMessage').textContent=m.price_confirmed===true?'Editing listing details. Price was previously confirmed. Verify it again before saving.':'PRICE NEEDS REVIEW: The stored price is unconfirmed. Confirm the intended price before saving or publishing.';
     window.scrollTo({top:0,behavior:'smooth'});return;
   }
   const removePreview=e.target.closest('[data-media-remove-preview]');
