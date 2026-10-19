@@ -1059,9 +1059,13 @@
                 form.reset();
             } catch (error) {
                 console.error('Contact form submission failed.', error);
-                status.textContent = (error?.message?.includes('RESEND_API_KEY') || error?.message?.includes('CONTACT_FROM_EMAIL'))
-                    ? 'The contact form needs its email service configured before it can send. Please try again later.'
-                    : 'We could not send your message right now. Please try again in a few minutes.';
+                const errorMessage = String(error?.message || '');
+                const statusCode = error?.context?.status;
+                status.textContent = (statusCode === 429 || errorMessage.includes('Too many messages'))
+                    ? 'Too many messages have been sent. Please wait before trying again.'
+                    : ((errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('CONTACT_FROM_EMAIL'))
+                        ? 'The contact form needs its email service configured before it can send. Please try again later.'
+                        : 'We could not send your message right now. Please try again in a few minutes.');
                 status.className = 'text-sm text-red-400';
             } finally {
                 button.disabled = false;
