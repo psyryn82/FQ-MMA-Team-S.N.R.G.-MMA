@@ -39,8 +39,8 @@ Deno.serve(async (req) => {
     .eq("id", optionId).eq("is_available", true).maybeSingle();
   if (optionError || !option?.event_id) return respond({ error: "That ticket option is not available." }, 404, origin);
   const { data: event, error: eventError } = await db.from("events")
-    .select("id,title,event_date,venue,status").eq("id", option.event_id).maybeSingle();
-  if (eventError || !event || !["upcoming", "live"].includes(event.status)) return respond({ error: "Tickets for this event are not currently available." }, 409, origin);
+    .select("id,title,event_date,venue,status,is_published").eq("id", option.event_id).maybeSingle();
+  if (eventError || !event || event.is_published !== true || !["upcoming", "live"].includes(event.status)) return respond({ error: "Tickets for this event are not currently available." }, 409, origin);
 
   const originalAmountCents = option.price_cents * quantity;
   let finalAmountCents = originalAmountCents;
