@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
   const siteUrl = (Deno.env.get("SITE_URL") || "https://fq-snrg-mma.com").replace(/\/$/, "");
   if (!supabaseUrl || !serviceKey || !stripeKey) return respond({ error: "Media checkout is not configured." }, 503, origin);
   if (!req.headers.get("apikey")) return respond({ error: "A public API key is required." }, 401, origin);
+  if (!stripeKey.startsWith("sk_test_")) return respond({ error: "Media checkout is locked to Stripe test mode until end-to-end testing is complete." }, 503, origin);
   let input: { media_id?: unknown; buyer_email?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "Media details are required." }, 400, origin); }
   const mediaId = Number(input.media_id), email = String(input.buyer_email || "").trim().toLowerCase();
