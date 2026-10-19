@@ -286,9 +286,8 @@ Deno.serve(async (req) => {
 
   const { data: media, error: mediaError } = await db
     .from("media")
-    .select("id,title,file_path,storage_bucket,is_published,price")
+    .select("id,title,file_path,storage_bucket,price,price_confirmed")
     .eq("id", mediaId)
-    .eq("is_published", true)
     .maybeSingle();
   if (mediaError || !media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") {
     return respond({ error: "This media is not configured for private delivery." }, 404, origin);
