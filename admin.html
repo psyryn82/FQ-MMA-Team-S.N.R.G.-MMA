@@ -47,12 +47,16 @@
 </div>
 <div class="flex flex-wrap gap-2 mt-4">
 <button id="accessGrantSend" type="button" class="btn">Approve & email link</button>
-<button id="accessSendExisting" type="button" class="btn2">Send / resend link</button>
+<button id="accessGrantText" type="button" class="btn2">Approve for text</button>
+<button id="accessSendExisting" type="button" class="btn2">Send / resend link by email</button>
+<button id="accessCreateTextLink" type="button" class="btn2">Generate timed link for text</button>
+<label class="block text-sm mt-3">One-time text-message link (expires in 30 minutes)<input id="accessTextLink" class="field" type="text" readonly placeholder="Approve recipient, then generate a link"></label>
+<button id="accessCopyTextLink" type="button" class="btn2 mt-2" disabled>Copy link for text message</button>
 </div>
 <label class="block text-sm mt-4">Approval ID for revocation<input id="accessPermissionId" class="field" maxlength="36" placeholder="Filled automatically after approval"></label>
 <button id="accessRevoke" type="button" class="btn2 mt-3">Revoke approval</button>
 <p id="accessGrantStatus" class="text-sm mt-3" role="status" aria-live="polite"></p>
-<p class="muted text-xs mt-2">Only authorized admin or Sasha accounts can grant, email, or revoke access. Original files remain in the private bucket.</p>
+<p class="muted text-xs mt-2">Only authorized admin or Sasha accounts can grant, create, email, or revoke access. For text: generate a one-time link, copy it, and paste it into your SMS/text app. It expires in 30 minutes and works once. Original files remain private.</p>
 </div>
 <button id="refreshAccessManagement" type="button" class="btn2 mb-5">Refresh access status</button>
 <div id="accessManagementList" class="space-y-3"></div>
@@ -73,7 +77,7 @@
 <label class="block text-sm">Related MMA event (optional)<select id="mediaEvent" class="field"><option value="">General MMA media / not event-specific</option></select></label>
 <label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
-<label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" placeholder="Enter the intended price" required><span class="muted text-xs">Do not assume $0 means free. Enter the intended price, then explicitly confirm it below. Only confirmed prices appear on the public site.</span></label><label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaPriceConfirmed" type="checkbox" class="mt-1"><span><strong>Confirm this exact price.</strong> I have verified the amount above. Check this only if $0 is intentionally free. Unconfirmed listings stay hidden and cannot be purchased or downloaded.</span></label>
+<label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" placeholder="Enter the intended price" required><span class="muted text-xs">A $0 listing is shown publicly as “Contact us for purchase details,” not as free. Enter the fixed price if one is set; confirm the listing’s pricing behavior below.</span></label><label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaPriceConfirmed" type="checkbox" class="mt-1"><span><strong>Confirm this exact price.</strong> I have verified the amount above. If the price is $0, customers will be asked to contact us for purchasing details, never told the item is free. Unconfirmed listings stay hidden and cannot be purchased or downloaded.</span></label>
 <label class="block text-sm md:col-span-2">Upload photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Paid originals stay private. Only originals explicitly confirmed free, or separate approved listing images, may be public. Maximum 2 GB.</span></label>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
@@ -348,7 +352,7 @@ async function loadMedia(){
     }
     const section=m.collection==='sasha_portfolio'?'Sasha Portfolio':'Fight Media';
     const eventName=eventsCache.find(ev=>ev.id===m.event_id)?.title||'General media';
-    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · '+(m.price_confirmed===true?'<span class="text-green-300">Price confirmed</span>':'<span class="text-amber-300 font-bold">PRICE NEEDS CONFIRMATION · hidden from public</span>')+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(m.storage_bucket==='fqmma-private'&&Number(m.price||0)<=0?'Private original · $0 means no customer download':(m.storage_bucket==='fqmma-private'?'Private original ready':(m.file_url?'Public file ready':'No file URL')))+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button>'+(String(m.category||'').toLowerCase()==='video'&&m.preview_path&&m.preview_path!==m.file_path?'<button class="btn2" data-media-remove-preview="'+esc(m.id)+'">Remove public preview</button>':'')+'<button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
+    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+(Number(m.price||0)>0?esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price))):'Contact for purchase details')+' · '+(m.price_confirmed===true?'<span class="text-green-300">Price confirmed</span>':'<span class="text-amber-300 font-bold">PRICE NEEDS CONFIRMATION · hidden from public</span>')+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(m.storage_bucket==='fqmma-private'&&Number(m.price||0)<=0?'Private original · $0 means no customer download':(m.storage_bucket==='fqmma-private'?'Private original ready':(m.file_url?'Public file ready':'No file URL')))+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button>'+(String(m.category||'').toLowerCase()==='video'&&m.preview_path&&m.preview_path!==m.file_path?'<button class="btn2" data-media-remove-preview="'+esc(m.id)+'">Remove public preview</button>':'')+'<button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
   }));
   list.innerHTML=cards.join('')||'<p class="muted text-sm">No media listings yet. Upload an item above to create the first listing.</p>';
   message.textContent='Loaded '+sectionRecords.length+' '+(activeMediaCollection==='sasha_portfolio'?'Sasha portfolio':'fight media')+' listing(s).';
@@ -700,6 +704,25 @@ async function runMediaAccessAction(action, body) {
   if(data?.error) throw new Error(data.error);
   return data;
 }
+$('accessGrantText')?.addEventListener('click',async()=>{
+ const status=$('accessGrantStatus'),media_id=Number($('accessMediaId').value),authorized_email=$('accessEmail').value.trim().toLowerCase(),reason=$('accessReason').value.trim();
+ if(!Number.isSafeInteger(media_id)||media_id<1||!authorized_email){status.textContent='Enter a valid media ID and recipient email.';return}
+ const button=$('accessGrantText');button.disabled=true;status.textContent='Saving approval for text delivery…';
+ try{const grant=await runMediaAccessAction('grant',{media_id,authorized_email,reason});$('accessPermissionId').value=grant.permission?.id||'';$('accessTextLink').value='';$('accessCopyTextLink').disabled=true;status.textContent='Approval saved. Generate a timed link, then copy it into your text message.'}
+ catch(err){status.textContent=err.message||'Could not approve this download.'}finally{button.disabled=false}
+});
+$('accessCreateTextLink')?.addEventListener('click',async()=>{
+ const status=$('accessGrantStatus'),media_id=Number($('accessMediaId').value),authorized_email=$('accessEmail').value.trim().toLowerCase();
+ if(!Number.isSafeInteger(media_id)||media_id<1||!authorized_email){status.textContent='Enter a valid media ID and approved recipient email.';return}
+ const button=$('accessCreateTextLink');button.disabled=true;status.textContent='Creating secure one-time link…';
+ try{const result=await runMediaAccessAction('create_download_link',{media_id,authorized_email});$('accessTextLink').value=result.link||'';$('accessCopyTextLink').disabled=!result.link;status.textContent='Link created for '+(result.title||'this media')+'. Expires in 30 minutes and works once. Copy it into your text message now.'}
+ catch(err){$('accessTextLink').value='';$('accessCopyTextLink').disabled=true;status.textContent=err.message||'Could not create the timed link.'}finally{button.disabled=false}
+});
+$('accessCopyTextLink')?.addEventListener('click',async()=>{
+ const link=$('accessTextLink').value;if(!link){$('accessGrantStatus').textContent='Generate a link first.';return}
+ try{await navigator.clipboard.writeText(link);$('accessGrantStatus').textContent='Link copied. Paste it into your SMS/text message before it expires.'}
+ catch{$('accessTextLink').focus();$('accessTextLink').select();$('accessGrantStatus').textContent='Automatic copy was blocked. The link is selected; use Ctrl+C to copy it.'}
+});
 $('accessGrantSend')?.addEventListener('click',async()=>{
   const status=$('accessGrantStatus');status.textContent='Saving approval…';
   const media_id=Number($('accessMediaId').value), authorized_email=$('accessEmail').value.trim().toLowerCase(), reason=$('accessReason').value.trim();
