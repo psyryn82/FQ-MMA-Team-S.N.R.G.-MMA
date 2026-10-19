@@ -50,8 +50,9 @@
 <button id="accessGrantText" type="button" class="btn2">Approve for text</button>
 <button id="accessSendExisting" type="button" class="btn2">Send / resend link by email</button>
 <button id="accessCreateTextLink" type="button" class="btn2">Generate timed link for text</button>
+<label class="block text-sm mt-3">Recipient phone number (optional)<input id="accessPhone" class="field" type="tel" maxlength="40" placeholder="+1 555 123 4567"></label>
 <label class="block text-sm mt-3">One-time text-message link (expires in 30 minutes)<input id="accessTextLink" class="field" type="text" readonly placeholder="Approve recipient, then generate a link"></label>
-<button id="accessCopyTextLink" type="button" class="btn2 mt-2" disabled>Copy link for text message</button>
+<div class="flex flex-wrap gap-2 mt-2"><button id="accessCopyTextLink" type="button" class="btn2" disabled>Copy link for text message</button><button id="accessOpenSms" type="button" class="btn2" disabled>Open text message</button></div>
 </div>
 <label class="block text-sm mt-4">Approval ID for revocation<input id="accessPermissionId" class="field" maxlength="36" placeholder="Filled automatically after approval"></label>
 <button id="accessRevoke" type="button" class="btn2 mt-3">Revoke approval</button>
@@ -716,7 +717,16 @@ $('accessCreateTextLink')?.addEventListener('click',async()=>{
  if(!Number.isSafeInteger(media_id)||media_id<1||!authorized_email){status.textContent='Enter a valid media ID and approved recipient email.';return}
  const button=$('accessCreateTextLink');button.disabled=true;status.textContent='Creating secure one-time link…';
  try{const result=await runMediaAccessAction('create_download_link',{media_id,authorized_email});$('accessTextLink').value=result.link||'';$('accessCopyTextLink').disabled=!result.link;status.textContent='Link created for '+(result.title||'this media')+'. Expires in 30 minutes and works once. Copy it into your text message now.'}
- catch(err){$('accessTextLink').value='';$('accessCopyTextLink').disabled=true;status.textContent=err.message||'Could not create the timed link.'}finally{button.disabled=false}
+ catch(err){$('accessTextLink').value='';$('accessCopyTextLink').disabled=true;$('accessOpenSms').disabled=true;status.textContent=err.message||'Could not create the timed link.'}finally{button.disabled=false}
+});
+$('accessOpenSms')?.addEventListener('click',()=>{
+ const phone=$('accessPhone').value.trim().replace(/[^+0-9]/g,'');
+ const link=$('accessTextLink').value;
+ if(!/^\+?[0-9]{7,15}$/.test(phone)){$('accessGrantStatus').textContent='Enter a valid recipient phone number first, or copy the link and text it manually.';return}
+ if(!link){$('accessGrantStatus').textContent='Generate a timed link first.';return}
+ const message='Your FQ MMA media download link (one use, expires in 30 minutes): '+link;
+ $('accessGrantStatus').textContent='Opening your device’s text-message app. Review the recipient and message, then press Send.';
+ window.location.href='sms:'+phone+'?body='+encodeURIComponent(message);
 });
 $('accessCopyTextLink')?.addEventListener('click',async()=>{
  const link=$('accessTextLink').value;if(!link){$('accessGrantStatus').textContent='Generate a link first.';return}
