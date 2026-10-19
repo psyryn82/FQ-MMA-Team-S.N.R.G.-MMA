@@ -65,7 +65,7 @@
 </section>
 <section id="tab-media" class="panel p-5 hidden">
 <h2 id="mediaSectionTitle" class="head text-2xl uppercase mb-1">Fight Media</h2>
-<p id="mediaSectionDescription" class="muted text-sm mb-4">Upload MMA fight media and Sasha portfolio photos/videos. Uploaded originals are publicly viewable and downloadable while published. Do not upload confidential or unreleased material. Maximum original file size: 2 GB.</p>
+<p id="mediaSectionDescription" class="muted text-sm mb-4">Upload MMA fight media and Sasha portfolio photos/videos. Paid originals stay private and are delivered only after confirmed payment. Free items may be public. Photos get a smaller public listing image; paid videos do not receive a public playback preview. Maximum original file size: 2 GB.</p>
 <form id="mediaForm" class="space-y-4">
 <input id="mediaRecordId" type="hidden">
 <div class="grid md:grid-cols-2 gap-4">
@@ -73,8 +73,8 @@
 <label class="block text-sm">Related MMA event (optional)<select id="mediaEvent" class="field"><option value="">General MMA media / not event-specific</option></select></label>
 <label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
-<label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">Media is publicly viewable and downloadable while published. Price is informational for now and does not restrict downloads.</span></label>
-<label class="block text-sm md:col-span-2">Upload photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">The original uploads once and is publicly viewable and downloadable while published. Maximum 2 GB.</span></label>
+<label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">A price above $0 keeps the original private for paid delivery. A $0 item is free. Paid photos show a smaller listing image; paid videos have no public playback preview.</span></label>
+<label class="block text-sm md:col-span-2">Upload photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Paid originals upload to private storage. Only free originals or separate listing images may be public. Maximum 2 GB.</span></label>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
@@ -337,7 +337,9 @@ async function loadMedia(){
     let preview='';
     const isVideo=String(m.category||'').toLowerCase()==='video';
     if(isVideo){
-      if(m.file_url){preview='<video class="mt-2 w-full max-h-96 rounded-lg bg-black" controls playsinline preload="metadata" src="'+esc(m.file_url)+'">Your browser does not support embedded video playback.</video><p class="muted text-xs mt-1"><a class="text-red-400 underline" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open/download original</a></p>';}else{preview='<p class="text-amber-300 text-xs mt-2">No public file URL. Re-upload this item to make it downloadable.</p>';}
+      if(m.storage_bucket==='fqmma-private'){preview='<p class="text-green-300 text-xs mt-2">Private original ready. No public playback preview is published.</p>';}
+      else if(m.file_url){preview='<video class="mt-2 w-full max-h-96 rounded-lg bg-black" controls playsinline preload="metadata" src="'+esc(m.file_url)+'">Your browser does not support embedded video playback.</video><p class="muted text-xs mt-1"><a class="text-red-400 underline" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open/download free original</a></p>';}
+      else{preview='<p class="text-amber-300 text-xs mt-2">No public video file. Check the private original in storage.</p>';}
     }else if(m.preview_path&&m.file_url){
       preview='<a class="text-red-400 underline text-xs" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open listing image</a>';
     }else if(m.file_url){
@@ -345,7 +347,7 @@ async function loadMedia(){
     }
     const section=m.collection==='sasha_portfolio'?'Sasha Portfolio':'Fight Media';
     const eventName=eventsCache.find(ev=>ev.id===m.event_id)?.title||'General media';
-    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(m.file_url?'Public original ready':'No public file URL')+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button><button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
+    return '<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><b>'+esc(m.title)+'</b><p class="muted text-xs mt-1">'+esc(section)+' · '+esc(m.category||'Media')+' · '+esc(eventName)+'</p><p class="muted text-xs mt-1">'+esc(m.description||'No description')+'</p><p class="text-sm mt-2">'+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price||0)))+' · <span class="'+(m.is_published?'text-green-400':'text-yellow-300')+'">'+(m.is_published?'Published':'Draft')+'</span> · '+(m.storage_bucket==='fqmma-private'?'Private original ready':(m.file_url?'Public file ready':'No file URL'))+'</p><p class="muted text-xs mt-1">Media ID: '+esc(m.id)+' · '+esc(formatDateTimeShort(m.created_at))+'</p><div class="mt-2">'+preview+'</div></div><div class="flex flex-wrap items-start gap-2"><button class="btn2" data-media-edit="'+esc(m.id)+'">Edit details</button>'+(String(m.category||'').toLowerCase()==='video'&&m.preview_path&&m.preview_path!==m.file_path?'<button class="btn2" data-media-remove-preview="'+esc(m.id)+'">Remove public preview</button>':'')+'<button class="btn2" data-media-publish="'+esc(m.id)+'" data-published="'+(m.is_published?'true':'false')+'">'+(m.is_published?'Unpublish':'Publish')+'</button><button class="btn2" data-media-delete="'+esc(m.id)+'">Delete</button></div></div></article>';
   }));
   list.innerHTML=cards.join('')||'<p class="muted text-sm">No media listings yet. Upload an item above to create the first listing.</p>';
   message.textContent='Loaded '+sectionRecords.length+' '+(activeMediaCollection==='sasha_portfolio'?'Sasha portfolio':'fight media')+' listing(s).';
@@ -458,6 +460,7 @@ $('mediaForm').addEventListener('submit',async e=>{
       existing=records.media?.find(m=>String(m.id)===String(id));if(!existing)throw new Error('Media listing was not found. Refresh the catalog and try again.');
       const purchases=await client.from('media_purchases').select('id',{count:'exact',head:true}).eq('media_id',id);
       if(purchases.error)throw purchases.error;
+      if(!file&&((Number(existing.price||0)>0)!==(price>0)))throw new Error('Changing an item between free and paid requires uploading a new original so its storage access can be configured safely.');
       if(file&&(purchases.count||0)>0)throw new Error('This item has purchase history. Its original cannot be replaced because that could change what existing buyers receive. Edit details only, or create a new listing for a different original.');
     }
     if(file){
@@ -468,17 +471,19 @@ $('mediaForm').addEventListener('submit',async e=>{
         listingImageFile=await createImagePreview(file);
       }
       const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),stamp=Date.now(),originalPath=collection+'/'+stamp+'-original-'+safeName;
-      updateMediaProgress('Uploading original file…',0,'Uploading the public, downloadable original.');
-      await uploadStorageFileWithProgress('fqmma-media',originalPath,file,'Uploading original file…');
-      uploaded.push({bucket:'fqmma-media',path:originalPath});
-      const originalUrl=client.storage.from('fqmma-media').getPublicUrl(originalPath).data.publicUrl;
+      const originalBucket=price>0?'fqmma-private':'fqmma-media';
+      updateMediaProgress('Uploading original file…',0,price>0?'Uploading the paid original to private storage.':'Uploading the free original to public storage.');
+      await uploadStorageFileWithProgress(originalBucket,originalPath,file,'Uploading original file…');
+      uploaded.push({bucket:originalBucket,path:originalPath});
+      const originalUrl=price>0?null:client.storage.from('fqmma-media').getPublicUrl(originalPath).data.publicUrl;
       if(listingImageFile){
         const listingImagePath=collection+'/'+stamp+'-listing-'+listingImageFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
         await uploadStorageFileWithProgress('fqmma-media',listingImagePath,listingImageFile,'Uploading photo listing image…');
         uploaded.push({bucket:'fqmma-media',path:listingImagePath});
-        Object.assign(patch,{category:'Photo',file_path:originalPath,file_url:originalUrl,preview_path:listingImagePath,storage_bucket:'fqmma-media'});
+        const listingImageUrl=client.storage.from('fqmma-media').getPublicUrl(listingImagePath).data.publicUrl;
+        Object.assign(patch,{category:'Photo',file_path:originalPath,file_url:price>0?listingImageUrl:originalUrl,preview_path:listingImagePath,storage_bucket:originalBucket});
       }else{
-        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:originalUrl,preview_path:originalPath,storage_bucket:'fqmma-media'});
+        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:originalUrl,preview_path:null,storage_bucket:originalBucket});
       }
     }
     updateMediaProgress('Saving listing…',null,'The files are uploaded. Saving the listing details now.');
@@ -488,10 +493,10 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(file&&existing?.file_path)oldObjects.push({bucket:existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media'),path:existing.file_path});
       if(file&&existing?.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path});
       uploaded.length=0;const cleanup=await Promise.all(oldObjects.map(x=>client.storage.from(x.bucket).remove([x.path])));
-      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':(file?'Original updated and publicly downloadable.':'Listing details updated.');
+      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':(file?(price>0?'Original updated and stored privately for paid delivery.':'Free original updated and published.'):'Listing details updated.');
     }else{
       const {error:insertError}=await client.from('media').insert({...patch}).select('id').single();if(insertError)throw insertError;
-      uploaded.length=0;message.textContent='Listing created. Original is publicly viewable and downloadable.';
+      uploaded.length=0;message.textContent=price>0?'Listing created. Paid original is private; only its listing image is public.':'Listing created. Free original is public.';
     }
     updateMediaProgress('Refreshing media catalog…',null,'Finishing up and refreshing the list.');
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
@@ -505,8 +510,26 @@ document.addEventListener('click',async e=>{
     $('mediaRecordId').value=m.id;$('mediaCollection').value=m.collection||'mma_event';$('mediaEvent').value=activeMediaCollection==='sasha_portfolio'?'':(m.event_id||'');$('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';
     $('mediaTitle').value=m.title||'';$('mediaDescription').value=m.description||'';$('mediaPrice').value=Number(m.price||0).toFixed(2);
     $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
-    $('mediaMessage').textContent='Editing listing details. Downloads are currently public for all published items.';
+    $('mediaMessage').textContent='Editing listing details. Paid originals should be private and delivered only after confirmed payment.';
     window.scrollTo({top:0,behavior:'smooth'});return;
+  }
+  const removePreview=e.target.closest('[data-media-remove-preview]');
+  if(removePreview){
+    const media=records.media?.find(x=>String(x.id)===removePreview.dataset.mediaRemovePreview);
+    if(!media||!media.preview_path||media.preview_path===media.file_path){$('mediaMessage').textContent='This is not a separate public preview file.';return}
+    const path=String(media.preview_path).trim();
+    if(/^https?:\/\//i.test(path)||path.startsWith('/')||path.split('/').some(part=>part==='..')){$('mediaMessage').textContent='Preview path is not a safe storage object path. Ask an administrator to review it.';return}
+    if(!confirm('Remove this separate public video preview? The private original will remain untouched.'))return;
+    removePreview.disabled=true;
+    try{
+      const {error:removeError}=await client.storage.from('fqmma-media').remove([path]);
+      if(removeError)throw removeError;
+      const {error:updateError}=await client.from('media').update({preview_path:null}).eq('id',media.id);
+      if(updateError)throw updateError;
+      $('mediaMessage').textContent='Public preview removed. The original file was not changed.';
+      await loadMedia();
+    }catch(err){$('mediaMessage').textContent='Could not remove public preview: '+(err?.message||String(err));removePreview.disabled=false}
+    return;
   }
   const publish=e.target.closest('[data-media-publish]');
   if(publish){
