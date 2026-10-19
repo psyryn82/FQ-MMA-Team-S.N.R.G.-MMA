@@ -416,6 +416,17 @@
 
         function renderAllContent() {
             document.getElementById('header-ticker-text').textContent = siteData.general.tickerText || 'FQ MMA / TEAM S.N.R.G. MMA • OFFICIAL SITE';
+            const portfolioTitle=document.getElementById('portfolio-main-title');
+            if(portfolioTitle)portfolioTitle.textContent=siteData.general.portfolioTitle||'Sasha’s Portfolio';
+            const portfolioIntro=document.getElementById('portfolio-main-intro');
+            if(portfolioIntro)portfolioIntro.textContent=siteData.general.portfolioIntro||'Explore Sasha’s professional work and send a booking request. Booking requests are reviewed before any payment or deposit is requested.';
+            const portfolioBookingTitle=document.getElementById('portfolio-booking-title');
+            if(portfolioBookingTitle)portfolioBookingTitle.textContent=siteData.general.portfolioBookingTitle||'Request a Sasha Portfolio Booking';
+            const portfolioBookingIntro=document.getElementById('portfolio-booking-intro');
+            if(portfolioBookingIntro)portfolioBookingIntro.textContent=siteData.general.portfolioBookingIntro||'Send a booking request first. The team will review your request and, if approved, email you a payment or deposit link. Submitting a request does not reserve a date or require payment.';
+            const portfolioBanner=document.getElementById('portfolio-banner-image');
+            const portfolioBannerUrl=getSafeHttpUrl(siteData.general.portfolioBannerUrl||'');
+            if(portfolioBanner){portfolioBanner.classList.toggle('hidden',!portfolioBannerUrl);if(portfolioBannerUrl)portfolioBanner.src=portfolioBannerUrl;else portfolioBanner.removeAttribute('src');}
             updateEventCountdown();
 
             // 0. Disciplines
