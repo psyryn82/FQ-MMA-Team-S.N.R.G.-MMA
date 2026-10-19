@@ -419,7 +419,8 @@ document.addEventListener('click',async e=>{
     if(a.public_path){const {error:removeError}=await client.storage.from('fqmma-media').remove([a.public_path]);if(removeError)$('siteAssetMessage').textContent='Asset marked private, but the old public copy could not be removed. Ask an administrator to clean up that object.';else $('siteAssetMessage').textContent='Public copy removed. Private original remains available to staff.'}
    }
    await loadSiteAssets();
-  }catch(err){$('siteAssetMessage').textContent='Could not change publication state: '+(err?.message||String(err));toggle.disabled=false}
+  }catch(err){$('siteAssetMessage').textContent='Could not change publication state: '+(err?.message||String(err))}
+  finally{stopAssetProgress();toggle.disabled=false}
   return;
  }
  const del=e.target.closest('[data-site-asset-delete]');
