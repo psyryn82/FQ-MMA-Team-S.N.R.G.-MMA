@@ -154,6 +154,21 @@ function stopMediaProgress(){
   clearInterval(mediaProgressTimer);mediaProgressTimer=null;
   $('mediaProgress').classList.add('hidden');$('mediaProgressBar').classList.remove('animate-pulse');
 }
+async function downloadStorageFileWithProgress(bucket,path,label,progressTarget="asset"){
+ const {data:{session},error:sessionError}=await client.auth.getSession();
+ if(sessionError)throw sessionError;
+ if(!session?.access_token)throw new Error('Your admin session expired. Sign in again and retry the download.');
+ const url=CONFIG.supabaseUrl+'/storage/v1/object/'+encodeURIComponent(bucket)+'/'+path.split('/').map(encodeURIComponent).join('/');
+ return await new Promise((resolve,reject)=>{
+  const xhr=new XMLHttpRequest();xhr.open('GET',url,true);xhr.responseType='blob';
+  xhr.setRequestHeader('Authorization','Bearer '+session.access_token);xhr.setRequestHeader('apikey',CONFIG.supabaseKey);
+  xhr.onprogress=event=>{if(event.lengthComputable){const detail=(event.loaded/1048576).toFixed(1)+' MB of '+(event.total/1048576).toFixed(1)+' MB downloaded';if(progressTarget==='asset')updateAssetProgress(label,Math.round(event.loaded/event.total*100),detail);else updateMediaProgress(label,Math.round(event.loaded/event.total*100),detail);}else if(progressTarget==='asset')updateAssetProgress(label,null,'Downloading file…');else updateMediaProgress(label,null,'Downloading file…');};
+  xhr.onload=()=>{if(xhr.status>=200&&xhr.status<300)resolve(xhr.response);else reject(new Error('Storage download failed (HTTP '+xhr.status+').'))};
+  xhr.onerror=()=>reject(new Error('Network error while downloading. Check your connection and try again.'));
+  xhr.onabort=()=>reject(new Error('Download was cancelled.'));
+  xhr.send();
+ });
+}
 async function uploadStorageFileWithProgress(bucket,path,file,label,progressTarget="media"){
   const {data:{session},error:sessionError}=await client.auth.getSession();
   if(sessionError)throw sessionError;
@@ -406,8 +421,7 @@ document.addEventListener('click',async e=>{
   const next=toggle.dataset.public!=='true';toggle.disabled=true;
   try{
    if(next){
-    updateAssetProgress('Downloading private original…',null,'Preparing the approved public copy. The storage download API does not expose byte-level progress.');
-    const {data:blob,error:downloadError}=await client.storage.from('fqmma-private').download(a.private_path);if(downloadError)throw downloadError;
+    const blob=await downloadStorageFileWithProgress('fqmma-private',a.private_path,'Downloading private original…','asset');
     const publicPath='site-assets/'+Date.now()+'-'+a.file_name.replace(/[^a-zA-Z0-9._-]+/g,'-');
     await uploadStorageFileWithProgress('fqmma-media',publicPath,blob,a.file_name+' public copy','asset');
     const publicUrl=client.storage.from('fqmma-media').getPublicUrl(publicPath).data.publicUrl;
