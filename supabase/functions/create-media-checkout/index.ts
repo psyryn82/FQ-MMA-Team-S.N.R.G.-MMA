@@ -24,14 +24,16 @@ Deno.serve(async (req) => {
   const { data: media, error } = await db.from("media").select("id,title,description,price,price_confirmed,is_published,file_path,storage_bucket").eq("id", mediaId).eq("is_published", true).maybeSingle();
   if (error || !media || media.price_confirmed !== true || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This paid media is not available for secure checkout." }, 404, origin);
   const stripe = new Stripe(stripeKey, { httpClient: Stripe.createFetchHttpClient() });
+  const expectedAmountCents = Math.round(Number(media.price) * 100);
+  if (!Number.isSafeInteger(expectedAmountCents) || expectedAmountCents < 1) return respond({ error: "The configured media price is invalid." }, 409, origin);
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "payment", payment_method_types: ["card"], customer_email: email,
       success_url: siteUrl + "/?media_purchase=success&media_id=" + media.id + "&session_id={CHECKOUT_SESSION_ID}",
       cancel_url: siteUrl + "/?media_purchase=cancelled",
       line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: Math.round(Number(media.price) * 100), product_data: { name: String(media.title).slice(0, 200), description: String(media.description || "FQ MMA digital media").slice(0, 500) } } }],
-      metadata: { purchase_type: "media", media_id: String(media.id) },
-      payment_intent_data: { receipt_email: email, metadata: { purchase_type: "media", media_id: String(media.id) } }
+      metadata: { purchase_type: "media", media_id: String(media.id), expected_amount_cents: String(expectedAmountCents) },
+      payment_intent_data: { receipt_email: email, metadata: { purchase_type: "media", media_id: String(media.id), expected_amount_cents: String(expectedAmountCents) } }
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     return respond({ url: session.url }, 200, origin);
