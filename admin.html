@@ -84,6 +84,7 @@
   <div class="mt-2 h-3 w-full overflow-hidden rounded-full bg-gray-800"><div id="mediaProgressBar" class="h-full rounded-full bg-red-600 transition-[width] duration-200" style="width:0%"></div></div>
   <div class="mt-2 flex items-center justify-between gap-3 text-xs muted"><span id="mediaProgressDetail">Please keep this page open.</span><span id="mediaProgressElapsed" class="tabular-nums">Elapsed 0:00</span></div>
 </div>
+<div class="mt-4 flex flex-wrap gap-2"><button id="cleanupPublicVideoPreviews" type="button" class="btn2">Remove legacy public video previews</button></div>
 <div id="mediaMessage" class="text-sm mt-3" role="status"></div>
 <div id="mediaList" class="mt-5 space-y-3"></div>
 </section>
@@ -502,6 +503,36 @@ $('mediaForm').addEventListener('submit',async e=>{
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
   }catch(err){for(const item of uploaded)await client.storage.from(item.bucket).remove([item.path]);message.textContent=err?.message||String(err)}
   finally{stopMediaProgress();button.disabled=false;button.textContent=$('mediaRecordId').value?'Save changes':'Upload & publish listing'}
+});
+$('cleanupPublicVideoPreviews')?.addEventListener('click',async()=>{
+  const button=$('cleanupPublicVideoPreviews'),message=$('mediaMessage');
+  if(!client){message.textContent='Admin database connection is not ready.';return}
+  if(!confirm('Remove public video files named public-preview-* from the MMA media folder? This will not delete private originals or ordinary public photos.'))return;
+  button.disabled=true;message.textContent='Finding legacy public video previews…';
+  try{
+    const {data:mediaRows,error:mediaError}=await client.from('media').select('id,file_path,preview_path,storage_bucket');
+    if(mediaError)throw mediaError;
+    const [mmaList,rootList]=await Promise.all([
+      client.storage.from('fqmma-media').list('mma_event',{limit:1000,search:'public-preview-'}),
+      client.storage.from('fqmma-media').list('',{limit:1000,search:'public-preview-'})
+    ]);
+    if(mmaList.error)throw mmaList.error;
+    if(rootList.error)throw rootList.error;
+    const candidates=[
+      ...(mmaList.data||[]).map(item=>({path:'mma_event/'+item.name,item})),
+      ...(rootList.data||[]).map(item=>({path:item.name,item}))
+    ].filter(({path,item})=>path.includes('public-preview-')&&item.id!==null);
+    const originalPaths=new Set((mediaRows||[]).map(m=>String(m.file_path||'')).filter(Boolean));
+    const safePaths=[...new Set(candidates.map(x=>x.path))].filter(path=>!originalPaths.has(path));
+    if(!safePaths.length){message.textContent='No removable legacy public video previews found. Private originals were not changed.';return}
+    const {error:removeError}=await client.storage.from('fqmma-media').remove(safePaths);
+    if(removeError)throw removeError;
+    const {error:updateError}=await client.from('media').update({preview_path:null}).in('preview_path',safePaths);
+    if(updateError)throw updateError;
+    message.textContent='Removed '+safePaths.length+' legacy public preview file(s). Private originals and regular public photos were left untouched.';
+    await loadMedia();
+  }catch(err){message.textContent='Preview cleanup failed: '+(err?.message||String(err))}
+  finally{button.disabled=false}
 });
 document.addEventListener('click',async e=>{
   const edit=e.target.closest('[data-media-edit]');
