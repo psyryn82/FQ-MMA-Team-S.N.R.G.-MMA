@@ -73,7 +73,7 @@
 <label class="block text-sm">Related MMA event (optional)<select id="mediaEvent" class="field"><option value="">General MMA media / not event-specific</option></select></label>
 <label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
-<label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" value="0" required><span class="muted text-xs">A price above $0 keeps the original private for paid delivery. A $0 item is free. Paid photos show a smaller listing image; paid videos have no public playback preview.</span></label>
+<label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" placeholder="Enter the intended price" required><span class="muted text-xs">Do not assume $0 means free. Enter the intended price, then explicitly confirm it below. Only confirmed prices appear on the public site.</span></label><label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaPriceConfirmed" type="checkbox" class="mt-1"><span><strong>Confirm this exact price.</strong> I have verified the amount above. Check this only if $0 is intentionally free. Unconfirmed listings stay hidden and cannot be purchased or downloaded.</span></label>
 <label class="block text-sm md:col-span-2">Upload photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Paid originals upload to private storage. Only free originals or separate listing images may be public. Maximum 2 GB.</span></label>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
@@ -319,7 +319,7 @@ async function loadMedia(){
   const message=$('mediaMessage'), list=$('mediaList');
   list.innerHTML='<p class="muted text-sm">Loading media catalog…</p>';
   const queryResults=await Promise.allSettled([
-    client.from('media').select('id,title,category,description,file_url,file_path,preview_path,storage_bucket,price,is_published,collection,media_destination,event_id,created_at').order('created_at',{ascending:false}).limit(250),
+    client.from('media').select('id,title,category,description,file_url,file_path,preview_path,storage_bucket,price,price_confirmed,is_published,collection,media_destination,event_id,created_at').order('created_at',{ascending:false}).limit(250),
     client.from('events').select('id,title,event_date,status').order('created_at',{ascending:false})
   ]);
   const mediaSettled=queryResults[0], eventSettled=queryResults[1];
@@ -431,7 +431,7 @@ document.addEventListener('click',async e=>{
  }
 });
 function clearMediaForm(){
-  $('mediaForm').reset();$('mediaRecordId').value='';$('mediaCollection').value=activeMediaCollection;$('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';if(activeMediaCollection==='sasha_portfolio')$('mediaEvent').value='';$('mediaPrice').value='0';$('mediaPublished').checked=true;$('mediaSaveButton').textContent='Upload & publish listing';$('mediaFile').required=false;
+  $('mediaForm').reset();$('mediaRecordId').value='';$('mediaCollection').value=activeMediaCollection;$('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';if(activeMediaCollection==='sasha_portfolio')$('mediaEvent').value='';$('mediaPrice').value='';$('mediaPriceConfirmed').checked=false;$('mediaPublished').checked=true;$('mediaSaveButton').textContent='Upload & publish listing';$('mediaFile').required=false;
 }
 $('mediaClearButton').onclick=clearMediaForm;
 async function createImagePreview(file){
@@ -449,14 +449,14 @@ $('mediaForm').addEventListener('submit',async e=>{
   const description=$('mediaDescription').value.trim(), collection=activeMediaCollection, eventId=collection==='sasha_portfolio'?null:($('mediaEvent').value||null);
   const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, message=$('mediaMessage');message.textContent='';
   if(!title){message.textContent='Enter a title.';return}
-  if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid price from $0 to $9,999.';return}
+  if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid intended price from $0 to $9,999.';return}if(!$('mediaPriceConfirmed').checked){message.textContent='Price not confirmed. Verify the amount and check “Confirm this exact price.” $0 is free only when explicitly confirmed.';return}
   if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
   if(!id&&!file){message.textContent='Choose an original photo or video to upload for a new listing.';return}
   if(file&&file.size>2*1024*1024*1024){message.textContent='Original file exceeds the 2 GB upload limit.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
   const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Uploading public media…';const uploaded=[];startMediaProgress();
   try{
-    const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,is_published:published};let existing=null;
+    const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,price_confirmed:true,is_published:published};let existing=null;
     if(id){
       existing=records.media?.find(m=>String(m.id)===String(id));if(!existing)throw new Error('Media listing was not found. Refresh the catalog and try again.');
       const purchases=await client.from('media_purchases').select('id',{count:'exact',head:true}).eq('media_id',id);
@@ -539,9 +539,287 @@ document.addEventListener('click',async e=>{
   if(edit){
     const m=records.media?.find(x=>String(x.id)===edit.dataset.mediaEdit);if(!m)return;
     $('mediaRecordId').value=m.id;$('mediaCollection').value=m.collection||'mma_event';$('mediaEvent').value=activeMediaCollection==='sasha_portfolio'?'':(m.event_id||'');$('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';
-    $('mediaTitle').value=m.title||'';$('mediaDescription').value=m.description||'';$('mediaPrice').value=Number(m.price||0).toFixed(2);
+    $('mediaTitle').value=m.title||'';$('mediaDescription').value=m.description||'';$('mediaPrice').value=Number(m.price||0).toFixed(2);$('mediaPriceConfirmed').checked=m.price_confirmed===true;
     $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
-    $('mediaMessage').textContent='Editing listing details. Paid originals should be private and delivered only after confirmed payment.';
+    $('mediaMessage').textContent=m.price_confirmed===true?'Editing listing details. Price was previously confirmed. Verify it again before saving.':'PRICE NEEDS REVIEW: the stored 
+    window.scrollTo({top:0,behavior:'smooth'});return;
+  }
+  const removePreview=e.target.closest('[data-media-remove-preview]');
+  if(removePreview){
+    const media=records.media?.find(x=>String(x.id)===removePreview.dataset.mediaRemovePreview);
+    if(!media||!media.preview_path||media.preview_path===media.file_path){$('mediaMessage').textContent='This is not a separate public preview file.';return}
+    const path=String(media.preview_path).trim();
+    if(/^https?:\/\//i.test(path)||path.startsWith('/')||path.split('/').some(part=>part==='..')){$('mediaMessage').textContent='Preview path is not a safe storage object path. Ask an administrator to review it.';return}
+    if(!confirm('Remove this separate public video preview? The private original will remain untouched.'))return;
+    removePreview.disabled=true;
+    try{
+      const {error:removeError}=await client.storage.from('fqmma-media').remove([path]);
+      if(removeError)throw removeError;
+      const {error:updateError}=await client.from('media').update({preview_path:null}).eq('id',media.id);
+      if(updateError)throw updateError;
+      $('mediaMessage').textContent='Public preview removed. The original file was not changed.';
+      await loadMedia();
+    }catch(err){$('mediaMessage').textContent='Could not remove public preview: '+(err?.message||String(err));removePreview.disabled=false}
+    return;
+  }
+  const publish=e.target.closest('[data-media-publish]');
+  if(publish){
+    const id=publish.dataset.mediaPublish, next=publish.dataset.published!=='true';const target=records.media?.find(x=>String(x.id)===String(id));if(next&&target?.price_confirmed!==true){$('mediaMessage').textContent='Cannot publish: this item’s price has not been explicitly confirmed. Edit the item, verify the intended price, and confirm it first.';return}
+    publish.disabled=true;
+    const {error}=await client.from('media').update({is_published:next}).eq('id',id);
+    if(error){$('mediaMessage').textContent=error.message;publish.disabled=false;return}
+    $('mediaMessage').textContent=next?'Listing published.':'Listing unpublished.';await loadMedia();return;
+  }
+  const del=e.target.closest('[data-media-delete]');
+  if(del){
+    const id=del.dataset.mediaDelete,m=records.media?.find(x=>String(x.id)===id);if(!m)return;
+    if(!confirm('Delete this media listing and its file? Existing purchase history must remain intact.'))return;
+    del.disabled=true;
+    try{
+      const purchases=await client.from('media_purchases').select('id',{count:'exact',head:true}).eq('media_id',id);
+      if(purchases.error)throw purchases.error;
+      if((purchases.count||0)>0){
+        const {error}=await client.from('media').update({is_published:false}).eq('id',id);if(error)throw error;
+        $('mediaMessage').textContent='Listing unpublished instead of deleted because purchase history exists.';
+      }else{
+        const {error}=await client.from('media').delete().eq('id',id);if(error)throw error;
+        const bucket=m.storage_bucket||(Number(m.price||0)>0?'fqmma-private':'fqmma-media');
+        if(m.file_path){const removed=await client.storage.from(bucket).remove([m.file_path]);if(removed.error)throw removed.error}
+        if(m.preview_path){const removedPreview=await client.storage.from('fqmma-media').remove([m.preview_path]);if(removedPreview.error)throw removedPreview.error}
+        $('mediaMessage').textContent='Media listing deleted.';
+      }
+      await loadMedia();
+    }catch(err){$('mediaMessage').textContent='Delete failed: '+(err?.message||String(err));del.disabled=false}
+  }
+});
+async function loadBookings(){
+ const list=$('bookingList');
+ list.innerHTML='<p class="muted text-sm">Loading booking requests…</p>';
+ const {data,error}=await client.from('booking_requests').select('id,customer_name,customer_email,customer_phone,service_type,preferred_date,preferred_time,location,details,status,admin_notes,payment_type,payment_amount_cents,payment_url,payment_sent_at,created_at').order('created_at',{ascending:false}).limit(200);
+ if(error){list.innerHTML='<p class="text-red-400 text-sm">Could not load booking requests: '+esc(error.message)+'</p>';return}
+ const statuses=['pending','approved','declined','completed','cancelled'];
+ list.innerHTML=(data||[]).map(b=>'<article class="border border-gray-800 rounded-xl p-4 space-y-4">'+
+  '<div class="flex flex-wrap justify-between gap-3"><div><h3 class="font-bold text-lg">'+esc(b.customer_name)+'</h3><p class="muted text-sm">'+esc(b.customer_email)+' · '+esc(b.customer_phone||'No phone provided')+'</p><p class="text-sm mt-1">'+esc(b.service_type)+'</p></div><span class="text-xs uppercase '+(b.status==='approved'?'text-green-400':b.status==='pending'?'text-yellow-300':'muted')+'">'+esc(b.status)+'</span></div>'+
+  '<div class="grid md:grid-cols-2 gap-3 text-sm"><p><span class="muted">Preferred date:</span> '+esc(b.preferred_date||'Flexible / not specified')+'</p><p><span class="muted">Preferred time:</span> '+esc(b.preferred_time||'Not specified')+'</p><p class="md:col-span-2"><span class="muted">Location:</span> '+esc(b.location||'Not specified')+'</p><p class="md:col-span-2 whitespace-pre-wrap"><span class="muted">Request details:</span> '+esc(b.details)+'</p><p class="muted text-xs md:col-span-2">Received '+esc(formatDateTimeShort(b.created_at))+'</p></div>'+
+  '<div class="grid md:grid-cols-2 gap-3"><label class="block text-sm">Booking status<select class="field" data-booking-status="'+esc(b.id)+'">'+statuses.map(s=>'<option value="'+s+'" '+(b.status===s?'selected':'')+' '+(s==='approved'&&b.status!=='approved'?'disabled':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join('')+'</select></label><label class="block text-sm">Admin notes<textarea class="field" rows="2" maxlength="3000" data-booking-notes="'+esc(b.id)+'">'+esc(b.admin_notes||'')+'</textarea></label></div>'+
+  '<div class="border-t border-gray-800 pt-3 space-y-3"><h4 class="font-bold">Approval and payment link</h4><p class="muted text-xs">Create the one-time payment link in Stripe first. Then enter it here to email the customer and mark this booking approved.</p>'+
+  '<label class="block text-sm">Stripe payment link<input class="field" type="url" maxlength="2000" placeholder="https://buy.stripe.com/…" data-booking-url="'+esc(b.id)+'" value="'+esc(b.payment_url||'')+'"></label>'+
+  '<div class="grid md:grid-cols-2 gap-3"><label class="block text-sm">Payment type<select class="field" data-booking-type="'+esc(b.id)+'"><option value="deposit" '+(b.payment_type==='deposit'?'selected':'')+'>Deposit</option><option value="full" '+(b.payment_type==='full'?'selected':'')+'>Full payment</option></select></label><label class="block text-sm">Amount in USD (optional)<input class="field" type="number" min="0.50" max="1000000" step="0.01" placeholder="e.g. 50.00" data-booking-amount="'+esc(b.id)+'" value="'+(b.payment_amount_cents==null?'':(Number(b.payment_amount_cents)/100).toFixed(2))+'"></label></div>'+
+  '<p class="muted text-xs">'+(b.payment_sent_at?'Payment link emailed '+esc(formatDateTimeShort(b.payment_sent_at)):'No payment link email recorded yet.')+'</p>'+
+  '<div class="flex flex-wrap gap-2"><button type="button" class="btn2" data-booking-save="'+esc(b.id)+'">Save status and notes</button><button type="button" class="btn" data-booking-send="'+esc(b.id)+'">Approve & email payment link</button></div></div></article>').join('')||'<p class="muted text-sm">No booking requests yet.</p>';
+ document.querySelectorAll('[data-booking-save]').forEach(button=>button.onclick=async()=>{
+  const id=button.dataset.bookingSave;button.disabled=true;
+  const status=$('bookingList').querySelector('[data-booking-status="'+id+'"]').value;
+  if(status==='approved' && (data||[]).find(x=>String(x.id)===String(id))?.status!=='approved'){say('Use “Approve & email payment link” to approve a booking. This keeps approval tied to the customer payment email.',true);button.disabled=false;return}
+  const notes=$('bookingList').querySelector('[data-booking-notes="'+id+'"]').value.trim();
+  const {error}=await client.from('booking_requests').update({status,admin_notes:notes,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error){say('Could not save booking: '+error.message,true);button.disabled=false;return}
+  say('Booking status and notes saved.');await loadBookings();
+ });
+ document.querySelectorAll('[data-booking-send]').forEach(button=>button.onclick=async()=>{
+  const id=button.dataset.bookingSend;
+  const url=$('bookingList').querySelector('[data-booking-url="'+id+'"]').value.trim();
+  const type=$('bookingList').querySelector('[data-booking-type="'+id+'"]').value;
+  const amountText=$('bookingList').querySelector('[data-booking-amount="'+id+'"]').value.trim();
+  const notes=$('bookingList').querySelector('[data-booking-notes="'+id+'"]').value.trim();
+  if(!url){say('Add the Stripe payment link before sending.',true);return}
+  let amount=null;
+  if(amountText!==''){const amountValue=Number(amountText);if(!Number.isFinite(amountValue)||amountValue<0.5){say('Enter a valid payment amount or leave it blank.',true);return}amount=Math.round(amountValue*100)}
+  if(!confirm('Approve this booking and email the '+type+' payment link to the customer?'))return;
+  button.disabled=true;button.textContent='Sending…';
+  try{
+   const {data,error}=await client.functions.invoke('send-booking-payment-link',{body:{booking_id:id,payment_url:url,payment_type:type,payment_amount_cents:amount,admin_notes:notes}});
+   if(error)throw error;
+   if(!data?.success)throw new Error(data?.error||'The payment link email could not be sent.');
+   say('Booking approved and payment link emailed.');await loadBookings();
+  }catch(err){say('Could not send payment link: '+(err?.message||String(err)),true);button.disabled=false;button.textContent='Approve & email payment link'}
+ });
+}
+$('refreshBookings').onclick=loadBookings;
+async function loadTicketPurchases(){
+  const list=$('ticketPurchasesList');
+  list.innerHTML='<p class="muted text-sm">Loading purchases…</p>';
+  const [purchases,options,events]=await Promise.all([
+    client.from('ticket_purchases').select('id,buyer_email,quantity,total_cents,charged_total_cents,currency,status,stripe_checkout_session_id,created_at,ticket_option_id,event_id').order('created_at',{ascending:false}).limit(100),
+    client.from('event_ticket_options').select('id,name'),
+    client.from('events').select('id,title')
+  ]);
+  if(purchases.error){list.innerHTML='<p class="text-red-400 text-sm">Could not load ticket purchases: '+esc(purchases.error.message)+'</p>';return}
+  if(options.error){list.innerHTML='<p class="text-red-400 text-sm">Ticket purchases loaded, but ticket names could not be loaded: '+esc(options.error.message)+'</p>';return}
+  if(events.error){list.innerHTML='<p class="text-red-400 text-sm">Ticket purchases loaded, but event names could not be loaded: '+esc(events.error.message)+'</p>';return}
+  const optionMap=new Map((options.data||[]).map(x=>[x.id,x.name]));
+  const eventMap=new Map((events.data||[]).map(x=>[x.id,x.title]));
+  list.innerHTML=(purchases.data||[]).map(p=>'<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><b>'+esc(eventMap.get(p.event_id)||'Event')+' · '+esc(optionMap.get(p.ticket_option_id)||'Ticket')+'</b><span class="text-xs uppercase '+(p.status==='paid'?'text-green-400':p.status==='refunded'?'text-yellow-300':'muted')+'">'+esc(p.status)+'</span></div><p class="text-sm mt-2">'+esc(p.buyer_email)+' · '+p.quantity+' ticket(s) · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.charged_total_cents??p.total_cents??0)/100))+'</p><p class="muted text-xs mt-1">'+esc(formatDateTimeShort(p.created_at))+' · '+esc(p.stripe_checkout_session_id||'Checkout not completed')+'</p></article>').join('')||'<p class="muted text-sm">No ticket purchases yet.</p>';
+}
+$('refreshTicketPurchases').onclick=loadTicketPurchases;
+async function loadSales(){
+  const streamList=$('streamSalesList'),fightMediaList=$('fightMediaSalesList'),portfolioList=$('portfolioSalesList'),unmatchedList=$('unmatchedMediaSalesList');
+  streamList.innerHTML=fightMediaList.innerHTML=portfolioList.innerHTML=unmatchedList.innerHTML='<p class="muted text-sm">Loading purchase records…</p>';
+  const [streams,mediaPurchases,events,media]=await Promise.all([
+    client.from('stream_purchases').select('id,event_id,buyer_email,amount_cents,currency,status,stripe_checkout_session_id,stripe_payment_intent_id,created_at').order('created_at',{ascending:false}).limit(200),
+    client.from('media_purchases').select('id,media_id,customer_email,payment_status,checkout_session_id,payment_intent_id,amount_cents,currency,created_at').order('created_at',{ascending:false}).limit(200),
+    client.from('events').select('id,title'),
+    client.from('media').select('id,title,collection,price')
+  ]);
+  if(streams.error){streamList.innerHTML='<p class="text-red-400 text-sm">Could not read stream purchases: '+esc(streams.error.message)+'</p>'}
+  else if(events.error){streamList.innerHTML='<p class="text-red-400 text-sm">Stream purchases loaded, but event names could not be loaded: '+esc(events.error.message)+'</p>'}
+  else{
+    const emap=new Map((events.data||[]).map(x=>[x.id,x.title]));
+    streamList.innerHTML=(streams.data||[]).map(p=>'<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><b>'+esc(emap.get(p.event_id)||'MMA event')+'</b><span class="text-xs uppercase '+(p.status==='paid'?'text-green-400':p.status==='refunded'?'text-yellow-300':'muted')+'">'+esc(p.status)+'</span></div><p class="text-sm mt-2">'+esc(p.buyer_email)+' · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.amount_cents||0)/100))+'</p><p class="muted text-xs mt-1">'+esc(formatDateTimeShort(p.created_at))+' · '+esc(p.stripe_checkout_session_id||'No completed checkout')+'</p><p class="muted text-xs break-all">'+esc(p.stripe_payment_intent_id||'')+'</p></article>').join('')||'<p class="muted text-sm">No live-stream purchases yet.</p>';
+  }
+  if(mediaPurchases.error){const err='<p class="text-red-400 text-sm">Could not read media purchases: '+esc(mediaPurchases.error.message)+'</p>';fightMediaList.innerHTML=portfolioList.innerHTML=unmatchedList.innerHTML=err}
+  else if(media.error){const err='<p class="text-red-400 text-sm">Media purchases loaded, but media details could not be loaded: '+esc(media.error.message)+'</p>';fightMediaList.innerHTML=portfolioList.innerHTML=unmatchedList.innerHTML=err}
+  else{
+    const mmap=new Map((media.data||[]).map(x=>[String(x.id),x]));
+    const buckets={mma_event:[],sasha_portfolio:[],unmatched:[]};
+    (mediaPurchases.data||[]).forEach(p=>{const m=mmap.get(String(p.media_id));const key=m?.collection==='sasha_portfolio'?'sasha_portfolio':m?.collection==='mma_event'?'mma_event':'unmatched';buckets[key].push({p,m})});
+    const renderPurchases=items=>items.map(({p,m})=>{const section=m?.collection==='sasha_portfolio'?'Sasha Portfolio':'Fight Media';return '<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><b>'+esc(m?.title||('Media #'+p.media_id))+(m?'':' · Catalog record missing')+'</b><span class="text-xs uppercase '+(p.payment_status==='paid'?'text-green-400':p.payment_status==='refunded'?'text-yellow-300':'muted')+'">'+esc(p.payment_status)+'</span></div><p class="text-sm mt-2">'+esc(p.customer_email||'Email unavailable')+' · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format(p.amount_cents!=null?Number(p.amount_cents)/100:Number(m?.price||0)))+'</p><p class="muted text-xs mt-1">'+esc(formatDateTimeShort(p.created_at))+' · '+esc(p.checkout_session_id)+'</p><p class="muted text-xs break-all">'+esc(p.payment_intent_id||'')+'</p>'+(m?'<p class="muted text-xs mt-1">'+section+'</p>':'')+'</article>'}).join('');
+    fightMediaList.innerHTML=renderPurchases(buckets.mma_event)||'<p class="muted text-sm">No Fight Media purchases yet.</p>';
+    portfolioList.innerHTML=renderPurchases(buckets.sasha_portfolio)||'<p class="muted text-sm">No Sasha Portfolio purchases yet.</p>';
+    unmatchedList.innerHTML=renderPurchases(buckets.unmatched)||'<p class="muted text-sm">No unmatched media purchase records.</p>';
+  }
+}
+
+async function runMediaAccessAction(action, body) {
+  const {data,error}=await client.functions.invoke('create-protected-media-url',{body:{action,...body}});
+  if(error) {
+    // Supabase wraps non-2xx responses in FunctionsHttpError. Read the actual
+    // JSON response so the admin sees the actionable server-side reason.
+    let detail='';
+    try {
+      const response=error.context;
+      if(response && typeof response.clone==='function') {
+        const payload=await response.clone().json();
+        detail=payload?.error||payload?.message||'';
+      }
+    } catch {}
+    const status=Number(error.context?.status)||0;
+    throw new Error(detail || (status ? 'Download request failed (HTTP '+status+'). Check the Edge Function logs.' : error.message) || 'Download request failed.');
+  }
+  if(data?.error) throw new Error(data.error);
+  return data;
+}
+$('accessGrantSend')?.addEventListener('click',async()=>{
+  const status=$('accessGrantStatus');status.textContent='Saving approval…';
+  const media_id=Number($('accessMediaId').value), authorized_email=$('accessEmail').value.trim().toLowerCase(), reason=$('accessReason').value.trim();
+  if(!Number.isSafeInteger(media_id)||media_id<1||!authorized_email){status.textContent='Enter a valid media ID and recipient email.';return}
+  const button=$('accessGrantSend');button.disabled=true;
+  try{
+    const grant=await runMediaAccessAction('grant',{media_id,authorized_email,reason});
+    $('accessPermissionId').value=grant.permission?.id||'';
+    status.textContent='Approval saved. Sending the one-time email link…';
+    await runMediaAccessAction('send_download_link',{media_id,authorized_email});
+    status.textContent='Approval saved and one-time email link sent. The link expires in 30 minutes.';
+  }catch(err){status.textContent=err.message||'Could not approve or email this download.'}
+  finally{button.disabled=false}
+});
+$('accessSendExisting')?.addEventListener('click',async()=>{
+  const status=$('accessGrantStatus');status.textContent='Sending one-time link…';
+  const media_id=Number($('accessMediaId').value), authorized_email=$('accessEmail').value.trim().toLowerCase();
+  if(!Number.isSafeInteger(media_id)||media_id<1||!authorized_email){status.textContent='Enter a valid media ID and recipient email.';return}
+  const button=$('accessSendExisting');button.disabled=true;
+  try{await runMediaAccessAction('send_download_link',{media_id,authorized_email});status.textContent='One-time email link sent. It expires in 30 minutes.'}
+  catch(err){status.textContent=err.message||'Could not send the download link.'}
+  finally{button.disabled=false}
+});
+$('accessRevoke')?.addEventListener('click',async()=>{
+  const status=$('accessGrantStatus'),permission_id=$('accessPermissionId').value.trim();
+  const media_id=Number($('accessMediaId').value),authorized_email=$('accessEmail').value.trim().toLowerCase();
+  if(!permission_id&&(!Number.isSafeInteger(media_id)||media_id<1||!authorized_email)){status.textContent='Enter an approval ID or the media ID and approved email.';return}
+  if(!confirm('Revoke this approval? Any unused download links will stop working.'))return;
+  const button=$('accessRevoke');button.disabled=true;status.textContent='Revoking approval…';
+  try{await runMediaAccessAction('revoke',permission_id?{permission_id}:{media_id,authorized_email});$('accessPermissionId').value='';status.textContent='Approval revoked. Any unused one-time links are no longer valid.'}
+  catch(err){status.textContent=err.message||'Could not revoke the approval.'}
+  finally{button.disabled=false}
+});
+
+async function loadAccessManagement(){
+  const list=$('accessManagementList');
+  list.innerHTML='<p class="muted text-sm">Loading paid access records…</p>';
+  const [streams,mediaPurchases,events,media]=await Promise.all([
+    client.from('stream_purchases').select('id,event_id,buyer_email,amount_cents,currency,status,stripe_checkout_session_id,created_at').order('created_at',{ascending:false}).limit(200),
+    client.from('media_purchases').select('id,media_id,customer_email,payment_status,checkout_session_id,amount_cents,currency,created_at').order('created_at',{ascending:false}).limit(200),
+    client.from('events').select('id,title'),
+    client.from('media').select('id,title,collection')
+  ]);
+  const errors=[streams.error,mediaPurchases.error,events.error,media.error].filter(Boolean);
+  if(errors.length){list.innerHTML='<p class="text-red-400 text-sm">Could not load access status: '+esc(errors.map(e=>e.message).join('; '))+'</p>';return}
+  const eventMap=new Map((events.data||[]).map(x=>[x.id,x.title]));
+  const mediaMap=new Map((media.data||[]).map(x=>[String(x.id),x]));
+  const rows=[];
+  for(const p of streams.data||[]){
+    rows.push({kind:'Live stream',item:eventMap.get(p.event_id)||'MMA event',email:p.buyer_email,status:p.status,amount:p.amount_cents,currency:p.currency,created:p.created_at,reference:p.stripe_checkout_session_id});
+  }
+  for(const p of mediaPurchases.data||[]){
+    const m=mediaMap.get(String(p.media_id));
+    rows.push({kind:m?.collection==='sasha_portfolio'?'Sasha portfolio media':'MMA event media',item:m?.title||('Media #'+p.media_id),email:p.customer_email,status:p.payment_status,amount:p.amount_cents,currency:p.currency,created:p.created_at,reference:p.checkout_session_id});
+  }
+  rows.sort((a,b)=>new Date(b.created)-new Date(a.created));
+  list.innerHTML=rows.map(p=>{
+    const paid=p.status==='paid';
+    return '<article class="border border-gray-800 rounded-lg p-3"><div class="flex flex-wrap justify-between gap-2"><div><b>'+esc(p.item)+'</b><p class="muted text-xs mt-1">'+esc(p.kind)+'</p></div><span class="text-xs uppercase '+(paid?'text-green-400':'text-yellow-300')+'">'+(paid?'Paid · access eligible':esc(p.status||'unknown')+' · not paid')+'</span></div><p class="text-sm mt-2">'+esc(p.email||'Email unavailable')+' · '+esc(new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format(p.amount!=null?Number(p.amount)/100:0))+'</p><p class="muted text-xs mt-1">'+esc(formatDateTimeShort(p.created))+'</p><p class="muted text-xs break-all">'+esc(p.reference||'No checkout reference')+'</p></article>';
+  }).join('')||'<p class="muted text-sm">No digital-content purchase records yet.</p>';
+}
+$('refreshAccessManagement').onclick=loadAccessManagement;
+
+$('refreshSales').onclick=loadSales;$('refreshStreamSales').onclick=loadSales;
+
+// Promotions admin management. Checkout redemption is intentionally not wired yet.
+function localDateTimeToIso(value){return value?new Date(value).toISOString():null}
+function isoToLocalDateTime(value){if(!value)return '';const d=new Date(value);return Number.isFinite(d.getTime())?new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16):''}
+function clearPromotionForm(){ $('promotionForm').reset();$('promotionId').value='';$('promotionActive').checked=true;$('promotionSave').textContent='Save promotion';$('promotionValue').disabled=false;$('promotionValue').required=true }
+$('promotionType').addEventListener('change',()=>{const free=$('promotionType').value.startsWith('free_');$('promotionValue').disabled=free;$('promotionValue').required=!free;if(free)$('promotionValue').value='';$('promotionAppliesTo').value=$('promotionType').value==='free_stream'?'stream':$('promotionType').value==='free_ticket'?'ticket':$('promotionAppliesTo').value});
+$('promotionClear').addEventListener('click',clearPromotionForm);
+$('promotionGenerate').addEventListener('click',()=>{const bytes=new Uint8Array(6);crypto.getRandomValues(bytes);$('promotionCode').value='FQ'+Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();});
+$('refreshPromotions').addEventListener('click',loadPromotions);
+async function loadPromotions(){
+ const list=$('promotionList'),message=$('promotionMessage');list.innerHTML='<p class="muted text-sm">Loading promotions…</p>';
+ const [promos,events]=await Promise.all([client.from('promotions').select('*').order('created_at',{ascending:false}),client.from('events').select('id,title,event_date').order('created_at',{ascending:false})]);
+ if(events.error){message.textContent='Could not load event choices: '+events.error.message;list.innerHTML='';return}
+ eventsCache=events.data||[];$('promotionEvent').innerHTML='<option value="">All eligible events</option>'+eventsCache.map(ev=>'<option value="'+esc(ev.id)+'">'+esc(ev.title)+(ev.event_date?' · '+formatDateShort(ev.event_date):'')+'</option>').join('');
+ if(promos.error){list.innerHTML='<p class="text-red-400 text-sm">Promotions table is not available yet. Apply the reviewed SQL migration before using this screen. '+esc(promos.error.message)+'</p>';return}
+ const eventMap=new Map(eventsCache.map(ev=>[ev.id,ev.title]));
+ const typeLabel={discount_percent:'Percentage discount',discount_amount:'Fixed-dollar discount',free_stream:'Free stream access',free_ticket:'Free event ticket'};
+ list.innerHTML=(promos.data||[]).map(p=>{
+   const value=p.promotion_type==='discount_percent'?esc(p.discount_value)+'% off':p.promotion_type==='discount_amount'?esc(Number(p.discount_value||0).toFixed(2))+' USD off':'Complimentary access';
+   return '<article class="border border-gray-800 rounded-lg p-4"><div class="flex flex-wrap justify-between gap-2"><div><b class="text-lg">'+esc(p.code)+'</b><p class="muted text-sm">'+esc(p.name||'Untitled promotion')+' · '+esc(typeLabel[p.promotion_type]||p.promotion_type)+' · '+esc(p.applies_to)+'</p><p class="muted text-xs mt-1">'+esc(eventMap.get(p.event_id)||'All eligible events')+' · '+value+'</p><p class="muted text-xs mt-1">'+(p.starts_at?'Starts '+esc(formatDateTimeShort(p.starts_at)):'Starts immediately')+' · '+(p.expires_at?'Expires '+esc(formatDateTimeShort(p.expires_at)):'No expiry')+' · '+(p.max_redemptions==null?'No redemption cap':esc(p.redemption_count||0)+' / '+esc(p.max_redemptions)+' redemptions')+'</p><p class="text-xs mt-2 '+(p.is_active?'text-green-400':'text-yellow-300')+'">'+(p.is_active?'Active in admin':'Inactive')+' · Not redeemable at checkout yet</p></div><div class="flex flex-wrap gap-2"><button class="btn2" data-promo-edit="'+esc(p.id)+'">Edit</button><button class="btn2" data-promo-toggle="'+esc(p.id)+'" data-active="'+(p.is_active?'true':'false')+'">'+(p.is_active?'Deactivate':'Activate')+'</button></div></div></article>';
+ }).join('')||'<p class="muted text-sm">No promotions yet. Create the first promo code above.</p>';
+}
+$('promotionForm').addEventListener('submit',async e=>{
+ e.preventDefault();const message=$('promotionMessage'),button=$('promotionSave');message.textContent='';
+ const id=$('promotionId').value,type=$('promotionType').value,code=$('promotionCode').value.trim().toUpperCase(),valueText=$('promotionValue').value.trim();
+ if(!/^[A-Z0-9_-]{3,40}$/.test(code)){message.textContent='Use 3–40 letters, numbers, underscores, or hyphens for the code.';return}
+ const free=type.startsWith('free_'),value=free?0:Number(valueText);
+ if(!free&&(!Number.isFinite(value)||value<=0||(type==='discount_percent'&&value>100))){message.textContent=type==='discount_percent'?'Enter a percentage from 0.01 to 100.':'Enter a fixed discount greater than $0.';return}
+ const starts=localDateTimeToIso($('promotionStarts').value),expires=localDateTimeToIso($('promotionExpires').value);
+ if(starts&&expires&&new Date(expires)<=new Date(starts)){message.textContent='Expiration must be later than the start date.';return}
+ const maxText=$('promotionMax').value.trim(),max=maxText===''?null:Number(maxText);
+ if(max!==null&&(!Number.isInteger(max)||max<1)){message.textContent='Maximum redemptions must be a positive whole number.';return}
+ const row={created_by:currentUser?.id||null,code,name:$('promotionName').value.trim(),promotion_type:type,applies_to:type==='free_stream'?'stream':type==='free_ticket'?'ticket':$('promotionAppliesTo').value,discount_value:value,event_id:$('promotionEvent').value||null,starts_at:starts,expires_at:expires,max_redemptions:max,is_active:$('promotionActive').checked,updated_at:new Date().toISOString()};
+ button.disabled=true;button.textContent='Saving…';
+ try{const result=id?await client.from('promotions').update(row).eq('id',id):await client.from('promotions').insert(row);if(result.error)throw result.error;message.textContent='Promotion saved. It is not redeemable at customer checkout until the checkout integration is implemented and tested.';clearPromotionForm();await loadPromotions()}catch(err){message.textContent='Could not save promotion: '+(err?.message||String(err))}finally{button.disabled=false;button.textContent='Save promotion'}
+});
+document.addEventListener('click',async e=>{
+ const edit=e.target.closest('[data-promo-edit]');if(edit){const {data,error}=await client.from('promotions').select('*').eq('id',edit.dataset.promoEdit).maybeSingle();if(error||!data){$('promotionMessage').textContent='Could not load promotion details: '+(error?.message||'Not found');return}
+ $('promotionId').value=data.id;$('promotionName').value=data.name||'';$('promotionCode').value=data.code||'';$('promotionType').value=data.promotion_type;$('promotionAppliesTo').value=data.applies_to;$('promotionValue').value=data.discount_value??'';$('promotionValue').disabled=data.promotion_type.startsWith('free_');$('promotionValue').required=!$('promotionValue').disabled;$('promotionEvent').value=data.event_id||'';$('promotionStarts').value=isoToLocalDateTime(data.starts_at);$('promotionExpires').value=isoToLocalDateTime(data.expires_at);$('promotionMax').value=data.max_redemptions??'';$('promotionActive').checked=!!data.is_active;$('promotionSave').textContent='Save changes';window.scrollTo({top:0,behavior:'smooth'});return}
+ const toggle=e.target.closest('[data-promo-toggle]');if(toggle){const next=toggle.dataset.active!=='true';toggle.disabled=true;const {error}=await client.from('promotions').update({is_active:next,updated_at:new Date().toISOString()}).eq('id',toggle.dataset.promoToggle);if(error){$('promotionMessage').textContent='Could not change promotion: '+error.message;toggle.disabled=false;return}await loadPromotions()}
+});
+
+async function loadChat(){const {data,error}=await client.from('chat_messages').select('*').order('created_at',{ascending:true}).limit(150);if(error){say(error.message,true);return}$('chatList').innerHTML=(data||[]).map(m=>'<article class="border border-gray-800 rounded-lg p-3"><div class="flex justify-between gap-3"><b>'+esc(m.sender_name||m.sender_email||m.user_id||'User')+'</b><span class="muted text-xs">'+esc(formatDateTimeShort(m.created_at))+'</span></div><p class="text-sm mt-2 whitespace-pre-wrap">'+esc(m.message)+'</p><p class="muted text-xs mt-1">'+(m.is_admin_reply?'Admin reply':'User message')+' · Channel: '+esc(m.channel||'support')+'</p><div class="flex gap-2 mt-2">'+(m.user_id?'<button class="btn2" data-reply-user="'+m.user_id+'" data-reply-channel="'+esc(m.channel||'support')+'">Reply to user</button>':'')+'<button class="btn2" data-delete-chat="'+m.id+'">Delete message</button></div></article>').join('')||'<p class="muted text-sm">No messages yet.</p>';document.querySelectorAll('[data-reply-user]').forEach(b=>b.onclick=()=>{$('chatUserId').value=b.dataset.replyUser;$('chatChannel').value=b.dataset.replyChannel||'support'});document.querySelectorAll('[data-delete-chat]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this chat message?'))return;b.disabled=true;const {error}=await client.from('chat_messages').delete().eq('id',b.dataset.deleteChat);if(error){say('Could not delete message: '+error.message,true);b.disabled=false}else{say('Chat message deleted.');await loadChat()}})}
+$('refreshChat').onclick=loadChat;
+$('chatReplyForm').addEventListener('submit',async e=>{e.preventDefault();const uid=$('chatUserId').value.trim();const {error}=await client.from('chat_messages').insert({user_id:uid,channel:$('chatChannel').value||'support',sender_name:'FQ MMA Admin',sender_email:currentUser.email||'',message:$('chatReply').value.trim(),is_admin_reply:true});if(error)say(error.message,true);else{say('Reply sent.');$('chatReply').value='';loadChat()}});
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();loginSay('Signing in…');const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){loginSay(error.message,true);return}await showDashboard(data.user)});
+document.getElementById('showAdminLoginPassword').addEventListener('change',e=>{document.getElementById('password').type=e.target.checked?'text':'password'});
+$('forgotPasswordBtn').addEventListener('click',async()=>{const email=$('email').value.trim();if(!email){loginSay('Enter your administrator email above first, then choose Forgot password?',true);$('email').focus();return}const redirectTo=new URL('./reset-password.html',window.location.href).href;loginSay('Sending password-reset email…');const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo});if(error){loginSay('Could not send reset email: '+error.message,true);return}loginSay('If this email belongs to an account, a password-reset link has been sent. Check your inbox and spam folder.')});
+$('googleBtn').onclick=async()=>{const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href.split('#')[0]}});if(error)loginSay(error.message,true)};
+$('logoutBtn').onclick=async()=>{await client.auth.signOut();currentUser=null;$('dashboard').classList.add('hidden');$('loginPanel').classList.remove('hidden');loginSay('Signed out.')};
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-group]');if(!b)return;activeGroup=b.dataset.group;const group=tabGroups.find(g=>g.key===activeGroup);if(group)activateTab(group.tabs[0][0])});$('subTabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)activateTab(b.dataset.tab)});
+renderShells();
+client.auth.getSession().then(({data})=>{if(data.session)showDashboard(data.session.user)});
+client.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>{if(session&&!currentUser)showDashboard(session.user);},0)});
+</script>
+</body>
+</html>+Number(m.price||0).toFixed(2)+' is not assumed free. Enter the intended price and explicitly confirm it before publishing.';
     window.scrollTo({top:0,behavior:'smooth'});return;
   }
   const removePreview=e.target.closest('[data-media-remove-preview]');
