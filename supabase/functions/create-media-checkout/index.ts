@@ -21,8 +21,8 @@ Deno.serve(async (req) => {
   if (!Number.isSafeInteger(mediaId) || mediaId < 1) return respond({ error: "Choose valid media." }, 400, origin);
   if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return respond({ error: "Enter a valid email address." }, 400, origin);
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: media, error } = await db.from("media").select("id,title,description,price,is_published,file_path,storage_bucket").eq("id", mediaId).eq("is_published", true).maybeSingle();
-  if (error || !media || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This paid media is not available for secure checkout." }, 404, origin);
+  const { data: media, error } = await db.from("media").select("id,title,description,price,price_confirmed,is_published,file_path,storage_bucket").eq("id", mediaId).eq("is_published", true).maybeSingle();
+  if (error || !media || media.price_confirmed !== true || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This paid media is not available for secure checkout." }, 404, origin);
   const stripe = new Stripe(stripeKey, { httpClient: Stripe.createFetchHttpClient() });
   try {
     const session = await stripe.checkout.sessions.create({
