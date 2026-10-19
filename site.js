@@ -1151,7 +1151,7 @@
                     window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
                     window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.functions.invoke('list-available-streams'),
-                    window.sb.from('media').select('id,title,category,description,file_url,preview_path,price,is_published,collection,media_destination,event_id').eq('is_published', true).order('created_at', {ascending:false})
+                    window.sb.from('media').select('id,title,category,description,file_url,preview_path,price,price_confirmed,is_published,collection,media_destination,event_id').eq('is_published', true).eq('price_confirmed', true).order('created_at', {ascending:false})
                 ]);
                 // A stream-function/network failure must not prevent unrelated content, especially videos, from rendering.
                 const settledValue = (result, label) => {
