@@ -74,7 +74,7 @@
 <label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
 <label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" placeholder="Enter the intended price" required><span class="muted text-xs">Do not assume $0 means free. Enter the intended price, then explicitly confirm it below. Only confirmed prices appear on the public site.</span></label><label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaPriceConfirmed" type="checkbox" class="mt-1"><span><strong>Confirm this exact price.</strong> I have verified the amount above. Check this only if $0 is intentionally free. Unconfirmed listings stay hidden and cannot be purchased or downloaded.</span></label>
-<label class="block text-sm md:col-span-2">Upload photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Paid originals upload to private storage. Only free originals or separate listing images may be public. Maximum 2 GB.</span></label>
+<label class="block text-sm md:col-span-2">Upload photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Paid originals stay private. Only originals explicitly confirmed free, or separate approved listing images, may be public. Maximum 2 GB.</span></label>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
@@ -455,7 +455,7 @@ $('mediaForm').addEventListener('submit',async e=>{
   if(!id&&!file){message.textContent='Choose an original photo or video to upload for a new listing.';return}
   if(file&&file.size>2*1024*1024*1024){message.textContent='Original file exceeds the 2 GB upload limit.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
-  const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Uploading public media…';const uploaded=[];startMediaProgress();
+  const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Uploading media…';const uploaded=[];startMediaProgress();
   try{
     const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,price_confirmed:true,is_published:published};let existing=null;
     if(id){
