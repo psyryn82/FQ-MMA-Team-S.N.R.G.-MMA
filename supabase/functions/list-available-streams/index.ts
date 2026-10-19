@@ -30,9 +30,9 @@ Deno.serve(async (req) => {
 
   const ids = configs.map((x) => x.event_id);
   const { data: events, error: eventError } = await db.from("events")
-    .select("id,title,event_date,venue,status")
+    .select("id,title,event_date,venue,status,is_published")
     .in("id", ids)
-    .in("status", ["upcoming", "live"]);
+    .in("status", ["upcoming", "live"]).eq("is_published", true);
   if (eventError) {
     console.error("Could not load stream event details", eventError.message);
     return respond({ error: "Live-stream listings are temporarily unavailable." }, 503, origin);
