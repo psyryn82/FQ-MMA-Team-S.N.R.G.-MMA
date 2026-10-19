@@ -67,8 +67,9 @@
     status.textContent='Loading published portfolio items…';
     const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     const {data,error}=await client.from('media')
-      .select('id,title,category,description,file_url,price,is_published,collection,media_destination,created_at')
+      .select('id,title,category,description,file_url,price,price_confirmed,is_published,collection,media_destination,created_at')
       .eq('is_published',true)
+      .eq('price_confirmed',true)
       .order('created_at',{ascending:false})
       .limit(100);
     if(error){status.textContent='We could not load the portfolio right now. Please try again later.';console.error('Sasha portfolio load failed:',error);return}
