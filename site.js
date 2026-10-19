@@ -544,34 +544,22 @@
                     const isRed = index % 2 === 0;
                     const borderColor = isRed ? 'border-brand-red' : 'border-white';
                     const glowStyle = isRed ? 'shadow-neon-red' : 'shadow-neon-white';
-                    // Only the dedicated public preview path may be embedded on the public site.
-                    // Never use file_path or a private file URL for public playback.
+                    // Public listings may show photos, but never embed a public video preview.
+                    // Paid originals stay private and are delivered only after Stripe confirms payment.
                     const safeListing = !!(item.mediaId && item.protectedMedia === true);
-                    const mediaUrl = safeListing ? getSafeHttpUrl(item.image, true) : '';
-                    const itemUrl = safeListing ? getSafeHttpUrl(item.link, true) : '';
                     const isVideo = String(item.category || '').toLowerCase() === 'video';
-                    let previewUrl = '';
-                    const previewPath = String(item.previewPath || '').trim();
-                    if (safeListing && isVideo && previewPath) {
-                        const publicBucketPrefix = 'https://dmcbbavsxyxrxuuzraiu.supabase.co/storage/v1/object/public/fqmma-media/';
-                        if (previewPath.startsWith(publicBucketPrefix)) {
-                            previewUrl = getSafeHttpUrl(previewPath, true);
-                        } else if (!/^https?:\/\//i.test(previewPath)) {
-                            const safePath = previewPath.replace(/^\/?fqmma-media\//i, '').replace(/^\/+/, '');
-                            if (safePath && !safePath.split('/').some(part => part === '..') && window.sb?.storage) {
-                                previewUrl = window.sb.storage.from('fqmma-media').getPublicUrl(safePath).data.publicUrl;
-                            }
-                        }
-                    }
-                    const media = isVideo && (previewUrl || itemUrl)
-                        ? `<video controls playsinline preload="metadata" aria-label="Video: ${escapeHtml(item.title || 'Fight video')}" class="w-full max-h-72 rounded-lg bg-black"><source src="${escapeHtml(previewUrl || itemUrl)}">Your browser does not support embedded video.</video>`
-                        : (mediaUrl && !isVideo
-                            ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`
-                            : '');
-                    const downloadUrl = safeListing ? getSafeHttpUrl(item.link, true) : itemUrl;
-                    const action = downloadUrl
-                        ? `<a href="${escapeHtml(downloadUrl)}" target="_blank" rel="noopener noreferrer" download class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}"><i class="fa-solid fa-download mr-2" aria-hidden="true"></i>Download original</a>`
-                        : `<span class="inline-flex rounded-lg border border-gray-600 px-4 py-2 text-xs font-black uppercase text-gray-300">Download unavailable for this item</span>`;
+                    const mediaUrl = safeListing && !isVideo ? getSafeHttpUrl(item.image, true) : '';
+                    const itemUrl = safeListing ? getSafeHttpUrl(item.link, true) : '';
+                    const isPaid = Number(item.priceAmount || 0) > 0;
+                    const downloadUrl = safeListing && !isPaid ? itemUrl : '';
+                    const media = mediaUrl && !isVideo
+                        ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`
+                        : (isVideo ? '<div class="w-full h-40 flex items-center justify-center rounded-lg bg-black text-sm font-bold uppercase tracking-widest text-gray-300">Video available by purchase or download</div>' : '');
+                    const action = isPaid
+                        ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase digital media</button>`
+                        : (downloadUrl
+                            ? `<a href="${escapeHtml(downloadUrl)}" target="_blank" rel="noopener noreferrer" download class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}"><i class="fa-solid fa-download mr-2" aria-hidden="true"></i>Download free original</a>`
+                            : `<span class="inline-flex rounded-lg border border-gray-600 px-4 py-2 text-xs font-black uppercase text-gray-300">Download unavailable for this item</span>`);
                     return `
                         <article class="bg-gray-900/95 p-5 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 space-y-3 ${glowStyle}">
                             ${media}
@@ -582,7 +570,7 @@
                                     ${item.eventTitle ? `<p class="text-xs text-brand-red mt-1">Event: ${escapeHtml(item.eventTitle)}</p>` : ''}
                                     ${item.description ? `<p class="text-sm text-gray-400 mt-2">${escapeHtml(item.description)}</p>` : ''}
                                 </div>
-                                <span class="shrink-0 font-heading font-bold ${isRed ? 'text-brand-neon' : 'text-white'}">${safeListing ? 'Free download' : escapeHtml(item.price || 'Free')}</span>
+                                <span class="shrink-0 font-heading font-bold ${isRed ? 'text-brand-neon' : 'text-white'}">${isPaid ? escapeHtml(item.price || 'One-time purchase') : (downloadUrl ? 'Free download' : 'No download included')}</span>
                             </div>
                             ${action}
                         </article>
