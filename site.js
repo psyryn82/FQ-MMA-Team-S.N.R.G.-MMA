@@ -555,11 +555,10 @@
                     const media = mediaUrl && !isVideo
                         ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`
                         : (isVideo ? '<div class="w-full h-40 flex items-center justify-center rounded-lg bg-black text-sm font-bold uppercase tracking-widest text-gray-300">Video available by purchase or download</div>' : '');
+                    const contactForPrice = !isPaid;
                     const action = isPaid
                         ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase digital media</button>`
-                        : (downloadUrl
-                            ? `<a href="${escapeHtml(downloadUrl)}" target="_blank" rel="noopener noreferrer" download class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}"><i class="fa-solid fa-download mr-2" aria-hidden="true"></i>Download free original</a>`
-                            : `<span class="inline-flex rounded-lg border border-gray-600 px-4 py-2 text-xs font-black uppercase text-gray-300">Download unavailable for this item</span>`);
+                        : `<a href="mailto:fqsnrgmma.info@gmail.com?subject=${encodeURIComponent('Media purchase inquiry: ' + (item.title || 'digital media'))}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Contact us for purchase details</a>`;
                     return `
                         <article class="bg-gray-900/95 p-5 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 space-y-3 ${glowStyle}">
                             ${media}
@@ -1186,7 +1185,7 @@
                     const databaseMedia = (mediaResult.data || []).map(m => ({
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
-                        priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'No download included',
+                        priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Contact us for purchase details',
                         image: String(m.category || '').toLowerCase() !== 'video' && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', link: m.file_url || '',
                         protectedMedia: true, description: m.description || ''
                     }));
