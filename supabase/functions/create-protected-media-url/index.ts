@@ -222,6 +222,44 @@ Deno.serve(async (req) => {
     return respond({ sent: true, expires_in: 1800, message: "One-time download link sent." }, 200, origin);
   }
 
+  if (action === "create_download_link") {
+    const staff = await requireStaff();
+    if ("error" in staff) return respond({ error: staff.error }, staff.status, origin);
+    const mediaId = Number(input.media_id);
+    const email = String(input.authorized_email || "").trim().toLowerCase();
+    if (!Number.isSafeInteger(mediaId) || mediaId < 1 || !validEmail(email)) {
+      return respond({ error: "A valid media item and approved email are required." }, 400, origin);
+    }
+    const { data: permission, error: permissionError } = await db.from("media_download_permissions")
+      .select("id,media_id,authorized_email,expires_at,revoked_at")
+      .eq("media_id", mediaId).eq("authorized_email", email).is("revoked_at", null).maybeSingle();
+    if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) {
+      return respond({ error: "No active download approval was found for this media item and email." }, 404, origin);
+    }
+    const { data: media, error: mediaError } = await db.from("media")
+      .select("id,title,file_path,storage_bucket,is_published,price_confirmed")
+      .eq("id", mediaId).eq("is_published", true).maybeSingle();
+    if (mediaError || !media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") {
+      return respond({ error: "This item is not available for private download." }, 404, origin);
+    }
+    const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { count, error: rateError } = await db.from("media_download_tokens")
+      .select("id", { count: "exact", head: true }).eq("permission_id", permission.id).gt("created_at", since);
+    if (rateError) return respond({ error: "Could not verify recent download-link requests." }, 500, origin);
+    if ((count || 0) >= 3) return respond({ error: "For security, only three download links can be created per approval every five minutes." }, 429, origin);
+    const token = randomToken(), tokenHash = await sha256Hex(token);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    const { data: tokenRow, error: tokenError } = await db.from("media_download_tokens")
+      .insert({ permission_id: permission.id, token_hash: tokenHash, expires_at: expiresAt, sent_by: staff.user.id })
+      .select("id").single();
+    if (tokenError || !tokenRow) return respond({ error: "Could not create a secure download link." }, 500, origin);
+    await db.from("media_download_tokens")
+      .update({ consumed_at: new Date().toISOString() })
+      .eq("permission_id", permission.id).is("consumed_at", null).neq("id", tokenRow.id);
+    const link = "https://fq-snrg-mma.com/media-download.html#token=" + token;
+    return respond({ link, title: media.title, expires_in: 1800, expires_at: expiresAt, message: "One-time download link created. Copy it into your text message before it expires." }, 200, origin);
+  }
+
   if (action === "revoke") {
     const staff = await requireStaff();
     if ("error" in staff) return respond({ error: staff.error }, staff.status, origin);
