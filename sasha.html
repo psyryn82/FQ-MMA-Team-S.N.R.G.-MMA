@@ -89,8 +89,14 @@
       const id=crypto.randomUUID();
       const {error}=await client.from('booking_requests').insert({id,customer_name:name,customer_email:email,customer_phone:phone,service_type:service,preferred_date:date,preferred_time:time,location,details,status:'pending'});
       if(error)throw error;
-      try{await client.functions.invoke('send-contact-message',{body:{name,email,category:'Portfolio / Photography Inquiry',company:'',message:'NEW SASHA PORTFOLIO BOOKING REQUEST\nBooking ID: '+id+'\nService: '+service+'\nPreferred date: '+(date||'Flexible')+'\nPreferred time: '+(time||'Flexible')+'\nLocation: '+(location||'Not specified')+'\nPhone: '+(phone||'Not provided')+'\nDetails: '+details}})}catch(notifyError){console.warn('Booking saved; notification function did not confirm.',notifyError)}
-      $('booking-form').reset();msg.textContent='Request received. The team will review it and contact you if approved. No payment has been taken.';
+      let notificationSent=false;
+      try{
+        const {data:notificationData,error:notificationError}=await client.functions.invoke('send-contact-message',{body:{name,email,category:'Portfolio / Photography Inquiry',company:'',message:'NEW SASHA PORTFOLIO BOOKING REQUEST\nBooking ID: '+id+'\nService: '+service+'\nPreferred date: '+(date||'Flexible')+'\nPreferred time: '+(time||'Flexible')+'\nLocation: '+(location||'Not specified')+'\nPhone: '+(phone||'Not provided')+'\nDetails: '+details}});
+        if(notificationError||notificationData?.success!==true)throw notificationError||new Error('Email notification was not confirmed.');
+        notificationSent=true;
+      }catch(notifyError){console.warn('Booking saved; notification failed or was not confirmed.',notifyError)}
+      $('booking-form').reset();
+      msg.textContent=notificationSent?'Request received. The team will review it and contact you if approved. No payment has been taken.':'Your request was saved, but email notification could not be confirmed. The team can still review it in the booking dashboard. If urgent, email fqsnrgmma.info@gmail.com.';
     }catch(err){msg.textContent='We could not submit your request. Please try again later.';console.error('Sasha booking submission failed.',err)}
     finally{btn.disabled=false;btn.textContent='Send booking request'}
   });
