@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const allowedOrigins = new Set(["https://fq-snrg-mma.com", "https://www.fq-snrg-mma.com"]);
 const headers = { "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Content-Type": "application/json", "Cache-Control": "no-store" };
 function respond(body: unknown, status = 200, origin = "") { return new Response(JSON.stringify(body), { status, headers: { ...headers, "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://fq-snrg-mma.com", "Vary": "Origin" } }); }
-function pemToDer(pem: string): Uint8Array { const body = pem.replace(/-----BEGIN [^-]+-----/g, "").replace(/-----END [^-]+-----/g, "").replace(/\s/g, ""); const binary = atob(body); const bytes = new Uint8Array(binary.length); for (let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i); return bytes; }
+function pemToDer(pem: string): Uint8Array<ArrayBuffer> { const body = pem.replace(/-----BEGIN [^-]+-----/g, "").replace(/-----END [^-]+-----/g, "").replace(/\s/g, ""); const binary = atob(body); const bytes = new Uint8Array(new ArrayBuffer(binary.length)); for (let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i); return bytes; }
 function base64Url(bytes: Uint8Array): string { let binary=""; for(let i=0;i<bytes.length;i++) binary+=String.fromCharCode(bytes[i]); return btoa(binary).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_"); }
 function base64UrlText(value: string): string { return base64Url(new TextEncoder().encode(value)); }
 Deno.serve(async (req: Request) => {
