@@ -618,8 +618,10 @@ $('mediaForm').addEventListener('submit',async e=>{
        // for authorized downloads while Livepeer ingests the streaming copy.
        uploaded.push({bucket:originalBucket,path:originalPath});
        const privateOriginalUpload=uploadStorageFileWithProgress(originalBucket,originalPath,file,'Uploading private original…');
-       const [,completedSession]=await Promise.all([privateOriginalUpload,uploadToLivepeerWithRetry()]);
-       session=completedSession;
+       const uploadResults=await Promise.allSettled([privateOriginalUpload,uploadToLivepeerWithRetry()]);
+       const failedUpload=uploadResults.find(result=>result.status==='rejected');
+       if(failedUpload)throw failedUpload.reason;
+       session=uploadResults[1].value;
        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:null,preview_path:null,storage_bucket:originalBucket,livepeer_asset_id:session.assetId,livepeer_playback_id:session.playbackId,livepeer_status:'processing',livepeer_playback_policy:price>0&&$('mediaPriceConfirmed').checked?'jwt':'public'});
      }
     updateMediaProgress('Saving listing…',null,'The files are uploaded. Saving the listing details now.');
