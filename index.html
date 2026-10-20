@@ -307,24 +307,7 @@
       }
     </style>
 
-    <script>
-      window.onTurnstileLoaded = function () {
-        const renderWidgets = () => document.querySelectorAll(".cf-turnstile[data-sitekey]").forEach((widget) => {
-          if (!window.turnstile || widget.dataset.widgetId) return;
-          try {
-            widget.dataset.widgetId = window.turnstile.render(widget, {
-              sitekey: widget.dataset.sitekey,
-              action: widget.dataset.action,
-              callback: () => {},
-              "error-callback": () => { const form = widget.closest("form"); const status = form?.querySelector("[role=status]"); if (status) status.textContent = "Security check unavailable. Please refresh and try again."; }
-            });
-          } catch (_) {
-            const form = widget.closest("form"); const status = form?.querySelector("[role=status]"); if (status) status.textContent = "Security check unavailable. Please refresh and try again.";
-          }
-        });
-        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderWidgets, { once: true }); else renderWidgets();
-      };
-    </script>
+    <script src="./turnstile-init.js"></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoaded&render=explicit" async defer></script>
     <style>
       @media (min-width: 1024px) { header nav[aria-label="Mobile navigation"] { display: none !important; } }
