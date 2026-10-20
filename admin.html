@@ -4,7 +4,8 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
 <title>FQ MMA Admin</title>
 <!-- Single admin entry point for homepage content, events, tickets, media, chat, and live-stream settings. -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script><script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
 <style>:root{color-scheme:dark}body{background:#07080a;color:#e5e7eb;font-family:Inter,sans-serif}.head{font-family:Oswald,sans-serif}.panel{background:#111318;border:1px solid #292d35;border-radius:14px}.field{width:100%;padding:11px 12px;background:#08090c;border:1px solid #343945;border-radius:8px;color:#fff;margin-top:5px}.btn{background:#e50914;color:white;font-weight:700;padding:10px 14px;border-radius:8px}.btn2{border:1px solid #414653;padding:9px 12px;border-radius:8px}.tab{padding:9px 12px;border-radius:8px;color:#cbd5e1}.tab.active{background:#3b1015;color:#ff525b}.muted{color:#9ca3af}</style>
 </head>
@@ -85,7 +86,7 @@
 <label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
 <label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" placeholder="Leave blank or enter 0 for contact pricing"><span class="muted text-xs">Leave blank or enter $0 to show “Contact us for pricing.” This does not make the media free. Confirm any positive price before it can be purchased.</span></label><label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaPriceConfirmed" type="checkbox" class="mt-1"><span><strong>Confirm this exact price.</strong> I have verified the amount above. If the price is $0, customers will be asked to contact us for pricing, never told the item is free. A positive price must be confirmed before checkout; unconfirmed prices display “Contact us for pricing.”</span></label>
-<label class="block text-sm md:col-span-2">Upload original photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Originals always upload to private storage. Maximum 2 GB.</span></label><label class="block text-sm md:col-span-2">Separate public video preview (optional for existing items; recommended for every published video)<input id="mediaVideoPreviewFile" type="file" class="field" accept="video/mp4,video/webm"><span class="muted text-xs">Upload a separate web-optimized / watermarked preview copy, up to 500 MB. Only this preview is publicly playable. Do not upload the paid/high-resolution original here. Playback controls hide the download button, but no browser video can be made impossible to copy or screen-record.</span></label>
+<label class="block text-sm md:col-span-2">Upload original photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Photos are stored privately with a separate listing image. Videos are sent once through this uploader and processed by Livepeer for full-length streaming. Maximum 5 GB.</span></label><p class="muted text-xs md:col-span-2">Paid videos use restricted playback and remain locked until purchase playback authorization is configured. The site never displays a direct download URL. Screen recording cannot be completely prevented.</p>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
@@ -398,7 +399,7 @@ async function loadMedia(){
   const message=$('mediaMessage'), list=$('mediaList');
   list.innerHTML='<p class="muted text-sm">Loading media catalog…</p>';
   const queryResults=await Promise.allSettled([
-    client.from('media').select('id,title,category,description,file_url,file_path,preview_path,storage_bucket,price,price_confirmed,is_published,collection,media_destination,event_id,created_at').order('created_at',{ascending:false}).limit(250),
+    client.from('media').select('id,title,category,description,file_url,file_path,preview_path,storage_bucket,price,price_confirmed,is_published,collection,media_destination,event_id,created_at,livepeer_asset_id,livepeer_playback_id,livepeer_status,livepeer_playback_policy').order('created_at',{ascending:false}).limit(250),
     client.from('events').select('id,title,event_date,status').order('created_at',{ascending:false})
   ]);
   const mediaSettled=queryResults[0], eventSettled=queryResults[1];
@@ -532,14 +533,14 @@ async function createImagePreview(file){
 }
 $('mediaForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const file=$('mediaFile').files[0], videoPreviewFile=$('mediaVideoPreviewFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
+  const file=$('mediaFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
   const description=$('mediaDescription').value.trim(), collection=activeMediaCollection, eventId=collection==='sasha_portfolio'?null:($('mediaEvent').value||null);
   const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, message=$('mediaMessage');message.textContent='';
   if(!title){message.textContent='Enter a title.';return}
   if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid intended price from $0 to $9,999. Leave at $0 if customers should contact us for a quote.';return}if(price>0&&!$('mediaPriceConfirmed').checked){message.textContent='Confirm the exact positive price before publishing it. Leave the price at $0 to display “Contact us for pricing.”';return}
   if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
-  if(!id&&!file){message.textContent='Choose an original photo or video to upload for a new listing.';return}if(videoPreviewFile&&id&&existingCategoryIsPhoto(id)&&!(file&&file.type.startsWith('video/'))){message.textContent='A video preview can only be attached to a video listing.';return}const existingForValidation=records.media?.find(m=>String(m.id)===String(id));const isVideoListing=file?file.type.startsWith('video/'):String(existingForValidation?.category||'').toLowerCase()==='video';if(published&&isVideoListing&&!videoPreviewFile&&!existingForValidation?.preview_path){message.textContent='To publish a video, upload a separate public preview copy. Keep the high-resolution original in private storage.';return}
-  if(file&&file.size>2*1024*1024*1024){message.textContent='Original file exceeds the 2 GB upload limit.';return}if(videoPreviewFile&&videoPreviewFile.size>500*1024*1024){message.textContent='Video preview exceeds the 500 MB upload limit.';return}if(videoPreviewFile&&!['video/mp4','video/webm'].includes(videoPreviewFile.type)){message.textContent='Choose an MP4 or WebM preview copy.';return}if(videoPreviewFile&&file&&!file.type.startsWith('video/')){message.textContent='A video preview can only be attached to a video original.';return}
+  if(!id&&!file){message.textContent='Choose an original photo or video to upload for a new listing.';return}const existingForValidation=records.media?.find(m=>String(m.id)===String(id));const isVideoListing=file?file.type.startsWith('video/'):String(existingForValidation?.category||'').toLowerCase()==='video';if(published&&isVideoListing&&!file&&!existingForValidation?.livepeer_playback_id){message.textContent='This legacy video has no Livepeer streaming asset yet. Re-upload the video once to enable full-length playback.';return}
+  if(file&&file.size>5*1024*1024*1024){message.textContent='Media exceeds the 5 GB upload limit.';return}if(file&&file.type.startsWith('video/')&&!window.tus?.Upload){message.textContent='The resumable video uploader did not load. Refresh the page and try again.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
   const button=$('mediaSaveButton'),pricingButton=$('mediaPricingSaveButton'),buttonLabel=id?'Saving changes…':'Uploading media…';[button,pricingButton].filter(Boolean).forEach(b=>{b.disabled=true;b.textContent=buttonLabel});const uploaded=[];startMediaProgress();
   try{
@@ -571,20 +572,19 @@ $('mediaForm').addEventListener('submit',async e=>{
         const listingImageUrl=client.storage.from('fqmma-media').getPublicUrl(listingImagePath).data.publicUrl;
         Object.assign(patch,{category:'Photo',file_path:originalPath,file_url:listingImageUrl,preview_path:listingImagePath,storage_bucket:originalBucket});
       }else{
-        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:originalUrl,preview_path:existing?.category==='Video'?existing.preview_path:null,storage_bucket:originalBucket});
+        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:originalUrl,preview_path:null,storage_bucket:originalBucket});
       }
     }
-    if(videoPreviewFile){
-       if(!id&&!file)throw new Error('Upload the private original video before adding its preview.');
-       if(id&&existing&&String(existing.category||'').toLowerCase()!=='video'&&!(file&&file.type.startsWith('video/')))throw new Error('Video preview requires a video original.');
-       const previewPath=collection+'/'+Date.now()+'-public-preview-'+videoPreviewFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
-       updateMediaProgress('Uploading public video preview…',0,'Uploading the separate preview copy. The original remains private.');
-       await uploadStorageFileWithProgress('fqmma-media',previewPath,videoPreviewFile,'Uploading public video preview…');
-       uploaded.push({bucket:'fqmma-media',path:previewPath});
-       patch.preview_path=previewPath;
-       patch.category='Video';
-     } else if(file&&file.type.startsWith('video/')) {
-       patch.preview_path=existing?.category==='Video'?existing.preview_path:null;
+    if(file&&file.type.startsWith('video/')) {
+       updateMediaProgress('Preparing Livepeer video upload…',8,'Creating a secure upload session. Do not close this page.');
+       const {data:session,error:sessionError}=await client.functions.invoke('create-vod-upload',{body:{name:title,file_name:file.name,file_size:file.size,is_paid:price>0&&$('mediaPriceConfirmed').checked}});
+       if(sessionError)throw sessionError;
+       if(!session?.assetId||!session?.playbackId||!session?.uploadUrl)throw new Error('Livepeer did not return a complete upload session. No listing was published.');
+       await new Promise((resolve,reject)=>{
+         const tusUpload=new window.tus.Upload(file,{endpoint:session.uploadUrl,chunkSize:10*1024*1024,retryDelays:[0,1000,3000,5000,10000],metadata:{filename:file.name,filetype:file.type,name:title},onError:reject,onProgress:(sent,total)=>updateMediaProgress('Uploading video to Livepeer…',Math.round(10+(sent/total)*78),Math.round(sent/1048576)+' MB of '+Math.round(total/1048576)+' MB uploaded.'),onSuccess:resolve});
+         tusUpload.start();
+       });
+       Object.assign(patch,{category:'Video',file_path:originalPath,file_url:null,preview_path:null,storage_bucket:originalBucket,livepeer_asset_id:session.assetId,livepeer_playback_id:session.playbackId,livepeer_status:'processing',livepeer_playback_policy:price>0&&$('mediaPriceConfirmed').checked?'jwt':'public'});
      }
     updateMediaProgress('Saving listing…',null,'The files are uploaded. Saving the listing details now.');
     if(id){
@@ -593,10 +593,10 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(file&&existing?.file_path)oldObjects.push({bucket:existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media'),path:existing.file_path});
       if(existing?.preview_path&&existing.preview_path!==patch.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path});
       uploaded.length=0;const cleanup=await Promise.all(oldObjects.map(x=>client.storage.from(x.bucket).remove([x.path])));
-      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':(file?'Original updated and stored privately; only an explicitly generated listing image is public.':'Listing details updated.');
+      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':(file?'Original updated privately; Livepeer is preparing full-length streaming.':'Listing details updated.');
     }else{
       const {error:insertError}=await client.from('media').insert({...patch}).select('id').single();if(insertError)throw insertError;
-      uploaded.length=0;message.textContent='Listing created. Original is private; only the separate photo listing image or video preview is public. A $0 price displays “Contact us for pricing,” not free access.';
+      uploaded.length=0;message.textContent='Listing created. The original is private; Livepeer is processing the streaming version. Paid videos remain locked. A $0 price displays “Contact us for pricing,” not free access.';
     }
     updateMediaProgress('Refreshing media catalog…',null,'Finishing up and refreshing the list.');
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
