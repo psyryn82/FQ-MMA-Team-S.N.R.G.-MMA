@@ -301,12 +301,14 @@ Deno.serve(async (req) => {
       .select("id,media_id,authorized_email,expires_at,revoked_at").eq("id", tokenRow.permission_id).is("revoked_at", null).maybeSingle();
     if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) return respond({ error: "This approval is no longer active. Contact FQ MMA support." }, 403, origin);
     const { data: media, error: mediaError } = await db.from("media")
-      .select("id,title,file_path,storage_bucket,is_published,price_confirmed,price").eq("id", permission.media_id).eq("is_published", true).maybeSingle();
+      .select("id,title,category,file_path,storage_bucket,is_published,price_confirmed,price").eq("id", permission.media_id).eq("is_published", true).maybeSingle();
     if (mediaError || !media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This media is not configured for private delivery." }, 404, origin);
+    if (action === "playback" && String(media.category || "").toLowerCase() !== "video") return respond({ error: "Only video items can use the private playback link." }, 400, origin);
+    if (action !== "download" && action !== "playback") return respond({ error: "Unsupported action." }, 400, origin);
     // Prepare the signed URL before consuming the one-time token. A transient
     // storage signing failure should not burn a valid recipient link.
-    const { data: signed, error: signedError } = await db.storage.from("fqmma-private").createSignedUrl(media.file_path, 900, { download: true });
-    if (signedError || !signed?.signedUrl) return respond({ error: "The download is temporarily unavailable. Ask staff to send a new link." }, 502, origin);
+    const { data: signed, error: signedError } = await db.storage.from("fqmma-private").createSignedUrl(media.file_path, 900, { download: action !== "playback" });
+    if (signedError || !signed?.signedUrl) return respond({ error: "The private media link is temporarily unavailable. Ask staff to send a new link." }, 502, origin);
     const { data: stillApproved, error: recheckError } = await db.from("media_download_permissions")
       .select("id").eq("id", permission.id).is("revoked_at", null).maybeSingle();
     if (recheckError || !stillApproved) return respond({ error: "This approval is no longer active. Contact FQ MMA support." }, 403, origin);
@@ -314,7 +316,7 @@ Deno.serve(async (req) => {
     const { data: consumed, error: consumeError } = await db.from("media_download_tokens")
       .update({ consumed_at: consumeNow }).eq("id", tokenRow.id).is("consumed_at", null).gt("expires_at", consumeNow).select("id").maybeSingle();
     if (consumeError || !consumed) return respond({ error: "This download link has already been used. Ask staff to send a new one." }, 403, origin);
-    return respond({ url: signed.signedUrl, title: media.title, expires_in: 900 }, 200, origin);
+    return respond({ url: signed.signedUrl, title: media.title, expires_in: 900, mode: action }, 200, origin);
   }
 
   const mediaId = Number(input.media_id);
