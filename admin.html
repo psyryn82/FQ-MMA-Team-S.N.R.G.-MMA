@@ -574,17 +574,16 @@ $('mediaForm').addEventListener('submit',async e=>{
         Object.assign(patch,{category:'Video',file_path:originalPath,file_url:originalUrl,preview_path:existing?.category==='Video'?existing.preview_path:null,storage_bucket:originalBucket});
       }
     }
-    if(videoPreviewFile){
-       if(!id&&!file)throw new Error('Upload the private original video before adding its preview.');
-       if(id&&existing&&String(existing.category||'').toLowerCase()!=='video'&&!(file&&file.type.startsWith('video/')))throw new Error('Video preview requires a video original.');
-       const previewPath=collection+'/'+Date.now()+'-public-preview-'+videoPreviewFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
-       updateMediaProgress('Uploading public video preview…',0,'Uploading the separate preview copy. The original remains private.');
-       await uploadStorageFileWithProgress('fqmma-media',previewPath,videoPreviewFile,'Uploading public video preview…');
-       uploaded.push({bucket:'fqmma-media',path:previewPath});
-       patch.preview_path=previewPath;
-       patch.category='Video';
-     } else if(file&&file.type.startsWith('video/')) {
-       patch.preview_path=existing?.category==='Video'?existing.preview_path:null;
+    if(file&&file.type.startsWith('video/')) {
+       updateMediaProgress('Preparing Livepeer video upload…',8,'Creating a secure upload session. Do not close this page.');
+       const {data:session,error:sessionError}=await client.functions.invoke('create-vod-upload',{body:{name:title,file_name:file.name,file_size:file.size,is_paid:price>0&&$('mediaPriceConfirmed').checked}});
+       if(sessionError)throw sessionError;
+       if(!session?.assetId||!session?.playbackId||!session?.uploadUrl)throw new Error('Livepeer did not return a complete upload session. No listing was published.');
+       await new Promise((resolve,reject)=>{
+         const tusUpload=new window.tus.Upload(file,{endpoint:session.uploadUrl,chunkSize:10*1024*1024,retryDelays:[0,1000,3000,5000,10000],metadata:{filename:file.name,filetype:file.type,name:title},onError:reject,onProgress:(sent,total)=>updateMediaProgress('Uploading video to Livepeer…',Math.round(10+(sent/total)*78),Math.round(sent/1048576)+' MB of '+Math.round(total/1048576)+' MB uploaded.'),onSuccess:resolve});
+         tusUpload.start();
+       });
+       Object.assign(patch,{category:'Video',file_path:originalPath,file_url:null,preview_path:null,storage_bucket:originalBucket,livepeer_asset_id:session.assetId,livepeer_playback_id:session.playbackId,livepeer_status:'processing',livepeer_playback_policy:price>0&&$('mediaPriceConfirmed').checked?'jwt':'public'});
      }
     updateMediaProgress('Saving listing…',null,'The files are uploaded. Saving the listing details now.');
     if(id){
