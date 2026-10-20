@@ -19,6 +19,11 @@
 <div class="panel p-4 flex flex-wrap items-center justify-between gap-3 mb-5"><div><div class="head text-2xl uppercase">Dashboard</div><p id="signedInAs" class="muted text-xs mt-1"></p></div><button id="logoutBtn" class="btn2">Sign out</button></div>
 <details class="panel p-4 mb-5" open><summary class="head text-lg uppercase cursor-pointer">Quick start guide <span class="muted text-xs normal-case font-normal">for new dashboard users</span></summary><div class="grid md:grid-cols-3 gap-4 mt-4 text-sm"><div><strong class="text-red-400">1. Change the website</strong><p class="muted mt-1">Open Website customization to edit the announcement, countdown heading, training cards, and Sasha portfolio wording/banner.</p></div><div><strong class="text-red-400">2. Upload or manage media</strong><p class="muted mt-1">Open Media Library, then choose Fight Media, Sasha Portfolio, or Website Assets from the dropdown. Keep the page open until the progress bar finishes.</p></div><div><strong class="text-red-400">3. Review sales and access</strong><p class="muted mt-1">Sales &amp; Commerce shows purchases and download permissions. A pending checkout is not proof of payment. Creating a staff download link does not charge a customer.</p></div></div><p class="muted text-xs mt-4">Safety tip: paid originals belong in private storage. Only make a separate public copy when you intend the file to be publicly accessible. If a button is disabled or an error appears, read the message before retrying.</p></details><div id="tabs" class="flex flex-wrap gap-2 mb-5"></div>
 <div id="subTabs" class="flex flex-wrap gap-2 mb-5"></div>
+<div id="mediaProgressHost" class="mb-4"><div id="mediaProgress" class="hidden mt-4 rounded-lg border border-gray-700 bg-black/40 p-4" role="status" aria-live="polite">
+  <div class="flex items-center justify-between gap-3 text-sm"><span id="mediaProgressLabel" class="font-semibold">Preparing upload…</span><span id="mediaProgressPercent" class="font-bold tabular-nums">0%</span></div>
+  <div class="mt-2 h-3 w-full overflow-hidden rounded-full bg-gray-800"><div id="mediaProgressBar" class="h-full rounded-full bg-red-600 transition-[width] duration-200" style="width:0%"></div></div>
+  <div class="mt-2 flex items-center justify-between gap-3 text-xs muted"><span id="mediaProgressDetail">Please keep this page open.</span><span id="mediaProgressElapsed" class="tabular-nums">Elapsed 0:00</span></div>
+</div></div>
 <div id="workspacePanels" class="space-y-4 min-w-0"></div>
 <section id="tab-home" class="panel p-5 hidden"><h2 class="head text-2xl uppercase mb-1">Website settings</h2><p class="muted text-sm mb-5">Update the public-site announcement text, countdown heading, payment-site link, and discipline cards using ordinary fields. Other saved homepage content is preserved when you save these settings.</p><form id="homeForm" class="space-y-5"><div class="grid md:grid-cols-2 gap-4"><label class="block text-sm">Top announcement / ticker text<input id="homeTickerText" class="field" maxlength="240" required></label><label class="block text-sm">Event announcement heading<input id="homeCountdownTitle" class="field" maxlength="240" required></label><label class="block text-sm md:col-span-2">External payment / pay site URL<input id="homePaysiteUrl" class="field" type="url" maxlength="2000" placeholder="https://…"></label></div><div><h3 class="head text-xl uppercase mb-2">Discipline cards</h3><p class="muted text-xs mb-3">Edit names and descriptions, add an optional training link, and paste an HTTPS image URL for a card photo. Use team-owned or properly licensed images.</p><div id="homeDisciplines" class="space-y-4"></div></div><div class="flex flex-wrap gap-2"><button class="btn" type="submit">Save website settings</button><button id="homeReload" class="btn2" type="button">Discard changes / reload saved settings</button></div></form></section>
 <div id="modulePanels"></div>
@@ -85,11 +90,6 @@
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
 </form>
-<div id="mediaProgress" class="hidden mt-4 rounded-lg border border-gray-700 bg-black/40 p-4" role="status" aria-live="polite">
-  <div class="flex items-center justify-between gap-3 text-sm"><span id="mediaProgressLabel" class="font-semibold">Preparing upload…</span><span id="mediaProgressPercent" class="font-bold tabular-nums">0%</span></div>
-  <div class="mt-2 h-3 w-full overflow-hidden rounded-full bg-gray-800"><div id="mediaProgressBar" class="h-full rounded-full bg-red-600 transition-[width] duration-200" style="width:0%"></div></div>
-  <div class="mt-2 flex items-center justify-between gap-3 text-xs muted"><span id="mediaProgressDetail">Please keep this page open.</span><span id="mediaProgressElapsed" class="tabular-nums">Elapsed 0:00</span></div>
-</div>
 <div class="mt-4 flex flex-wrap gap-2"><button id="cleanupPublicVideoPreviews" type="button" class="btn2">Remove legacy public video previews</button></div>
 <div id="mediaMessage" class="text-sm mt-3" role="status"></div>
 <div id="mediaList" class="mt-5 space-y-3"></div>
@@ -417,7 +417,13 @@ async function loadMedia(){
     let preview='';
     const isVideo=String(m.category||'').toLowerCase()==='video';
     if(isVideo){
-      if(m.storage_bucket==='fqmma-private'){preview='<p class="text-green-300 text-xs mt-2">Private original ready. No public playback preview is published.</p>';}
+      if(m.storage_bucket==='fqmma-private'){
+         if(m.file_path){
+           const {data:signedData,error:signedError}=await client.storage.from('fqmma-private').createSignedUrl(m.file_path,300);
+           if(!signedError&&signedData?.signedUrl){preview='<video class="mt-2 w-full max-h-96 rounded-lg bg-black" controls playsinline preload="metadata" src="'+esc(signedData.signedUrl)+'">Your browser does not support embedded video playback.</video><p class="text-green-300 text-xs mt-1">Private original preview. Temporary playback link expires in 5 minutes; the original remains private.</p>';}
+           else{preview='<p class="text-amber-300 text-xs mt-2">Private original is stored, but preview could not be created: '+esc(signedError?.message||'Storage did not return a playback URL.')+'</p>';}
+         }else{preview='<p class="text-amber-300 text-xs mt-2">Private video is missing its storage path. Refresh the catalog or inspect this record.</p>';}
+       }
       else if(m.file_url){preview='<video class="mt-2 w-full max-h-96 rounded-lg bg-black" controls playsinline preload="metadata" src="'+esc(m.file_url)+'">Your browser does not support embedded video playback.</video><p class="muted text-xs mt-1"><a class="text-red-400 underline" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open/download free original</a></p>';}
       else{preview='<p class="text-amber-300 text-xs mt-2">No public video file. Check the private original in storage.</p>';}
     }else if(m.preview_path&&m.file_url){
