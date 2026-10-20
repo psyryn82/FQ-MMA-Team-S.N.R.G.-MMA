@@ -570,7 +570,7 @@
                     const contactForPrice = !isPaid;
                     const action = isPaid
                         ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase digital media</button>`
-                        : `<a href="mailto:fqsnrgmma.info@gmail.com?subject=${encodeURIComponent('Media purchase inquiry: ' + (item.title || 'digital media'))}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Contact us for purchase details</a>`;
+                        : `<a href="mailto:fqsnrgmma.info@gmail.com?subject=${encodeURIComponent('Media purchase inquiry: ' + (item.title || 'digital media'))}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Contact us for pricing</a>`;
                     return `
                         <article class="bg-gray-900/95 p-5 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 space-y-3 ${glowStyle}">
                             ${media}
@@ -581,7 +581,7 @@
                                     ${item.eventTitle ? `<p class="text-xs text-brand-red mt-1">Event: ${escapeHtml(item.eventTitle)}</p>` : ''}
                                     ${item.description ? `<p class="text-sm text-gray-400 mt-2">${escapeHtml(item.description)}</p>` : ''}
                                 </div>
-                                <span class="shrink-0 font-heading font-bold ${isRed ? 'text-brand-neon' : 'text-white'}">${isPaid ? escapeHtml(item.price || 'One-time purchase') : 'Contact for purchase details'}</span>
+                                <span class="shrink-0 font-heading font-bold ${isRed ? 'text-brand-neon' : 'text-white'}">${isPaid ? escapeHtml(item.price || 'One-time purchase') : 'Contact us for pricing'}</span>
                             </div>
                             ${action}
                         </article>
