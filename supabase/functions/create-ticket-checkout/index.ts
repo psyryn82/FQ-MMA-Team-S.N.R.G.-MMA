@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     .select("id,event_id,name,description,price_cents,currency,is_available")
     .eq("id", optionId).eq("is_available", true).maybeSingle();
   if (optionError || !option?.event_id) return respond({ error: "That ticket option is not available." }, 404, origin);
-  if (/\\b(watch\\s*live|live[- ]?stream|stream access)\\b/i.test(`${option.name || ""} ${option.description || ""}`)) {
+  if (/\b(watch\s*live|live[- ]?stream|stream access)\b/i.test(`${option.name || ""} ${option.description || ""}`)) {
     return respond({ error: "Live-stream access must be purchased through the dedicated stream checkout. Please use the Live-stream access button on the event page." }, 409, origin);
   }
   const { data: event, error: eventError } = await db.from("events")
