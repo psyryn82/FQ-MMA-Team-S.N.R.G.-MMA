@@ -24,7 +24,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
 
-    <!-- Supabase client setup lives in an external file so CSP can permit it without unsafe-inline. -->
+
     <script src="./supabase-init.js" defer></script>
     
 
@@ -307,7 +307,6 @@
       }
     </style>
 
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoaded&render=explicit" async defer></script>
     <script>
       window.onTurnstileLoaded = function () {
         const renderWidgets = () => document.querySelectorAll(".cf-turnstile[data-sitekey]").forEach((widget) => {
@@ -326,6 +325,7 @@
         if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderWidgets, { once: true }); else renderWidgets();
       };
     </script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoaded&render=explicit" async defer></script>
     <style>
       @media (min-width: 1024px) { header nav[aria-label="Mobile navigation"] { display: none !important; } }
       @media (max-width: 1023.98px) { header nav[aria-label="Main navigation"] { display: none !important; } }
