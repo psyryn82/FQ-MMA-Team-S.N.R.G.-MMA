@@ -19,9 +19,9 @@
 <div><p class="accent font-bold uppercase tracking-[.25em] text-xs">Photography · Videography</p><h1 class="text-4xl md:text-6xl font-black uppercase leading-tight mt-4">Stories worth <span class="accent">keeping.</span></h1><p class="muted mt-5 leading-relaxed">A dedicated portfolio for portraits, events, and visual storytelling. Browse selected work, then send a booking request. Every request is reviewed before any payment link is sent.</p><a class="btn inline-block mt-7" href="#portfolio">Explore the portfolio</a></div>
 <div class="panel min-h-64 md:min-h-80 flex items-center justify-center p-8 text-center"><div><p class="text-2xl font-black uppercase">Sasha Fleskes</p><p class="muted mt-2">Photography & Videography</p><p class="accent text-sm mt-5">Portfolio · Services · Booking requests</p></div></div>
 </section>
-<section id="portfolio" class="space-y-5"><div><p class="accent text-xs uppercase tracking-[.25em] font-bold">Selected work</p><h2 class="text-3xl font-black uppercase mt-2">Portfolio</h2><p class="muted mt-2">Browse published photos and video listings. Original files remain private.</p></div><div id="portfolio-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"><p class="muted">Loading portfolio…</p></div><p id="portfolio-status" class="muted text-sm" role="status"></p></section>
+<section id="portfolio" class="space-y-5"><div><p class="accent text-xs uppercase tracking-[.25em] font-bold">Selected work</p><h2 class="text-3xl font-black uppercase mt-2">Portfolio</h2><p class="muted mt-2">Browse published photos and video previews. Original files remain private; only separate preview copies are playable.</p></div><div id="portfolio-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"><p class="muted">Loading portfolio…</p></div><p id="portfolio-status" class="muted text-sm" role="status"></p></section>
 <section class="grid md:grid-cols-2 gap-8">
-<div class="panel p-6"><p class="accent text-xs uppercase tracking-[.25em] font-bold">What we do</p><h2 class="text-2xl font-black uppercase mt-2">Services</h2><ul class="muted mt-4 space-y-3"><li>• Portrait and personal photography</li><li>• Event photography</li><li>• Photography sessions</li><li>• Video services</li><li>• Custom projects by request</li></ul><p class="muted text-sm mt-5">Tell us what you have in mind and we can discuss the scope, timing, and pricing.</p></div>
+<div class="panel p-6"><p class="accent text-xs uppercase tracking-[.25em] font-bold">Sessions & services</p><h2 class="text-2xl font-black uppercase mt-2">Session & Service Pricing</h2><p class="muted text-sm mt-2 mb-4">Explore session rates and service options. Custom projects may require a quote.</p><div id="portfolio-services-list" class="space-y-3"><p class="muted">Loading session pricing…</p></div></div>
 <div id="booking" class="panel p-6"><p class="accent text-xs uppercase tracking-[.25em] font-bold">Start a conversation</p><h2 class="text-2xl font-black uppercase mt-2">Request a booking</h2><p class="muted text-sm mt-2 mb-5">This is a request only, not a confirmed appointment. If approved, the team will send a payment or deposit link. No payment is collected here.</p>
 <form id="booking-form" class="space-y-4">
 <label class="block text-sm">Your name<input id="b-name" class="field" required maxlength="120" autocomplete="name"></label>
@@ -45,19 +45,28 @@
   $('year').textContent=new Date().getFullYear();
   const status=$('portfolio-status');
   const safeText=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money=v=>'$'+Number(v||0).toFixed(2);
+  function renderServices(services){
+    const host=$('portfolio-services-list');
+    const rows=Array.isArray(services)?services.filter(s=>s&&String(s.name||'').trim()):[];
+    host.innerHTML=rows.length?rows.map(s=>'<article class="panel p-4"><h3 class="font-bold text-lg">'+safeText(s.name)+'</h3><p class="accent font-black mt-2">'+safeText(s.price||'Contact for quote')+'</p>'+(s.details?'<p class="muted text-sm mt-2">'+safeText(s.details)+'</p>':'')+'</article>').join(''):'<p class="muted">Session rates are being updated. Send a booking request for a quote.</p>';
+  }
   function mediaCard(m,client){
     const isVideo=String(m.category||'').toLowerCase()==='video';
-    const url=String(m.file_url||'');
-    const mediaVisual=!isVideo&&/^https:\/\//i.test(url)
-      ? '<img class="w-full aspect-[4/3] object-cover bg-black" loading="lazy" src="'+safeText(url)+'" alt="'+safeText(m.title||'Portfolio photo')+'">'
-      : '<div class="w-full aspect-[4/3] flex items-center justify-center bg-black text-zinc-300 font-bold uppercase tracking-widest">'+(isVideo?'Video available by purchase or download':'Photo')+'</div>';
-    const price=Number(m.price||0);
-    return '<article class="panel overflow-hidden">'+mediaVisual+'<div class="p-4"><h3 class="font-bold">'+safeText(m.title||'Portfolio item')+'</h3>'+(m.description?'<p class="muted text-sm mt-2">'+safeText(m.description)+'</p>':'')+(price>0?'<p class="accent text-sm font-bold mt-3">One-time price: +'</div></article>';
+    const previewUrl=isVideo&&m.preview_path?client.storage.from('fqmma-media').getPublicUrl(m.preview_path).data.publicUrl:'';
+    const imageUrl=!isVideo&&m.file_url&&/^https:\/\//i.test(m.file_url)?m.file_url:'';
+    const mediaVisual=isVideo
+      ? (previewUrl?'<video class="w-full aspect-[4/3] object-contain bg-black" controls controlsList="nodownload noplaybackrate" disablepictureinpicture playsinline preload="metadata" oncontextmenu="return false" aria-label="'+safeText(m.title||'Video preview')+'" src="'+safeText(previewUrl)+'">Your browser does not support video playback.</video>':'<div class="w-full aspect-[4/3] flex flex-col items-center justify-center bg-black text-zinc-300 font-bold uppercase tracking-widest text-center p-4"><span>Video preview coming soon</span><span class="normal-case tracking-normal font-normal text-xs mt-2">Original remains private.</span></div>')
+      : (imageUrl?'<img class="w-full aspect-[4/3] object-cover bg-black" loading="lazy" src="'+safeText(imageUrl)+'" alt="'+safeText(m.title||'Portfolio photo')+'">':'<div class="w-full aspect-[4/3] flex items-center justify-center bg-black text-zinc-300 font-bold uppercase tracking-widest">Photo</div>');
+    const price=Number(m.price||0),isPaid=price>0&&m.price_confirmed===true;
+    const priceText=isPaid?'One-time price: '+money(price):'Contact us for pricing';
+    const action=isPaid?'<button type="button" class="btn mt-3 w-full" data-buy-media="'+Number(m.id)+'" data-media-title="'+safeText(m.title||'digital media')+'" data-media-price="'+price.toFixed(2)+'">Purchase digital media</button>':'<a class="btn mt-3 inline-flex w-full justify-center" href="mailto:fqsnrgmma.info@gmail.com?subject='+encodeURIComponent('Media pricing inquiry: '+(m.title||'digital media'))+'">Contact us for pricing</a>';
+    return '<article class="panel overflow-hidden">'+mediaVisual+'<div class="p-4"><h3 class="font-bold">'+safeText(m.title||'Portfolio item')+'</h3>'+(m.description?'<p class="muted text-sm mt-2">'+safeText(m.description)+'</p>':'')+'<p class="accent text-sm font-bold mt-3">'+priceText+'</p>'+action+'</div></article>';
   }
   function openMediaCheckout(id,title,price){
     $('media-checkout-id').value=String(id);
     $('media-checkout-title').textContent='Purchase '+(title||'digital media');
-    $('media-checkout-price').textContent='One-time price: $'+Number(price||0).toFixed(2);
+    $('media-checkout-price').textContent='One-time price: '+money(price);
     $('media-checkout-status').textContent='';
     $('media-checkout-modal').classList.remove('hidden');
     $('media-checkout-email').focus();
@@ -66,14 +75,23 @@
     if(!window.supabase){status.textContent='Portfolio service is temporarily unavailable.';return}
     status.textContent='Loading published portfolio items…';
     const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-    const {data,error}=await client.from('media')
-      .select('id,title,category,description,file_url,price,price_confirmed,is_published,collection,media_destination,created_at')
-      .eq('is_published',true)
-      .eq('price_confirmed',true)
-      .order('created_at',{ascending:false})
-      .limit(100);
-    if(error){status.textContent='We could not load the portfolio right now. Please try again later.';console.error('Sasha portfolio load failed:',error);return}
-    const rows=(data||[]).filter(m=>m.collection==='sasha_portfolio'||m.media_destination==='portfolio');
+    const results=await Promise.all([
+      client.from('media').select('id,title,category,description,file_url,preview_path,price,price_confirmed,is_published,collection,media_destination,created_at').eq('is_published',true).order('created_at',{ascending:false}).limit(100),
+      client.from('site_content').select('content_value').eq('content_key','public').maybeSingle()
+    ]);
+    const mediaResult=results[0],contentResult=results[1];
+    if(contentResult.error)console.warn('Portfolio service pricing could not be loaded.',contentResult.error);
+    let services=[];
+    try{const saved=contentResult.data&&contentResult.data.content_value?JSON.parse(contentResult.data.content_value):{};services=saved.general&&Array.isArray(saved.general.portfolioServices)?saved.general.portfolioServices:[]}catch(err){console.warn('Portfolio service pricing format is invalid.',err)}
+    renderServices(services);
+    const serviceSelect=$('b-service'),selectedService=serviceSelect.value;
+    const configuredNames=services.filter(s=>s&&String(s.name||'').trim()).map(s=>String(s.name).trim());
+    const defaults=['Photography session','Event photography','Portrait session','Video service'];
+    const serviceNames=Array.from(new Set(configuredNames.concat(defaults)));
+    serviceSelect.innerHTML='<option value="">Choose a service</option>'+serviceNames.map(name=>'<option>'+safeText(name)+'</option>').join('')+'<option>Other / custom project</option>';
+    if(serviceNames.includes(selectedService))serviceSelect.value=selectedService;
+    if(mediaResult.error){status.textContent='We could not load the portfolio right now. Please try again later.';console.error('Sasha portfolio load failed:',mediaResult.error);return}
+    const rows=(mediaResult.data||[]).filter(m=>m.collection==='sasha_portfolio'||m.media_destination==='portfolio');
     $('portfolio-grid').innerHTML=rows.map(m=>mediaCard(m,client)).join('')||'<p class="muted">The portfolio is being prepared. Please check back soon.</p>';
     status.textContent=rows.length?'Showing '+rows.length+' published portfolio item(s).':'';
   }
@@ -86,16 +104,15 @@
     if(!window.supabase){msg.textContent='Booking service is temporarily unavailable. Please try again later.';return}
     btn.disabled=true;btn.textContent='Submitting…';msg.textContent='Submitting your request…';
     try{
-      const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-      const id=crypto.randomUUID();
-      const {error}=await client.from('booking_requests').insert({id,customer_name:name,customer_email:email,customer_phone:phone,service_type:service,preferred_date:date,preferred_time:time,location,details,status:'pending'});
-      if(error)throw error;
+      const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY),id=crypto.randomUUID();
+      const result=await client.from('booking_requests').insert({id,customer_name:name,customer_email:email,customer_phone:phone,service_type:service,preferred_date:date,preferred_time:time,location,details,status:'pending'});
+      if(result.error)throw result.error;
       let notificationSent=false;
       try{
-        const {data:notificationData,error:notificationError}=await client.functions.invoke('send-contact-message',{body:{name,email,category:'Portfolio / Photography Inquiry',company:'',message:'NEW SASHA PORTFOLIO BOOKING REQUEST\nBooking ID: '+id+'\nService: '+service+'\nPreferred date: '+(date||'Flexible')+'\nPreferred time: '+(time||'Flexible')+'\nLocation: '+(location||'Not specified')+'\nPhone: '+(phone||'Not provided')+'\nDetails: '+details}});
-        if(notificationError||notificationData?.success!==true)throw notificationError||new Error('Email notification was not confirmed.');
+        const notify=await client.functions.invoke('send-contact-message',{body:{name,email,category:'Portfolio / Photography Inquiry',company:'',message:'NEW SASHA PORTFOLIO BOOKING REQUEST\nBooking ID: '+id+'\nService: '+service+'\nPreferred date: '+(date||'Flexible')+'\nPreferred time: '+(time||'Flexible')+'\nLocation: '+(location||'Not specified')+'\nPhone: '+(phone||'Not provided')+'\nDetails: '+details}});
+        if(notify.error||notify.data?.success!==true)throw notify.error||new Error('Email notification was not confirmed.');
         notificationSent=true;
-      }catch(notifyError){console.warn('Booking saved; notification failed or was not confirmed.',notifyError)}
+      }catch(err){console.warn('Booking saved; notification could not be confirmed.',err)}
       $('booking-form').reset();
       msg.textContent=notificationSent?'Request received. The team will review it and contact you if approved. No payment has been taken.':'Your request was saved, but email notification could not be confirmed. The team can still review it in the booking dashboard. If urgent, email fqsnrgmma.info@gmail.com.';
     }catch(err){msg.textContent='We could not submit your request. Please try again later.';console.error('Sasha booking submission failed.',err)}
@@ -103,93 +120,16 @@
   });
   $('media-checkout-close').addEventListener('click',()=>$('media-checkout-modal').classList.add('hidden'));
   $('media-checkout-modal').addEventListener('click',e=>{if(e.target.id==='media-checkout-modal')$('media-checkout-modal').classList.add('hidden')});
-  $('portfolio-grid').addEventListener('click',e=>{
-    const button=e.target.closest('[data-buy-media]');
-    if(button)openMediaCheckout(button.dataset.buyMedia,button.dataset.mediaTitle,button.dataset.mediaPrice);
-  });
+  $('portfolio-grid').addEventListener('click',e=>{const button=e.target.closest('[data-buy-media]');if(button)openMediaCheckout(button.dataset.buyMedia,button.dataset.mediaTitle,button.dataset.mediaPrice)});
   $('media-checkout-form').addEventListener('submit',async e=>{
     e.preventDefault();
-    const button=$('media-checkout-submit'),msg=$('media-checkout-status');
-    button.disabled=true;button.textContent='Preparing secure checkout…';msg.textContent='';
+    const button=$('media-checkout-submit'),msg=$('media-checkout-status');button.disabled=true;button.textContent='Preparing secure checkout…';msg.textContent='';
     try{
       const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-      const {data,error}=await client.functions.invoke('create-media-checkout',{body:{media_id:Number($('media-checkout-id').value),buyer_email:$('media-checkout-email').value.trim()}});
-      if(error)throw error;
-      if(!data?.url||!data.url.startsWith('https://checkout.stripe.com/'))throw new Error(data?.error||'Secure checkout could not be opened.');
-      window.location.assign(data.url);
-    }catch(err){msg.textContent=err.message||'Checkout could not be started. No payment was taken.'}
-    finally{button.disabled=false;button.textContent='Continue to secure checkout'}
-  });
-  loadPortfolio();
-})();
-</script>
-</body>
-</html>
-+price.toFixed(2)+'</p><button type="button" class="btn mt-3 w-full" data-buy-media="'+Number(m.id)+'" data-media-title="'+safeText(m.title||'digital media')+'" data-media-price="'+price.toFixed(2)+'">Purchase digital media</button>':'<a class="btn mt-3 inline-flex w-full justify-center" href="mailto:fqsnrgmma.info@gmail.com?subject='+encodeURIComponent('Media purchase inquiry: '+(m.title||'digital media'))+'">Contact us for purchase details</a>')+'</div></article>';
-  }
-  function openMediaCheckout(id,title,price){
-    $('media-checkout-id').value=String(id);
-    $('media-checkout-title').textContent='Purchase '+(title||'digital media');
-    $('media-checkout-price').textContent='One-time price: $'+Number(price||0).toFixed(2);
-    $('media-checkout-status').textContent='';
-    $('media-checkout-modal').classList.remove('hidden');
-    $('media-checkout-email').focus();
-  }
-  async function loadPortfolio(){
-    if(!window.supabase){status.textContent='Portfolio service is temporarily unavailable.';return}
-    status.textContent='Loading published portfolio items…';
-    const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-    const {data,error}=await client.from('media')
-      .select('id,title,category,description,file_url,price,price_confirmed,is_published,collection,media_destination,created_at')
-      .eq('is_published',true)
-      .eq('price_confirmed',true)
-      .order('created_at',{ascending:false})
-      .limit(100);
-    if(error){status.textContent='We could not load the portfolio right now. Please try again later.';console.error('Sasha portfolio load failed:',error);return}
-    const rows=(data||[]).filter(m=>m.collection==='sasha_portfolio'||m.media_destination==='portfolio');
-    $('portfolio-grid').innerHTML=rows.map(m=>mediaCard(m,client)).join('')||'<p class="muted">The portfolio is being prepared. Please check back soon.</p>';
-    status.textContent=rows.length?'Showing '+rows.length+' published portfolio item(s).':'';
-  }
-  $('booking-form').addEventListener('submit',async e=>{
-    e.preventDefault();
-    const btn=$('b-submit'),msg=$('booking-status');
-    if($('b-company').value.trim())return;
-    const name=$('b-name').value.trim(),email=$('b-email').value.trim(),phone=$('b-phone').value.trim(),service=$('b-service').value,date=$('b-date').value||null,time=$('b-time').value.trim(),location=$('b-location').value.trim(),details=$('b-details').value.trim();
-    if(!name||!email||!service||!details){msg.textContent='Please complete your name, email, service, and project details.';return}
-    if(!window.supabase){msg.textContent='Booking service is temporarily unavailable. Please try again later.';return}
-    btn.disabled=true;btn.textContent='Submitting…';msg.textContent='Submitting your request…';
-    try{
-      const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-      const id=crypto.randomUUID();
-      const {error}=await client.from('booking_requests').insert({id,customer_name:name,customer_email:email,customer_phone:phone,service_type:service,preferred_date:date,preferred_time:time,location,details,status:'pending'});
-      if(error)throw error;
-      let notificationSent=false;
-      try{
-        const {data:notificationData,error:notificationError}=await client.functions.invoke('send-contact-message',{body:{name,email,category:'Portfolio / Photography Inquiry',company:'',message:'NEW SASHA PORTFOLIO BOOKING REQUEST\nBooking ID: '+id+'\nService: '+service+'\nPreferred date: '+(date||'Flexible')+'\nPreferred time: '+(time||'Flexible')+'\nLocation: '+(location||'Not specified')+'\nPhone: '+(phone||'Not provided')+'\nDetails: '+details}});
-        if(notificationError||notificationData?.success!==true)throw notificationError||new Error('Email notification was not confirmed.');
-        notificationSent=true;
-      }catch(notifyError){console.warn('Booking saved; notification failed or was not confirmed.',notifyError)}
-      $('booking-form').reset();
-      msg.textContent=notificationSent?'Request received. The team will review it and contact you if approved. No payment has been taken.':'Your request was saved, but email notification could not be confirmed. The team can still review it in the booking dashboard. If urgent, email fqsnrgmma.info@gmail.com.';
-    }catch(err){msg.textContent='We could not submit your request. Please try again later.';console.error('Sasha booking submission failed.',err)}
-    finally{btn.disabled=false;btn.textContent='Send booking request'}
-  });
-  $('media-checkout-close').addEventListener('click',()=>$('media-checkout-modal').classList.add('hidden'));
-  $('media-checkout-modal').addEventListener('click',e=>{if(e.target.id==='media-checkout-modal')$('media-checkout-modal').classList.add('hidden')});
-  $('portfolio-grid').addEventListener('click',e=>{
-    const button=e.target.closest('[data-buy-media]');
-    if(button)openMediaCheckout(button.dataset.buyMedia,button.dataset.mediaTitle,button.dataset.mediaPrice);
-  });
-  $('media-checkout-form').addEventListener('submit',async e=>{
-    e.preventDefault();
-    const button=$('media-checkout-submit'),msg=$('media-checkout-status');
-    button.disabled=true;button.textContent='Preparing secure checkout…';msg.textContent='';
-    try{
-      const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-      const {data,error}=await client.functions.invoke('create-media-checkout',{body:{media_id:Number($('media-checkout-id').value),buyer_email:$('media-checkout-email').value.trim()}});
-      if(error)throw error;
-      if(!data?.url||!data.url.startsWith('https://checkout.stripe.com/'))throw new Error(data?.error||'Secure checkout could not be opened.');
-      window.location.assign(data.url);
+      const result=await client.functions.invoke('create-media-checkout',{body:{media_id:Number($('media-checkout-id').value),buyer_email:$('media-checkout-email').value.trim()}});
+      if(result.error)throw result.error;
+      if(!result.data||!result.data.url||!result.data.url.startsWith('https://checkout.stripe.com/'))throw new Error(result.data?.error||'Secure checkout could not be opened.');
+      window.location.assign(result.data.url);
     }catch(err){msg.textContent=err.message||'Checkout could not be started. No payment was taken.'}
     finally{button.disabled=false;button.textContent='Continue to secure checkout'}
   });

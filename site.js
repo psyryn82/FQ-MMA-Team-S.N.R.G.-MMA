@@ -560,16 +560,17 @@
                     const safeListing = !!(item.mediaId && item.protectedMedia === true);
                     const isVideo = String(item.category || '').toLowerCase() === 'video';
                     const mediaUrl = safeListing && !isVideo ? getSafeHttpUrl(item.image, true) : '';
+                    const videoPreviewUrl = safeListing && isVideo ? getSafeHttpUrl(item.previewUrl || '', true) : '';
                     const itemUrl = safeListing ? getSafeHttpUrl(item.link, true) : '';
-                    const isPaid = Number(item.priceAmount || 0) > 0;
+                    const isPaid = Number(item.priceAmount || 0) > 0 && item.priceConfirmed === true;
                     const downloadUrl = safeListing && !isPaid ? itemUrl : '';
                     const media = mediaUrl && !isVideo
                         ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`
-                        : (isVideo ? '<div class="w-full h-40 flex items-center justify-center rounded-lg bg-black text-sm font-bold uppercase tracking-widest text-gray-300">Video available by purchase or download</div>' : '');
+                        : (isVideo ? (videoPreviewUrl ? `<video class="w-full max-h-72 rounded-lg bg-black" controls controlsList="nodownload noplaybackrate" disablepictureinpicture playsinline preload="metadata" oncontextmenu="return false" aria-label="${escapeHtml(item.title || 'Video preview')}"><source src="${escapeHtml(videoPreviewUrl)}">Your browser does not support video playback.</video>` : '<div class="w-full h-40 flex flex-col items-center justify-center rounded-lg bg-black text-sm font-bold uppercase tracking-widest text-gray-300 text-center p-4"><span>Video preview coming soon</span><span class="normal-case tracking-normal font-normal text-xs mt-2">The original stays private.</span></div>') : '');
                     const contactForPrice = !isPaid;
                     const action = isPaid
                         ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase digital media</button>`
-                        : `<a href="mailto:fqsnrgmma.info@gmail.com?subject=${encodeURIComponent('Media purchase inquiry: ' + (item.title || 'digital media'))}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Contact us for purchase details</a>`;
+                        : `<a href="mailto:fqsnrgmma.info@gmail.com?subject=${encodeURIComponent('Media purchase inquiry: ' + (item.title || 'digital media'))}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Contact us for pricing</a>`;
                     return `
                         <article class="bg-gray-900/95 p-5 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 space-y-3 ${glowStyle}">
                             ${media}
@@ -580,7 +581,7 @@
                                     ${item.eventTitle ? `<p class="text-xs text-brand-red mt-1">Event: ${escapeHtml(item.eventTitle)}</p>` : ''}
                                     ${item.description ? `<p class="text-sm text-gray-400 mt-2">${escapeHtml(item.description)}</p>` : ''}
                                 </div>
-                                <span class="shrink-0 font-heading font-bold ${isRed ? 'text-brand-neon' : 'text-white'}">${isPaid ? escapeHtml(item.price || 'One-time purchase') : 'Contact for purchase details'}</span>
+                                <span class="shrink-0 font-heading font-bold ${isRed ? 'text-brand-neon' : 'text-white'}">${isPaid ? escapeHtml(item.price || 'One-time purchase') : 'Contact us for pricing'}</span>
                             </div>
                             ${action}
                         </article>
@@ -1165,7 +1166,7 @@
                     window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
                     window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.functions.invoke('list-available-streams'),
-                    window.sb.from('media').select('id,title,category,description,file_url,preview_path,price,price_confirmed,is_published,collection,media_destination,event_id').eq('is_published', true).eq('price_confirmed', true).order('created_at', {ascending:false})
+                    window.sb.from('media').select('id,title,category,description,file_url,preview_path,price,price_confirmed,is_published,collection,media_destination,event_id').eq('is_published', true).order('created_at', {ascending:false})
                 ]);
                 // A stream-function/network failure must not prevent unrelated content, especially videos, from rendering.
                 const settledValue = (result, label) => {
@@ -1200,8 +1201,8 @@
                     const databaseMedia = (mediaResult.data || []).map(m => ({
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
-                        priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Contact us for purchase details',
-                        image: String(m.category || '').toLowerCase() !== 'video' && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', link: m.file_url || '',
+                        priceAmount: Number(m.price || 0), priceConfirmed: m.price_confirmed === true, price: Number(m.price || 0) > 0 && m.price_confirmed === true ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Contact us for pricing',
+                        image: String(m.category || '').toLowerCase() !== 'video' && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', previewUrl: String(m.category || '').toLowerCase() === 'video' && m.preview_path ? window.sb.storage.from('fqmma-media').getPublicUrl(m.preview_path).data.publicUrl : '', link: m.file_url || '',
                         protectedMedia: true, description: m.description || ''
                     }));
                     siteData.portfolio = [...databaseMedia, ...siteData.portfolio.filter(p => !p.mediaId)];
