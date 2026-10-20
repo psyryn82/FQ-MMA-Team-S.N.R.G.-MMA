@@ -18,7 +18,7 @@
 <button id="googleBtn" class="btn2 w-full mt-3" type="button">Continue with Google</button><p id="loginMessage" class="text-sm mt-4" role="status"></p></section>
 <section id="dashboard" class="hidden">
 <div class="panel p-4 flex flex-wrap items-center justify-between gap-3 mb-5"><div><div class="head text-2xl uppercase">Dashboard</div><p id="signedInAs" class="muted text-xs mt-1"></p></div><button id="logoutBtn" class="btn2">Sign out</button></div>
-<details class="panel p-4 mb-5" open><summary class="head text-lg uppercase cursor-pointer">Quick start guide <span class="muted text-xs normal-case font-normal">for new dashboard users</span></summary><div class="grid md:grid-cols-3 gap-4 mt-4 text-sm"><div><strong class="text-red-400">1. Change the website</strong><p class="muted mt-1">Open Website customization to edit the announcement, countdown heading, training cards, and Sasha portfolio wording/banner.</p></div><div><strong class="text-red-400">2. Upload or manage media</strong><p class="muted mt-1">Open Media Library, then choose Fight Media, Sasha Portfolio, or Website Assets from the dropdown. Keep the page open until the progress bar finishes.</p></div><div><strong class="text-red-400">3. Review sales and access</strong><p class="muted mt-1">Sales &amp; Commerce shows purchases and download permissions. A pending checkout is not proof of payment. Creating a staff download link does not charge a customer.</p></div></div><p class="muted text-xs mt-4">Safety tip: paid originals belong in private storage. Only make a separate public copy when you intend the file to be publicly accessible. If a button is disabled or an error appears, read the message before retrying.</p></details><div id="tabs" class="flex flex-wrap gap-2 mb-5"></div>
+<details class="panel p-4 mb-5" open><summary class="head text-lg uppercase cursor-pointer">Quick start guide <span class="muted text-xs normal-case font-normal">for new dashboard users</span></summary><div class="grid md:grid-cols-3 gap-4 mt-4 text-sm"><div><strong class="text-red-400">1. Edit public pages</strong><p class="muted mt-1">Use Website for the homepage, events, fighters, training schedule, and support inbox. Use Portfolio for Sasha’s branding, media, and booking requests.</p></div><div><strong class="text-red-400">2. Add digital media</strong><p class="muted mt-1">Use Media for fight photos/videos and website assets. Use Portfolio → Portfolio Media for Sasha’s purchasable files. Set each item’s price and publish it in that same section.</p></div><div><strong class="text-red-400">3. Track money and access</strong><p class="muted mt-1">Use Purchases to review ticket, livestream, and digital-media sales separately, manage download access, and view promo codes. Pending checkout is not proof of payment.</p></div></div><p class="muted text-xs mt-4">Safety tip: paid originals belong in private storage. Only make a separate public copy when you intend the file to be publicly accessible. If a button is disabled or an error appears, read the message before retrying.</p></details><div id="tabs" class="flex flex-wrap gap-2 mb-5"></div>
 <div id="subTabs" class="flex flex-wrap gap-2 mb-5"></div>
 <div id="workspacePanels" class="space-y-4 min-w-0"></div>
 <section id="tab-home" class="panel p-5 hidden"><h2 class="head text-2xl uppercase mb-1">Website settings</h2><p class="muted text-sm mb-5">Update the public-site announcement text, countdown heading, payment-site link, and discipline cards using ordinary fields. Other saved homepage content is preserved when you save these settings.</p><form id="homeForm" class="space-y-5"><div class="grid md:grid-cols-2 gap-4"><label class="block text-sm">Top announcement / ticker text<input id="homeTickerText" class="field" maxlength="240" required></label><label class="block text-sm">Event announcement heading<input id="homeCountdownTitle" class="field" maxlength="240" required></label><label class="block text-sm md:col-span-2">External payment / pay site URL<input id="homePaysiteUrl" class="field" type="url" maxlength="2000" placeholder="https://…"></label></div><div><h3 class="head text-xl uppercase mb-2">Discipline cards</h3><p class="muted text-xs mb-3">Edit names and descriptions, add an optional training link, and paste an HTTPS image URL for a card photo. Use team-owned or properly licensed images.</p><div id="homeDisciplines" class="space-y-4"></div></div><div class="flex flex-wrap gap-2"><button class="btn" type="submit">Save website settings</button><button id="homeReload" class="btn2" type="button">Discard changes / reload saved settings</button></div></form></section>
@@ -72,7 +72,7 @@
 </section>
 <section id="tab-media" class="panel p-5 hidden">
 <h2 id="mediaSectionTitle" class="head text-2xl uppercase mb-1">Fight Media</h2>
-<p id="mediaSectionDescription" class="muted text-sm mb-4">Upload MMA fight media and Sasha portfolio photos/videos. Original photos and videos stay private. Photos use a smaller public listing image; videos can use a separate low-resolution / watermarked public preview. Public previews hide download controls but cannot prevent all copying or screen recording. Maximum original file size: 2 GB.</p>
+<p id="mediaSectionDescription" class="muted text-sm mb-4">Upload fight photos/videos for purchase and download. Portfolio Media is managed separately under Portfolio. Originals remain private; photos use a separate listing image. Videos are never streamed from this library. Maximum original file size: 5 GB.</p>
 <form id="mediaForm" class="space-y-4">
 <input id="mediaRecordId" type="hidden">
 <div class="grid md:grid-cols-2 gap-4">
@@ -81,7 +81,7 @@
 <label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
 <label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" placeholder="Leave blank or enter 0 for contact pricing"><span class="muted text-xs">Leave blank or enter $0 to show “Contact us for pricing.” This does not make the media free. Confirm any positive price before it can be purchased.</span></label><label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaPriceConfirmed" type="checkbox" class="mt-1"><span><strong>Confirm this exact price.</strong> I have verified the amount above. If the price is $0, customers will be asked to contact us for pricing, never told the item is free. A positive price must be confirmed before checkout; unconfirmed prices display “Contact us for pricing.”</span></label>
-<label class="block text-sm md:col-span-2">Upload original photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Photos are stored privately with a separate listing image. Videos are sent once through this uploader and processed by Livepeer for full-length streaming. Maximum 5 GB.</span></label><p class="muted text-xs md:col-span-2">Paid videos use restricted playback and remain locked until purchase playback authorization is configured. The site never displays a direct download URL. Screen recording cannot be completely prevented.</p>
+<label class="block text-sm md:col-span-2">Upload original photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Photos are stored privately with a separate listing image. Videos are stored privately for authorized purchase downloads only. This upload does not create or configure a livestream.</span></label><p class="muted text-xs md:col-span-2">Paid originals stay private. After a confirmed purchase, customers receive authorized, time-limited download access. Videos are not played or livestreamed from this listing. The site never displays a direct download URL. Screen recording cannot be completely prevented.</p>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
@@ -220,32 +220,25 @@ const modules={
 const dayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 function fieldHtml(table,f){let val=f.default??'';let cls='field';if(f.type==='textarea')return '<label class="block text-sm">'+esc(f.label)+'<textarea class="'+cls+'" name="'+f.k+'" rows="3" '+(f.required?'required':'')+'></textarea></label>';if(f.type==='checkbox')return '<label class="text-sm flex items-center gap-2"><input name="'+f.k+'" type="checkbox" '+(f.default?'checked':'')+'>'+esc(f.label)+'</label>';if(f.type==='select'){let opts=f.options||[];if(f.k==='event_id')opts=eventsCache.map(ev=>[ev.id,ev.title+(ev.event_date?' · '+formatDateShort(ev.event_date):' · date TBA')]);return '<label class="block text-sm">'+esc(f.label)+'<select class="'+cls+'" name="'+f.k+'" '+(f.required?'required':'')+'><option value="">Choose…</option>'+opts.map(o=>'<option value="'+esc(o[0])+'" '+(String(o[0])===String(f.default??'')?'selected':'')+'>'+esc(o[1])+'</option>').join('')+'</select></label>'}return '<label class="block text-sm">'+esc(f.label)+'<input class="'+cls+'" name="'+f.k+'" type="'+(f.type==='money'?'number':f.type)+'" '+(f.type==='money'?(table==='event_ticket_options'&&f.k==='price_cents'?'min="0.50" step="0.01"':'min="0" step="0.01"'):f.type==='number'?'min="'+(f.k==='quantity_limit'?'1':'0')+'"':'')+' value="'+esc(val)+'" '+(f.required?'required':'')+'></label>'}
 const tabGroups=[
- {key:'media',label:'Media',tabs:[['media','Fight Media Files'],['sasha_media','Sasha Files'],['site_assets','Website Assets'],['media_cleanup','Storage & Cleanup']]},
- {key:'tickets',label:'Tickets',tabs:[['ticket_options','Ticket Settings'],['event_streams','Live Stream Settings']]},
- {key:'portfolio',label:'Portfolio',tabs:[['portfolio_settings','Branding & Presentation'],['sasha_portfolio','Portfolio Items'],['bookings','Booking Requests']]},
+ {key:'media',label:'Media',tabs:[['media','Fight Media'],['site_assets','Website Assets'],['media_cleanup','Storage Cleanup']]},
+ {key:'tickets',label:'Tickets',tabs:[['ticket_options','Event Tickets'],['event_streams','Livestream Access']]},
+ {key:'portfolio',label:'Portfolio',tabs:[['portfolio_settings','Portfolio Branding'],['sasha_portfolio','Portfolio Media'],['bookings','Booking Requests']]},
  {key:'website',label:'Website',tabs:[['home','Homepage & Branding'],['events','Events'],['fighters','Fighters'],['schedule','Training Schedule'],['chat','Support Inbox']]},
- {key:'purchases',label:'Purchases',tabs:[['media_pricing','Media Pricing & Listings'],['products','Merchandise & Shop Links'],['ticket_purchases','Ticket Purchases'],['sales','Media Sales'],['stream_sales','Stream Sales'],['promotions','Promotions'],['access_management','Customer Access & Timed Links']]},
- {key:'admin',label:'Admin',tabs:[['admin_permissions','Owner & Staff Permissions']]}
+ {key:'purchases',label:'Purchases',tabs:[['ticket_purchases','Event Ticket Sales'],['sales','Digital Media Sales'],['stream_sales','Livestream Sales'],['access_management','Download Access'],['promotions','Promo Codes'],['products','Merch & Shop Links']]},
+ {key:'admin',label:'Admin',tabs:[['admin_permissions','Staff & Permissions']]}
 ];
 let activeGroup='website';
 function organizePanels(){
  const host=$('workspacePanels');if(!host)return;
  host.innerHTML=['media','tickets','portfolio','website','purchases','admin'].map(key=>'<div id="workspace-'+key+'" class="space-y-4 min-w-0"></div>').join('');
- const pricingPanel=document.createElement('section');pricingPanel.id='tab-media_pricing';pricingPanel.className='panel p-5 hidden';pricingPanel.innerHTML='<h2 class="head text-2xl uppercase mb-1">Media Pricing & Listings</h2><p class="muted text-sm mb-5">Edit listing titles, descriptions, confirmed prices, and publication status here. The original upload and storage controls remain in Media. These controls are associated with the existing media form and preserve the same media records.</p><div id="mediaPricingFields" class="grid md:grid-cols-2 gap-4"></div><div class="flex flex-wrap gap-2 mt-4"><button id="mediaPricingSaveButton" class="btn" type="submit" form="mediaForm">Save listing changes</button><button id="mediaPricingClearButton" class="btn2" type="button">Clear form</button><button id="mediaPricingRefreshButton" class="btn2" type="button">Refresh listings</button></div><div id="mediaPricingList" class="mt-6 space-y-3"></div>';
- host.querySelector('#workspace-purchases').appendChild(pricingPanel);
  const portfolioPanel=document.createElement('section');portfolioPanel.id='tab-portfolio_settings';portfolioPanel.className='panel p-5 hidden';
- portfolioPanel.innerHTML='<h2 class="head text-2xl uppercase mb-1">Sasha Branding & Presentation</h2><p class="muted text-sm mb-5">These settings control Sasha’s portfolio title, introduction, banner, and booking request wording. They are saved with the existing public-site settings and do not create duplicate records.</p><form id="portfolioSettingsForm" class="space-y-4"><div class="grid md:grid-cols-2 gap-4"><label class="block text-sm md:col-span-2">Sasha portfolio title<input id="homePortfolioTitle" class="field" maxlength="120" placeholder="Sasha’s Portfolio"></label><label class="block text-sm md:col-span-2">Portfolio introduction<textarea id="homePortfolioIntro" class="field" rows="2" maxlength="500" placeholder="Photography and videography portfolio introduction"></textarea></label><label class="block text-sm md:col-span-2">Portfolio banner image URL (optional)<input id="homePortfolioBanner" class="field" type="url" maxlength="2000" placeholder="https://…"></label><label class="block text-sm">Booking form heading<input id="homePortfolioBookingTitle" class="field" maxlength="120" placeholder="Request a Sasha Portfolio Booking"></label><label class="block text-sm">Booking form introduction<textarea id="homePortfolioBookingIntro" class="field" rows="2" maxlength="500" placeholder="Explain the booking request process"></textarea></label></div><div><label class="block text-sm">Session & service pricing (one service per line: Service name | Price / starting price / Contact for quote | What is included)<textarea id="homePortfolioServices" class="field" rows="8" maxlength="12000" placeholder="Portrait session | Starting at $150 | 60-minute session; Event photography | Contact for quote | Coverage depends on event length; Video services | Starting at $250 | Final price depends on editing and duration"></textarea></label><p class="muted text-xs mt-2">Add as many services as needed. Use “Contact for quote” for custom pricing. These are booking/session rates, separate from individual downloadable photo/video prices.</p></div><div class="flex flex-wrap gap-2"><button class="btn" type="submit">Save portfolio settings</button><button id="portfolioReload" class="btn2" type="button">Discard changes / reload saved settings</button></div></form>';
+ portfolioPanel.innerHTML='<h2 class="head text-2xl uppercase mb-1">Portfolio Branding & Presentation</h2><p class="muted text-sm mb-5">Edit Sasha’s portfolio title, introduction, banner, service pricing, and booking request wording. Individual downloadable media prices are managed with each media listing in Portfolio Media.</p><form id="portfolioSettingsForm" class="space-y-4"><div class="grid md:grid-cols-2 gap-4"><label class="block text-sm md:col-span-2">Portfolio title<input id="homePortfolioTitle" class="field" maxlength="120" placeholder="Sasha’s Portfolio"></label><label class="block text-sm md:col-span-2">Portfolio introduction<textarea id="homePortfolioIntro" class="field" rows="2" maxlength="500" placeholder="Photography and videography portfolio introduction"></textarea></label><label class="block text-sm md:col-span-2">Portfolio banner image URL (optional)<input id="homePortfolioBanner" class="field" type="url" maxlength="2000" placeholder="https://…"></label><label class="block text-sm">Booking form heading<input id="homePortfolioBookingTitle" class="field" maxlength="120" placeholder="Request a Sasha Portfolio Booking"></label><label class="block text-sm">Booking form introduction<textarea id="homePortfolioBookingIntro" class="field" rows="2" maxlength="500" placeholder="Explain the booking request process"></textarea></label></div><div><label class="block text-sm">Session & service pricing (one service per line: Service name | Price / starting price / Contact for quote | What is included)<textarea id="homePortfolioServices" class="field" rows="8" maxlength="12000" placeholder="Portrait session | Starting at $150 | 60-minute session; Event photography | Contact for quote | Coverage depends on event length; Video services | Starting at $250 | Final price depends on editing and duration"></textarea></label><p class="muted text-xs mt-2">These are booking/session rates, separate from individual downloadable photo/video prices.</p></div><div class="flex flex-wrap gap-2"><button class="btn" type="submit">Save portfolio settings</button><button id="portfolioReload" class="btn2" type="button">Discard changes / reload saved settings</button></div></form>';
  host.querySelector('#workspace-portfolio').appendChild(portfolioPanel);
- const pg={home:'website',events:'website',fighters:'website',schedule:'website',chat:'website',ticket_options:'tickets',event_streams:'tickets',media:'media',sasha_media:'media',site_assets:'media',portfolio_settings:'portfolio',sasha_portfolio:'portfolio',bookings:'portfolio',media_pricing:'purchases',products:'purchases',ticket_purchases:'purchases',sales:'purchases',stream_sales:'purchases',promotions:'purchases',access_management:'purchases',admin_permissions:'admin'};
+ const pg={home:'website',events:'website',fighters:'website',schedule:'website',chat:'website',ticket_options:'tickets',event_streams:'tickets',media:'media',site_assets:'media',portfolio_settings:'portfolio',sasha_portfolio:'portfolio',bookings:'portfolio',products:'purchases',ticket_purchases:'purchases',sales:'purchases',stream_sales:'purchases',promotions:'purchases',access_management:'purchases',admin_permissions:'admin'};
  Object.entries(pg).forEach(([key,group])=>{const el=$('tab-'+key);if(el)host.querySelector('#workspace-'+group).appendChild(el)});
  Array.from($('modulePanels').children).forEach(el=>{const key=el.id.replace(/^tab-/,'');host.querySelector('#workspace-'+(pg[key]||'website')).appendChild(el)});
- // Keep title, description, price, confirmation, and publish controls beside the upload field.
- // Moving these controls into a separate tab made the upload form appear to have no title or price on mobile.
- // Keep uploaded media cards in the Media Library panel so they remain visible after loading.
  $('portfolioSettingsForm').addEventListener('submit',e=>{e.preventDefault();$('homeForm').requestSubmit()});
  $('portfolioReload').addEventListener('click',loadHome);
- $('mediaPricingClearButton').addEventListener('click',clearMediaForm);
- $('mediaPricingRefreshButton').addEventListener('click',loadMedia);
 }
 function renderShells(){
  $('tabs').innerHTML=tabGroups.map(g=>'<button type="button" class="tab '+(g.key==='website'?'active':'')+'" data-group="'+g.key+'">'+g.label+'</button>').join('');
@@ -257,19 +250,37 @@ function renderSubTabs(){
  $('subTabs').innerHTML=group.tabs.map(t=>'<button type="button" class="tab '+(t[0]===activeTab?'active':'')+'" data-tab="'+t[0]+'">'+t[1]+'</button>').join('');
  $('subTabs').classList.toggle('hidden',group.tabs.length===1);
 }
+function mediaFormHasUnsavedWork(){
+ return !!($('mediaRecordId')?.value||$('mediaTitle')?.value.trim()||$('mediaDescription')?.value.trim()||$('mediaFile')?.files?.length||$('mediaPrice')?.value);
+}
 function activateTab(tab){
- activeTab=tab;const aliases={ticket_options:'event_ticket_options',sasha_media:'media',sasha_portfolio:'media',media_cleanup:'media'};const panelTab=aliases[tab]||tab;
+ const previousTab=activeTab;
+ const aliases={ticket_options:'event_ticket_options',sasha_portfolio:'media',media_cleanup:'media'};
+ const panelTab=aliases[tab]||tab;
+ const nextCollection=tab==='sasha_portfolio'?'sasha_portfolio':(tab==='media'?'mma_event':activeMediaCollection);
+ if(panelTab==='media'&&nextCollection!==activeMediaCollection){
+  if(mediaFormHasUnsavedWork()&&!confirm('Switch media catalogs and discard the unfinished listing? Choose Cancel to keep editing it.')){
+   const previousGroup=tabGroups.find(g=>g.tabs.some(t=>t[0]===previousTab));
+   activeTab=previousTab;activeGroup=previousGroup?.key||'website';
+   document.querySelectorAll('[data-group]').forEach(b=>b.classList.toggle('active',b.dataset.group===activeGroup));renderSubTabs();
+   return;
+  }
+  activeMediaCollection=nextCollection;
+  clearMediaForm();
+ }
+ activeTab=tab;
  const group=tabGroups.find(g=>g.tabs.some(t=>t[0]===tab));if(group)activeGroup=group.key;
  document.querySelectorAll('[data-group]').forEach(b=>b.classList.toggle('active',b.dataset.group===activeGroup));renderSubTabs();
- Object.entries(modules).forEach(([key,m])=>{const el=$('tab-'+m.table);if(el)el.classList.toggle('hidden',key!==panelTab)});
- ['home','media','site_assets','chat','ticket_purchases','sales','stream_sales','access_management','bookings','admin_permissions','promotions','portfolio_settings','media_pricing'].forEach(key=>{const el=$('tab-'+key);if(el)el.classList.toggle('hidden',key!==panelTab&&!(key==='media'&&panelTab==='sasha_media'))});
- if(modules[panelTab])loadTable(modules[panelTab].table);
- if(panelTab==='media_pricing'){ $('mediaCollection').value=activeMediaCollection||'mma_event'; loadMedia(); }
+ const moduleKey=Object.keys(modules).find(key=>modules[key].table===panelTab)||panelTab;
+ Object.entries(modules).forEach(([key,m])=>{const el=$('tab-'+m.table);if(el)el.classList.toggle('hidden',key!==moduleKey)});
+ ['home','media','site_assets','chat','ticket_purchases','sales','stream_sales','access_management','bookings','admin_permissions','promotions','portfolio_settings'].forEach(key=>{const el=$('tab-'+key);if(el)el.classList.toggle('hidden',key!==panelTab)});
+ if(modules[moduleKey])loadTable(modules[moduleKey].table);
  if(panelTab==='media'){
-  clearMediaForm();activeMediaCollection=(tab==='sasha_media'||tab==='sasha_portfolio')?'sasha_portfolio':'mma_event';$('mediaCollection').value=activeMediaCollection;
-  $('mediaSectionTitle').textContent=activeMediaCollection==='sasha_portfolio'?'Sasha Portfolio':'Fight Media';
-  $('mediaSectionDescription').textContent=activeMediaCollection==='sasha_portfolio'?'Manage Sasha’s portfolio files and listings here. Portfolio presentation and booking requests are managed in Portfolio. Original files remain private; listing images are generated automatically.':'Manage MMA fight and event files here, linked to events when appropriate. Pricing and listings can also be reached from Purchases. Original files remain private; listing images are generated automatically.';
-  $('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';if(activeMediaCollection==='sasha_portfolio')$('mediaEvent').value='';loadMedia();
+  $('mediaCollection').value=activeMediaCollection;
+  $('mediaSectionTitle').textContent=activeMediaCollection==='sasha_portfolio'?'Portfolio Media':'Fight Media';
+  $('mediaSectionDescription').textContent=activeMediaCollection==='sasha_portfolio'?'Manage Sasha’s purchasable portfolio photos and videos. Set each item’s price and publication status here. Customers purchase digital files and receive authorized download access; videos are not streamed on the website.':'Manage fight photos and videos for purchase and download. Link fight media to an event when useful. Set the price and publication status here. Video uploads are stored privately and do not create livestreams or online playback.';
+  $('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';if(activeMediaCollection==='sasha_portfolio')$('mediaEvent').value='';
+  loadMedia();
  }
  if(tab==='media_cleanup')requestAnimationFrame(()=>$('cleanupPublicVideoPreviews')?.scrollIntoView({behavior:'smooth',block:'center'}));
  if(tab==='site_assets')loadSiteAssets();if(tab==='chat')loadChat();if(tab==='ticket_purchases')loadTicketPurchases();if(tab==='bookings')loadBookings();
@@ -418,16 +429,7 @@ async function loadMedia(){
     let preview='';
     const isVideo=String(m.category||'').toLowerCase()==='video';
     if(isVideo){
-      if(m.storage_bucket==='fqmma-private'){
-         if(m.file_path){
-           const {data:signedData,error:signedError}=await client.storage.from('fqmma-private').createSignedUrl(m.file_path,300);
-           if(!signedError&&signedData?.signedUrl){preview='<video class="mt-2 w-full max-h-96 rounded-lg bg-black" controls controlsList="nodownload noplaybackrate" disablepictureinpicture playsinline preload="metadata" oncontextmenu="return false" src="'+esc(signedData.signedUrl)+'">Your browser does not support embedded video playback.</video><p class="text-green-300 text-xs mt-1">Private original preview. Temporary playback link expires in 5 minutes; the original remains private.</p>';}
-           else{preview='<p class="text-amber-300 text-xs mt-2">Private original is stored, but preview could not be created: '+esc(signedError?.message||'Storage did not return a playback URL.')+'</p>';}
-         }else{preview='<p class="text-amber-300 text-xs mt-2">Private video is missing its storage path. Refresh the catalog or inspect this record.</p>';}
-       }
-      else if(m.file_url){preview='<video class="mt-2 w-full max-h-96 rounded-lg bg-black" controls playsinline preload="metadata" src="'+esc(m.file_url)+'">Your browser does not support embedded video playback.</video><p class="muted text-xs mt-1"><a class="text-red-400 underline" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open/download free original</a></p>';}
-      else if(m.preview_path){const publicPreview=client.storage.from('fqmma-media').getPublicUrl(m.preview_path).data.publicUrl;preview='<video class="mt-2 w-full max-h-96 rounded-lg bg-black" controls controlsList="nodownload noplaybackrate" disablepictureinpicture playsinline preload="metadata" oncontextmenu="return false" src="'+esc(publicPreview)+'">Your browser does not support embedded video playback.</video><p class="text-green-300 text-xs mt-1">Separate public preview; original remains private. Download controls are hidden, but playback cannot prevent screen recording or all copying.</p>';}
-       else{preview='<p class="text-amber-300 text-xs mt-2">Private original is stored. Add a separate public preview copy to enable website playback.</p>';}
+      preview='<div class="mt-2 rounded-lg border border-gray-700 bg-black/40 p-4 text-sm"><strong>Private video original</strong><p class="muted text-xs mt-1">Available for purchase and authorized download only. No livestream or website playback is configured.</p></div>';
     }else if(m.preview_path&&m.file_url){
       preview='<a class="text-red-400 underline text-xs" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open listing image</a>';
     }else if(m.file_url){
@@ -539,10 +541,10 @@ $('mediaForm').addEventListener('submit',async e=>{
   if(!title){message.textContent='Enter a title.';return}
   if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid intended price from $0 to $9,999. Leave at $0 if customers should contact us for a quote.';return}if(price>0&&!$('mediaPriceConfirmed').checked){message.textContent='Confirm the exact positive price before publishing it. Leave the price at $0 to display “Contact us for pricing.”';return}
   if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
-  if(!id&&!file){message.textContent='Choose an original photo or video to upload for a new listing.';return}const existingForValidation=records.media?.find(m=>String(m.id)===String(id));const isVideoListing=file?file.type.startsWith('video/'):String(existingForValidation?.category||'').toLowerCase()==='video';if(published&&isVideoListing&&!file&&!existingForValidation?.livepeer_playback_id){message.textContent='This legacy video has no Livepeer streaming asset yet. Re-upload the video once to enable full-length playback.';return}
-  if(file&&file.size>5*1024*1024*1024){message.textContent='Media exceeds the 5 GB upload limit.';return}if(file&&file.type.startsWith('video/')&&!window.tus?.Upload){message.textContent='The resumable video uploader did not load. Refresh the page and try again.';return}
+  if(!id&&!file){message.textContent='Choose an original photo or video to upload for a new listing.';return}
+  if(file&&file.size>5*1024*1024*1024){message.textContent='Media exceeds the 5 GB upload limit.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
-  const button=$('mediaSaveButton'),pricingButton=$('mediaPricingSaveButton'),buttonLabel=id?'Saving changes…':'Uploading media…';[button,pricingButton].filter(Boolean).forEach(b=>{b.disabled=true;b.textContent=buttonLabel});const uploaded=[];startMediaProgress();
+  const button=$('mediaSaveButton'),buttonLabel=id?'Saving changes…':'Uploading media…';button.disabled=true;button.textContent=buttonLabel;const uploaded=[];startMediaProgress();
   try{
     const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,price_confirmed:price>0?$('mediaPriceConfirmed').checked:true,is_published:published};let existing=null;
     if(id){
@@ -552,6 +554,7 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(!file){const currentBucket=existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media');if(currentBucket!=='fqmma-private')throw new Error('This original is in public storage. Re-upload the original before editing this listing so the original can be stored privately. No changes were saved.');}
       if(file&&(purchases.count||0)>0)throw new Error('This item has purchase history. Its original cannot be replaced because that could change what existing buyers receive. Edit details only, or create a new listing for a different original.');
     }
+    let originalPath=null,originalBucket='fqmma-private';
     if(file){
       const isPhoto=file.type.startsWith('image/');
       let listingImageFile=null;
@@ -559,8 +562,7 @@ $('mediaForm').addEventListener('submit',async e=>{
         updateMediaProgress('Preparing photo listing image…',5,'Creating a listing image from the photo.');
         listingImageFile=await createImagePreview(file);
       }
-      const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),stamp=Date.now(),originalPath=collection+'/'+stamp+'-original-'+safeName;
-      const originalBucket='fqmma-private';
+      const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),stamp=Date.now();originalPath=collection+'/'+stamp+'-original-'+safeName;
       const originalUrl=null;
       if(listingImageFile){
         updateMediaProgress('Uploading original photo…',0,'Saving the original privately.');
@@ -578,52 +580,11 @@ $('mediaForm').addEventListener('submit',async e=>{
       }
     }
     if(file&&file.type.startsWith('video/')) {
-       updateMediaProgress('Preparing video uploads…',8,'Requesting a fresh Livepeer upload session.');
-       const requestLivepeerSession=async()=>{
-         const {data:session,error:sessionError}=await client.functions.invoke('create-vod-upload',{body:{name,file_name:file.name,file_size:file.size,is_paid:price>0&&$('mediaPriceConfirmed').checked}});
-         if(sessionError)throw sessionError;
-         if(!session?.assetId||!session?.playbackId||!session?.uploadUrl)throw new Error('Livepeer did not return a complete upload session. No listing was published.');
-         return session;
-       };
-       let session=await requestLivepeerSession();
-       const uploadToLivepeer=(activeSession)=>new Promise((resolve,reject)=>{
-         const tusUpload=new window.tus.Upload(file,{
-           endpoint:activeSession.uploadUrl,
-           chunkSize:10*1024*1024,
-           retryDelays:[0,1000,3000,5000,10000],
-           metadata:{filename:file.name,filetype:file.type,name:title},
-           onError:error=>{
-             const detail=String(error?.message||error||'Unknown Livepeer upload error');
-             reject(new Error('LIVEPEER_UPLOAD_ERROR: '+detail));
-           },
-           onProgress:(sent,total)=>updateMediaProgress('Uploading video to Livepeer…',Math.round(10+(sent/total)*78),Math.round(sent/1048576)+' MB of '+Math.round(total/1048576)+' MB uploaded.'),
-           onSuccess:resolve
-         });
-         tusUpload.start();
-       });
-       const uploadToLivepeerWithRetry=async()=>{
-         try {
-           await uploadToLivepeer(session);
-         } catch(firstError) {
-           const detail=String(firstError?.message||firstError);
-           if(!/exp.{0,40}claim|timestamp check failed|token.{0,20}expired/i.test(detail))throw new Error('Livepeer video upload failed: '+detail.replace(/^LIVEPEER_UPLOAD_ERROR:\s*/,''));
-           updateMediaProgress('Refreshing Livepeer upload session…',10,'The upload token expired. Requesting a fresh session and retrying once.');
-           session=await requestLivepeerSession();
-           try { await uploadToLivepeer(session); }
-           catch(retryError) { throw new Error('Livepeer rejected the refreshed upload session too. Please retry the upload and share this error with support: '+String(retryError?.message||retryError).replace(/^LIVEPEER_UPLOAD_ERROR:\s*/,'')); }
-         }
-         return session;
-       };
-       // Both full-size copies start together. Keep the private original required
-       // for authorized downloads while Livepeer ingests the streaming copy.
+       updateMediaProgress('Uploading private video original…',12,'Saving the video in private storage for purchase downloads. No livestream or public playback asset is created.');
        uploaded.push({bucket:originalBucket,path:originalPath});
-       const privateOriginalUpload=uploadStorageFileWithProgress(originalBucket,originalPath,file,'Uploading private original…');
-       const uploadResults=await Promise.allSettled([privateOriginalUpload,uploadToLivepeerWithRetry()]);
-       const failedUpload=uploadResults.find(result=>result.status==='rejected');
-       if(failedUpload)throw failedUpload.reason;
-       session=uploadResults[1].value;
-       Object.assign(patch,{category:'Video',file_path:originalPath,file_url:null,preview_path:null,storage_bucket:originalBucket,livepeer_asset_id:session.assetId,livepeer_playback_id:session.playbackId,livepeer_status:'processing',livepeer_playback_policy:price>0&&$('mediaPriceConfirmed').checked?'jwt':'public'});
-     }
+       await uploadStorageFileWithProgress(originalBucket,originalPath,file,'Uploading private video original…');
+       Object.assign(patch,{category:'Video',file_path:originalPath,file_url:null,preview_path:null,storage_bucket:originalBucket,livepeer_asset_id:null,livepeer_playback_id:null,livepeer_status:'not_uploaded',livepeer_playback_policy:null});
+    }
     updateMediaProgress('Saving listing…',null,'The files are uploaded. Saving the listing details now.');
     if(id){
       const {error}=await client.from('media').update(patch).eq('id',id);if(error)throw error;
@@ -631,15 +592,15 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(file&&existing?.file_path)oldObjects.push({bucket:existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media'),path:existing.file_path});
       if(existing?.preview_path&&existing.preview_path!==patch.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path});
       uploaded.length=0;const cleanup=await Promise.all(oldObjects.map(x=>client.storage.from(x.bucket).remove([x.path])));
-      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':(file?'Original updated privately; Livepeer is preparing full-length streaming.':'Listing details updated.');
+      message.textContent=cleanup.some(x=>x.error)?'Listing updated, but an old storage file could not be removed. Ask an administrator to clean up the unused object.':(file?'Original updated privately for purchase/download.':'Listing details updated.');
     }else{
       const {error:insertError}=await client.from('media').insert({...patch}).select('id').single();if(insertError)throw insertError;
-      uploaded.length=0;message.textContent='Listing created. The original is private; Livepeer is processing the streaming version. Paid videos remain locked. A $0 price displays “Contact us for pricing,” not free access.';
+      uploaded.length=0;message.textContent='Listing created. The original is private for purchase/download. Video uploads do not create livestreams or public playback. A $0 price displays “Contact us for pricing,” not free access.';
     }
     updateMediaProgress('Refreshing media catalog…',null,'Finishing up and refreshing the list.');
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
   }catch(err){for(const item of uploaded)await client.storage.from(item.bucket).remove([item.path]);message.textContent=err?.message||String(err)}
-  finally{stopMediaProgress();const finalLabel=$('mediaRecordId').value?'Save changes':'Upload & publish listing';[button,pricingButton].filter(Boolean).forEach(b=>{b.disabled=false;b.textContent=finalLabel})}
+  finally{stopMediaProgress();const finalLabel=$('mediaRecordId').value?'Save changes':'Upload & publish listing';button.disabled=false;button.textContent=finalLabel}
 });
 $('cleanupPublicVideoPreviews')?.addEventListener('click',async()=>{
   const button=$('cleanupPublicVideoPreviews'),message=$('mediaMessage');
