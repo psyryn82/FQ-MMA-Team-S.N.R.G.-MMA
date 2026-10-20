@@ -201,7 +201,7 @@
         async function activateAdminSession(user) {
             if (!await isCurrentUserAdmin(user)) {
                 await window.sb.auth.signOut();
-                throw new Error('This account is not an authorized administrator. Add its user ID to admin_users in Supabase first.');
+                throw new Error('This account is not authorized to access the administrator dashboard. Contact the site owner.');
             }
             isAdminLoggedIn = true;
             window.__snrgAdminUser = user;
@@ -216,7 +216,7 @@
             e.preventDefault();
             const errorBox = document.getElementById('admin-login-error'); errorBox.textContent = '';
             try {
-                if (!window.supabaseReady) throw new Error('Add your Supabase project URL and publishable/anon key near the top of this HTML file first.');
+                if (!window.supabaseReady) throw new Error('Administrator sign-in is temporarily unavailable. Please try again later.');
                 const email = document.getElementById('admin-email-input').value.trim();
                 const password = document.getElementById('admin-pin-input').value;
                 const { data, error } = await window.sb.auth.signInWithPassword({ email, password });
@@ -235,7 +235,7 @@
             errorBox.className = 'text-xs text-red-400';
             errorBox.textContent = '';
             try {
-                if (!window.supabaseReady) throw new Error('Email sign-in is not configured yet.');
+                if (!window.supabaseReady) throw new Error('Email sign-in is temporarily unavailable. Please try again later.');
                 const emailInput = document.getElementById('admin-email-input');
                 if (!emailInput.reportValidity()) return;
                 const redirectUrl = new URL(window.location.href);
@@ -263,7 +263,7 @@
         async function signInAdminWithGoogle() {
             const errorBox = document.getElementById('admin-login-error'); errorBox.textContent = '';
             try {
-                if (!window.supabaseReady) throw new Error('Add your Supabase project URL and publishable/anon key near the top of this HTML file first.');
+                if (!window.supabaseReady) throw new Error('Administrator sign-in is temporarily unavailable. Please try again later.');
                 const { error } = await window.sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname + '?admin=1' } });
                 if (error) throw error;
             } catch (err) { errorBox.textContent = err.message || 'Google sign-in failed.'; }
@@ -454,7 +454,7 @@
                             <p class="text-sm text-gray-300 leading-relaxed">${escapeHtml(d.desc || '')}</p>
                           </div>
                           <div class="pt-3 border-t border-gray-800 flex items-center justify-between gap-3">
-                            <span class="text-[11px] text-gray-400 font-mono">${trainingUrl ? 'Official link' : (imageUrl ? 'Training discipline' : 'Photo can be added in admin')}</span>
+                            <span class="text-[11px] text-gray-400 font-mono">${trainingUrl ? 'Official link' : (imageUrl ? 'Training discipline' : 'Training details coming soon')}</span>
                             ${trainingUrl ? `<a href="${escapeHtml(trainingUrl)}" target="_blank" rel="noopener noreferrer" class="${btnStyle} font-heading text-xs font-black uppercase px-4 py-2 rounded-lg shadow whitespace-nowrap">Visit link <i class="fa-solid fa-arrow-right ml-1"></i></a>` : ''}
                           </div>
                         </div>
@@ -1090,14 +1090,14 @@
             e.preventDefault(); const input=document.getElementById('chat-input-text'); const val=input.value.trim();
             if(!val) return;
             try {
-                if(!window.supabaseReady) throw new Error('Live chat is not configured yet.');
+                if(!window.supabaseReady) throw new Error('Live chat is temporarily unavailable. Please try again later.');
                 if(val.length>500) throw new Error('Messages must be 500 characters or fewer.');
                 const {data:{user},error:authError}=await window.sb.auth.getUser();
                 if(authError) throw authError;
                 if(!user) throw new Error('Sign in before sending a chat message.');
                 const {error}=await window.sb.from('chat_messages').insert({user_id:user.id,sender_name:user.user_metadata?.full_name||'Fan',sender_email:user.email||'',message:val,is_admin_reply:false,channel:'fan_chat'});
                 if(error) throw error; input.value='';
-            } catch(err) { showNotification(err.message || 'Could not send chat message.','error'); }
+            } catch(err) { showNotification('Could not send your chat message. Please try again later.','error'); }
         }
         function sendQuickReaction(text) { const input=document.getElementById('chat-input-text'); input.value=text; input.focus(); }
         function appendChatMessage(user, message, colorClass) {
@@ -1391,7 +1391,7 @@
             try { const {data,error}=await window.sb.from('chat_messages').select('id,sender_name,message,created_at').order('created_at',{ascending:false}).limit(100); if(error) throw error;
               if(!data?.length){box.innerHTML='<p class="text-xs text-gray-400">No messages yet.</p>';return;}
               box.innerHTML=data.map(m=>`<div class="flex items-start justify-between gap-3 rounded border border-gray-800 bg-black p-3"><div><div class="text-[10px] text-gray-500">${escapeHtml(m.sender_name||'Fan')} • ${formatLongDateTime(m.created_at)}</div><div class="mt-1 text-xs">${escapeHtml(m.message)}</div></div><button onclick="deleteChatMessage('${m.id}')" class="text-xs text-red-400">Delete</button></div>`).join('');
-            } catch(err) { box.innerHTML=`<p class="text-xs text-red-400">${escapeHtml(err.message)}. Confirm the Supabase setup SQL has been run.</p>`; }
+            } catch(err) { box.textContent='Chat moderation is temporarily unavailable. Refresh the dashboard or contact the site owner.'; }
         }
         async function deleteChatMessage(id) { const {error}=await window.sb.from('chat_messages').delete().eq('id',id); if(error) showNotification(error.message,'error'); else await loadAdminChat(); }
 
@@ -1400,7 +1400,7 @@
             const {data,error}=await window.sb.from('chat_messages').select('sender_name,message,created_at').eq('channel','fan_chat').order('created_at',{ascending:true}).limit(60);
             const feed=document.getElementById('chat-feed'); if(!feed) return;
             if(error) {
-                feed.innerHTML='<div class="text-center text-red-400 text-[10px]">Could not load chat. Run the latest Supabase schema, then try again.</div>';
+                feed.innerHTML='<div class="text-center text-red-400 text-[10px]">Live chat is temporarily unavailable. Please try again later.</div>';
                 console.error('Live chat could not load.',error);
                 return;
             }
