@@ -63,16 +63,44 @@ Deno.serve(async (req: Request) => {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      console.error("Livepeer asset creation failed", response.status);
+      // Log only the HTTP status and response field names. Never log credentials,
+      // upload URLs, playback URLs, or the raw response body.
+      console.error("Livepeer asset creation failed", {
+        status: response.status,
+        responseKeys: payload && typeof payload === "object" ? Object.keys(payload) : [],
+      });
       return respond({ error: "Livepeer could not create the video upload. Check the Livepeer account and try again." }, 502, origin);
     }
-    const asset = payload.asset || payload;
-    const assetId = asset.id || payload.assetId;
-    const playbackId = asset.playbackId || payload.playbackId;
-    const uploadUrl = payload.tusEndpoint || payload.uploadUrl || (payload.upload && payload.upload.url) || asset.tusEndpoint;
-    if (!assetId || !playbackId || !uploadUrl || !/^https:\/\//i.test(String(uploadUrl))) {
-      console.error("Livepeer upload response missing required fields", Object.keys(payload || {}));
-      return respond({ error: "Livepeer returned an incomplete upload session. No listing was saved. Check the Livepeer API response format." }, 502, origin);
+
+    // Livepeer's response may wrap the asset differently across API/SDK versions.
+    // Accept only known field names and return the TUS endpoint expected by the
+    // browser uploader. Do not expose any direct playback or download URLs.
+    const envelope = payload && typeof payload === "object" ? payload : {};
+    const data = envelope.data && typeof envelope.data === "object" ? envelope.data : envelope;
+    const asset = data.asset && typeof data.asset === "object" ? data.asset
+      : envelope.asset && typeof envelope.asset === "object" ? envelope.asset
+      : data;
+    const upload = data.upload && typeof data.upload === "object" ? data.upload
+      : envelope.upload && typeof envelope.upload === "object" ? envelope.upload
+      : {};
+    const assetId = asset.id || data.assetId || envelope.assetId;
+    const playbackId = asset.playbackId || data.playbackId || envelope.playbackId;
+    const uploadUrl = data.tusEndpoint || data.tus_endpoint || data.uploadUrl ||
+      envelope.tusEndpoint || envelope.tus_endpoint || envelope.uploadUrl ||
+      upload.url || upload.tusEndpoint || upload.tus_endpoint ||
+      asset.tusEndpoint || asset.tus_endpoint || asset.uploadUrl;
+    if (!assetId || !playbackId || typeof uploadUrl !== "string" || !/^https:\/\//i.test(uploadUrl)) {
+      console.error("Livepeer upload response missing required fields", {
+        status: response.status,
+        topLevelKeys: Object.keys(envelope),
+        dataKeys: data && typeof data === "object" ? Object.keys(data) : [],
+        assetKeys: asset && typeof asset === "object" ? Object.keys(asset) : [],
+        uploadKeys: Object.keys(upload),
+        hasAssetId: Boolean(assetId),
+        hasPlaybackId: Boolean(playbackId),
+        hasHttpsUploadUrl: typeof uploadUrl === "string" && /^https:\/\//i.test(uploadUrl),
+      });
+      return respond({ error: "Livepeer created an incomplete upload session. No listing was saved. Check the Edge Function logs for the safe response-field diagnostics, then contact support if needed." }, 502, origin);
     }
     // Never return a direct download URL or original source URL to the browser.
     return respond({ assetId, playbackId, uploadUrl, playbackPolicy: isPaid ? "jwt" : "public" }, 200, origin);
