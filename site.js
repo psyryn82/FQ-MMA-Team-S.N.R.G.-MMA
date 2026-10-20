@@ -443,7 +443,7 @@
                 const trainingUrl = getSafeHttpUrl(d.link || '');
                 return `
                     <article class="bg-gray-900/95 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 overflow-hidden flex flex-col justify-between gap-0 ${glowStyle}">
-                        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${disciplineName} training" loading="lazy" referrerpolicy="no-referrer" class="w-full h-48 object-cover bg-black">` : `<div class="h-28 flex items-center justify-center bg-gradient-to-br from-gray-900 to-black border-b border-gray-800"><i class="fa-solid fa-hand-fist text-4xl ${isRed ? 'text-brand-red' : 'text-gray-300'}" aria-hidden="true"></i><span class="sr-only">${disciplineName} photo not added yet</span></div>`}
+                        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${disciplineName} training" loading="lazy" referrerpolicy="no-referrer" class="w-full h-48 object-cover bg-black">` : ''}
                         <div class="p-6 space-y-4 flex flex-col flex-grow justify-between">
                           <div class="space-y-2">
                             <span class="${tagColor} text-xs font-heading font-black px-2.5 py-1 rounded uppercase tracking-wider border inline-block">Combat Discipline</span>
