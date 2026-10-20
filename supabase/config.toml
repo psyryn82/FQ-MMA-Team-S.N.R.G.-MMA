@@ -28,3 +28,7 @@ verify_jwt = false
 # Paid VOD playback verifies Stripe payment and the purchase ledger server-side.
 [functions.create-protected-media-playback]
 verify_jwt = false
+
+# Public media checkout is rate-limited and validates every item and price server-side.
+[functions.create-media-checkout]
+verify_jwt = false
