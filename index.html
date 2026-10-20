@@ -227,16 +227,40 @@
         }
 
         #event-countdown {
-          gap: 0.4rem;
+          gap: 0.65rem;
+          max-width: 58rem;
+          width: 100%;
+          padding: 0.35rem;
+          border-radius: 1.4rem;
+          background: linear-gradient(135deg, rgba(127, 29, 29, .26), rgba(0, 0, 0, .92) 48%, rgba(190, 242, 100, .08));
+          border: 1px solid rgba(255, 42, 42, .55);
+          box-shadow: 0 0 18px rgba(255, 42, 42, .24), 0 0 38px rgba(255, 42, 42, .12), inset 0 0 18px rgba(255, 255, 255, .025);
         }
 
         #event-countdown > div {
-          padding: 0.55rem 0.25rem;
+          padding: clamp(.7rem, 2vw, 1.2rem) 0.3rem;
           min-width: 0;
+          border-color: rgba(255, 42, 42, .8);
+          background: linear-gradient(180deg, rgba(31, 10, 10, .98), rgba(0, 0, 0, .96));
+          box-shadow: 0 0 12px rgba(255, 42, 42, .2), inset 0 0 12px rgba(255, 42, 42, .07);
         }
 
         #event-countdown [id^="countdown-"] {
-          font-size: clamp(1.25rem, 6vw, 1.8rem);
+          font-size: clamp(1.65rem, 5vw, 3.25rem);
+          line-height: 1;
+          letter-spacing: -.035em;
+          text-shadow: 0 0 10px rgba(255, 255, 255, .2), 0 0 22px rgba(255, 42, 42, .28);
+          font-variant-numeric: tabular-nums;
+        }
+
+        #event-countdown #countdown-seconds {
+          color: #d9ff6a;
+          text-shadow: 0 0 9px rgba(217, 255, 106, .55), 0 0 22px rgba(217, 255, 106, .28);
+        }
+
+        @media (min-width: 768px) {
+          #event-countdown > div { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+          #countdown-event-title { font-size: clamp(1.5rem, 3vw, 2.25rem); }
         }
 
         #countdown-event-title {
