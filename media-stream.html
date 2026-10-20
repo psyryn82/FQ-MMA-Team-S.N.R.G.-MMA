@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#07080a"><title>Secure Paid Video | FQ MMA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#07080a;color:#f3f4f6;font-family:Inter,system-ui,sans-serif}.wrap{max-width:960px;margin:auto;padding:24px}.panel{background:#111318;border:1px solid #292d35;border-radius:14px;padding:24px}.muted{color:#9ca3af}.accent{color:#ff3333}.btn{display:inline-block;background:#e50914;color:white;padding:10px 14px;border-radius:8px;text-decoration:none;font-weight:700}video{display:block;width:100%;max-height:72vh;background:#000;border-radius:10px}.status{margin-top:16px;line-height:1.5}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px;flex-wrap:wrap}
+</style></head>
+<body><main class="wrap"><div class="top"><strong class="accent">FQ MMA / Team S.N.R.G.</strong><a class="btn" href="/sasha.html">Back to portfolio</a></div>
+<section class="panel"><p class="accent">SECURE DIGITAL MEDIA</p><h1 id="title">Verifying your purchase…</h1><p class="muted">Playback is authorized by a verified Stripe payment. The stream link is temporary and should not be shared.</p>
+<video id="player" controls playsinline preload="metadata" controlsList="nodownload" disablePictureInPicture hidden></video><p id="status" class="status" role="status" aria-live="polite">Checking payment and preparing secure playback…</p></section></main>
+<script>
+(async function(){
+ const SUPABASE_URL="https://dmcbbavsxyxrxuuzraiu.supabase.co",SUPABASE_KEY="sb_publishable_vJAptJ41TpicuxtMspB8tA_AaMFlGEC";
+ const params=new URLSearchParams(location.search),mediaId=Number(params.get("media_id")),sessionId=params.get("session_id")||"";
+ const title=document.getElementById("title"),status=document.getElementById("status"),player=document.getElementById("player");
+ if(!Number.isSafeInteger(mediaId)||mediaId<1||!/^cs_(test|live)_[A-Za-z0-9_]+$/.test(sessionId)){status.textContent="This playback link is incomplete or invalid. Return to the portfolio and contact support if you have completed payment.";return;}
+ try{
+  const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  const {data,error}=await client.functions.invoke("create-protected-media-playback",{body:{media_id:mediaId,session_id:sessionId}});
+  if(error||!data||!data.playback_url)throw new Error(data?.error||error?.message||"Playback authorization failed.");
+  title.textContent=data.title||"Your video";player.hidden=false;
+  if(player.canPlayType("application/vnd.apple.mpegurl"))player.src=data.playback_url;
+  else if(window.Hls&&Hls.isSupported()){const hls=new Hls({enableWorker:true});hls.loadSource(data.playback_url);hls.attachMedia(player);hls.on(Hls.Events.ERROR,(_,info)=>{if(info.fatal)status.textContent="The stream could not be loaded. Refresh this page to request a new temporary playback link.";});}
+  else throw new Error("This browser does not support secure HLS playback. Try Safari, Chrome, or Edge.");
+  status.textContent="Purchase verified. Press play to watch. The temporary playback authorization expires in about 10 minutes; refresh this page to re-authorize if needed.";
+  history.replaceState(null,"",location.pathname);
+ }catch(error){status.textContent=error instanceof Error?error.message:"Secure playback could not be prepared. Please contact FQ MMA support.";}
+})();
+</script></body></html>
