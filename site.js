@@ -570,7 +570,7 @@
                     const contactForPrice = !isPaid;
                     const action = isPaid
                         ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase digital media</button>`
-                        : `<a href="mailto:fqsnrgmma.info@gmail.com?subject=${encodeURIComponent('Media purchase inquiry: ' + (item.title || 'digital media'))}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Contact us for pricing</a>`;
+                        : `<button type="button" data-contact-pricing="true" data-media-title="${escapeHtml(item.title || 'digital media')}" data-media-collection="${item.collection === 'sasha_portfolio' ? 'photography' : 'MMA media'}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase transition-all ${isRed ? 'bg-brand-red text-white hover:bg-red-700 hover:shadow-neon-red' : 'bg-white text-black hover:bg-gray-200'}">Contact us for pricing</button>`;
                     return `
                         <article class="bg-gray-900/95 p-5 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 space-y-3 ${glowStyle}">
                             ${media}
@@ -1297,6 +1297,23 @@
             document.getElementById('mediaPurchaseEmail').focus();
         }
         document.addEventListener('click',event=>{
+            const pricingButton=event.target.closest('[data-contact-pricing]');
+            if(pricingButton) {
+                const contactTabButton=document.querySelector('[data-tab="contact"]');
+                if(typeof window.setActiveTab === 'function') window.setActiveTab('contact');
+                else contactTabButton?.click();
+                const category=document.getElementById('contact-category');
+                const message=document.getElementById('contact-message');
+                const title=pricingButton.dataset.mediaTitle || 'digital media';
+                const collection=pricingButton.dataset.mediaCollection || 'media';
+                if(category) category.value=collection === 'photography' ? 'Portfolio / Photography Inquiry' : 'Media Purchase Inquiry';
+                if(message) {
+                    message.value=`Hello, I would like pricing and purchase details for "${title}" (${collection}). Please let me know the available options.\n\n`;
+                    message.focus();
+                }
+                document.getElementById('tab-contact')?.scrollIntoView({behavior:'smooth',block:'start'});
+                return;
+            }
             const button=event.target.closest('[data-buy-media]');
             if(button) openMediaCheckout(button.dataset.buyMedia,button.dataset.mediaTitle);
         });
