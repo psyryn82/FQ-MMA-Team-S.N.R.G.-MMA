@@ -227,7 +227,7 @@ let activeGroup='website';
 function organizePanels(){
  const host=$('workspacePanels');if(!host)return;
  host.innerHTML=['media','tickets','portfolio','website','purchases','admin'].map(key=>'<div id="workspace-'+key+'" class="space-y-4 min-w-0"></div>').join('');
- const pricingPanel=document.createElement('section');pricingPanel.id='tab-media_pricing';pricingPanel.className='panel p-5 hidden';pricingPanel.innerHTML='<h2 class="head text-2xl uppercase mb-1">Media Pricing & Listings</h2><p class="muted text-sm mb-5">Edit listing titles, descriptions, confirmed prices, and publication status here. The original upload and storage controls remain in Media. These controls are associated with the existing media form and preserve the same media records.</p><div id="mediaPricingFields" class="grid md:grid-cols-2 gap-4"></div><div id="mediaPricingList" class="mt-6 space-y-3"></div>';
+ const pricingPanel=document.createElement('section');pricingPanel.id='tab-media_pricing';pricingPanel.className='panel p-5 hidden';pricingPanel.innerHTML='<h2 class="head text-2xl uppercase mb-1">Media Pricing & Listings</h2><p class="muted text-sm mb-5">Edit listing titles, descriptions, confirmed prices, and publication status here. The original upload and storage controls remain in Media. These controls are associated with the existing media form and preserve the same media records.</p><div id="mediaPricingFields" class="grid md:grid-cols-2 gap-4"></div><div class="flex flex-wrap gap-2 mt-4"><button id="mediaPricingSaveButton" class="btn" type="submit" form="mediaForm">Save listing changes</button><button id="mediaPricingClearButton" class="btn2" type="button">Clear form</button><button id="mediaPricingRefreshButton" class="btn2" type="button">Refresh listings</button></div><div id="mediaPricingList" class="mt-6 space-y-3"></div>';
  host.querySelector('#workspace-purchases').appendChild(pricingPanel);
  const portfolioPanel=document.createElement('section');portfolioPanel.id='tab-portfolio_settings';portfolioPanel.className='panel p-5 hidden';
  portfolioPanel.innerHTML='<h2 class="head text-2xl uppercase mb-1">Sasha Branding & Presentation</h2><p class="muted text-sm mb-5">These settings control Sasha’s portfolio title, introduction, banner, and booking request wording. They are saved with the existing public-site settings and do not create duplicate records.</p><form id="portfolioSettingsForm" class="space-y-4"><div class="grid md:grid-cols-2 gap-4"><label class="block text-sm md:col-span-2">Sasha portfolio title<input id="homePortfolioTitle" class="field" maxlength="120" placeholder="Sasha’s Portfolio"></label><label class="block text-sm md:col-span-2">Portfolio introduction<textarea id="homePortfolioIntro" class="field" rows="2" maxlength="500" placeholder="Photography and videography portfolio introduction"></textarea></label><label class="block text-sm md:col-span-2">Portfolio banner image URL (optional)<input id="homePortfolioBanner" class="field" type="url" maxlength="2000" placeholder="https://…"></label><label class="block text-sm">Booking form heading<input id="homePortfolioBookingTitle" class="field" maxlength="120" placeholder="Request a Sasha Portfolio Booking"></label><label class="block text-sm">Booking form introduction<textarea id="homePortfolioBookingIntro" class="field" rows="2" maxlength="500" placeholder="Explain the booking request process"></textarea></label></div><div class="flex flex-wrap gap-2"><button class="btn" type="submit">Save portfolio settings</button><button id="portfolioReload" class="btn2" type="button">Discard changes / reload saved settings</button></div></form>';
@@ -243,6 +243,8 @@ function organizePanels(){
  const mediaList=$('mediaList');if(mediaList)$('mediaPricingList').appendChild(mediaList);
  $('portfolioSettingsForm').addEventListener('submit',e=>{e.preventDefault();$('homeForm').requestSubmit()});
  $('portfolioReload').addEventListener('click',loadHome);
+ $('mediaPricingClearButton').addEventListener('click',clearMediaForm);
+ $('mediaPricingRefreshButton').addEventListener('click',loadMedia);
 }
 function renderShells(){
  $('tabs').innerHTML=tabGroups.map(g=>'<button type="button" class="tab '+(g.key==='website'?'active':'')+'" data-group="'+g.key+'">'+g.label+'</button>').join('');
@@ -255,7 +257,7 @@ function renderSubTabs(){
  $('subTabs').classList.toggle('hidden',group.tabs.length===1);
 }
 function activateTab(tab){
- activeTab=tab;const aliases={sasha_portfolio:'sasha_media',media_cleanup:'media'};const panelTab=aliases[tab]||tab;
+ activeTab=tab;const aliases={ticket_options:'event_ticket_options',sasha_media:'media',sasha_portfolio:'media',media_cleanup:'media'};const panelTab=aliases[tab]||tab;
  const group=tabGroups.find(g=>g.tabs.some(t=>t[0]===tab));if(group)activeGroup=group.key;
  document.querySelectorAll('[data-group]').forEach(b=>b.classList.toggle('active',b.dataset.group===activeGroup));renderSubTabs();
  Object.entries(modules).forEach(([key,m])=>{const el=$('tab-'+m.table);if(el)el.classList.toggle('hidden',key!==panelTab)});
@@ -531,7 +533,7 @@ $('mediaForm').addEventListener('submit',async e=>{
   if(!id&&!file){message.textContent='Choose an original photo or video to upload for a new listing.';return}
   if(file&&file.size>2*1024*1024*1024){message.textContent='Original file exceeds the 2 GB upload limit.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
-  const button=$('mediaSaveButton');button.disabled=true;button.textContent=id?'Saving changes…':'Uploading media…';const uploaded=[];startMediaProgress();
+  const button=$('mediaSaveButton'),pricingButton=$('mediaPricingSaveButton'),buttonLabel=id?'Saving changes…':'Uploading media…';[button,pricingButton].filter(Boolean).forEach(b=>{b.disabled=true;b.textContent=buttonLabel});const uploaded=[];startMediaProgress();
   try{
     const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,price_confirmed:true,is_published:published};let existing=null;
     if(id){
@@ -579,7 +581,7 @@ $('mediaForm').addEventListener('submit',async e=>{
     updateMediaProgress('Refreshing media catalog…',null,'Finishing up and refreshing the list.');
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
   }catch(err){for(const item of uploaded)await client.storage.from(item.bucket).remove([item.path]);message.textContent=err?.message||String(err)}
-  finally{stopMediaProgress();button.disabled=false;button.textContent=$('mediaRecordId').value?'Save changes':'Upload & publish listing'}
+  finally{stopMediaProgress();const finalLabel=$('mediaRecordId').value?'Save changes':'Upload & publish listing';[button,pricingButton].filter(Boolean).forEach(b=>{b.disabled=false;b.textContent=finalLabel})}
 });
 $('cleanupPublicVideoPreviews')?.addEventListener('click',async()=>{
   const button=$('cleanupPublicVideoPreviews'),message=$('mediaMessage');
@@ -615,7 +617,7 @@ document.addEventListener('click',async e=>{
   const edit=e.target.closest('[data-media-edit]');
   if(edit){
     const m=records.media?.find(x=>String(x.id)===edit.dataset.mediaEdit);if(!m)return;
-    $('mediaRecordId').value=m.id;$('mediaCollection').value=m.collection||'mma_event';$('mediaEvent').value=activeMediaCollection==='sasha_portfolio'?'':(m.event_id||'');$('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';
+    activeMediaCollection=m.collection||'mma_event';$('mediaRecordId').value=m.id;$('mediaCollection').value=activeMediaCollection;$('mediaEvent').value=activeMediaCollection==='sasha_portfolio'?'':(m.event_id||'');$('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';
     $('mediaTitle').value=m.title||'';$('mediaDescription').value=m.description||'';$('mediaPrice').value=Number(m.price||0).toFixed(2);$('mediaPriceConfirmed').checked=m.price_confirmed===true;
     $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
     $('mediaMessage').textContent=m.price_confirmed===true?'Editing listing details. Price was previously confirmed. Verify it again before saving.':'PRICE NEEDS REVIEW: The stored price is unconfirmed. Confirm the intended price before saving or publishing.';
