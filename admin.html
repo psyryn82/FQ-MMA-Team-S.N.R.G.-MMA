@@ -7,12 +7,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script><script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
-<style>:root{color-scheme:dark}body{background:#07080a;color:#e5e7eb;font-family:Inter,sans-serif}.head{font-family:Oswald,sans-serif}.panel{background:#111318;border:1px solid #292d35;border-radius:14px}.field{width:100%;padding:11px 12px;background:#08090c;border:1px solid #343945;border-radius:8px;color:#fff;margin-top:5px}select.field{-webkit-appearance:menulist!important;appearance:auto!important;pointer-events:auto!important;position:relative;z-index:2;cursor:pointer;color-scheme:dark}select.field option{background:#08090c;color:#fff}select.field:disabled{cursor:not-allowed;opacity:.65}.btn{background:#e50914;color:white;font-weight:700;padding:10px 14px;border-radius:8px}.btn2{border:1px solid #414653;padding:9px 12px;border-radius:8px}.tab{padding:9px 12px;border-radius:8px;color:#cbd5e1}.tab.active{background:#3b1015;color:#ff525b}.muted{color:#9ca3af}</style>
+<style>:root{color-scheme:dark}body{background:#07080a;color:#e5e7eb;font-family:Inter,sans-serif}.head{font-family:Oswald,sans-serif}.panel{background:#111318;border:1px solid #292d35;border-radius:14px}.field{width:100%;padding:11px 12px;background:#08090c;border:1px solid #343945;border-radius:8px;color:#fff;margin-top:5px}select.field{-webkit-appearance:menulist!important;appearance:auto!important;pointer-events:auto!important;position:relative;z-index:2;cursor:pointer;color-scheme:dark}select.field option{background:#08090c;color:#fff}select.field:disabled{cursor:not-allowed;opacity:.65}.btn{background:#e50914;color:white;font-weight:700;padding:10px 14px;border-radius:8px}.btn2{border:1px solid #414653;padding:9px 12px;border-radius:8px}.tab{padding:9px 12px;border-radius:8px;color:#cbd5e1}.tab.active{background:#3b1015;color:#ff525b}.muted{color:#9ca3af}:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid #d9ff6a!important;outline-offset:3px!important;box-shadow:0 0 0 2px #07080a!important}</style>
 </head>
 <body class="min-h-screen">
 <header class="border-b border-gray-800 bg-black px-4 py-4"><div class="max-w-6xl mx-auto flex items-center justify-between gap-4"><div><div class="head text-2xl font-bold uppercase"><span class="text-red-500">FQ MMA</span> Admin</div><div class="muted text-xs mt-1">Team S.N.R.G. MMA • Control panel</div></div><a href="./index.html" class="btn2 text-sm">View website ↗</a></div></header>
 <main class="max-w-6xl mx-auto px-4 py-8">
-<section id="setupNotice" class="panel p-5 mb-6 border-yellow-800"><h2 class="font-bold text-yellow-300">First-time setup notes</h2><p class="text-sm muted mt-2">If sign-in fails, confirm the latest schema is applied and Google is enabled in Authentication → Sign In Providers with valid OAuth credentials. Never use a service_role key in this file.</p></section>
+<section id="setupNotice" class="hidden panel p-5 mb-6 border-yellow-800"><h2 class="font-bold text-yellow-300">First-time setup notes</h2><p class="text-sm muted mt-2">If sign-in fails, confirm the latest schema is applied and Google is enabled in Authentication → Sign In Providers with valid OAuth credentials. Never use a service_role key in this file.</p></section>
 <section id="loginPanel" class="panel p-6 max-w-md mx-auto"><div class="head text-3xl uppercase font-bold">Administrator sign in</div><p class="muted text-sm mt-2 mb-5">Only approved FQ MMA administrators can access this dashboard.</p>
 <form id="loginForm" class="space-y-4"><label class="block text-sm">Email<input id="email" class="field" type="email" autocomplete="username" required></label><label class="block text-sm">Password<input id="password" class="field" type="password" autocomplete="current-password" required></label><label class="inline-flex items-center gap-2 text-sm mt-2" for="showAdminLoginPassword"><input id="showAdminLoginPassword" type="checkbox" class="accent-red-600"> Show password</label><button class="btn w-full" type="submit">Sign in with email</button></form><button id="forgotPasswordBtn" class="mt-3 text-sm text-red-300 underline" type="button">Forgot password?</button>
 <button id="googleBtn" class="btn2 w-full mt-3" type="button">Continue with Google</button><p id="loginMessage" class="text-sm mt-4" role="status"></p></section>
@@ -339,7 +339,7 @@ async function loadEventOverview(){
   message.textContent='Loaded '+events.length+' event(s), '+ticketSales.length+' ticket purchase record(s), and '+streamSales.length+' livestream purchase record(s).';
  }catch(error){list.innerHTML='<p class="text-red-400 text-sm">Could not load the event overview: '+esc(error?.message||String(error))+'</p>';message.textContent='Check your admin permissions and refresh. No records were changed.';}
 }
-async function requireAdmin(user){const {data,error}=await client.from('admin_users').select('user_id,role').eq('user_id',user.id).maybeSingle();if(error)throw new Error('Could not verify admin access. Check the admin_users table and its RLS policy. '+error.message);if(!data)throw new Error('This account is not an approved staff account. An owner must add its exact Supabase Auth user ID to public.admin_users.');return data}
+async function requireAdmin(user){const {data,error}=await client.from('admin_users').select('user_id,role').eq('user_id',user.id).maybeSingle();if(error)throw new Error('Administrator access could not be verified. Please try again or contact the site owner.');if(!data)throw new Error('This account is not authorized to access the administrator dashboard. Contact the site owner.');return data}
 let dashboardInitPromise=null;
 async function showDashboard(user){
  if(!user)return;
@@ -351,7 +351,7 @@ async function showDashboard(user){
    currentUser=user;
    $('loginPanel').classList.add('hidden');
    $('dashboard').classList.remove('hidden');
-   $('setupNotice').classList.add('hidden');
+   $('setupNotice').classList.remove('hidden');
    $('signedInAs').textContent=(user.email||'Signed in')+' · '+String(staff.role||'staff').replaceAll('_',' ');
    activateTab('home');
    try{
