@@ -236,11 +236,8 @@ function organizePanels(){
  const pg={home:'website',events:'website',fighters:'website',schedule:'website',chat:'website',ticket_options:'tickets',event_streams:'tickets',media:'media',sasha_media:'media',site_assets:'media',portfolio_settings:'portfolio',sasha_portfolio:'portfolio',bookings:'portfolio',media_pricing:'purchases',products:'purchases',ticket_purchases:'purchases',sales:'purchases',stream_sales:'purchases',promotions:'purchases',access_management:'purchases',admin_permissions:'admin'};
  Object.entries(pg).forEach(([key,group])=>{const el=$('tab-'+key);if(el)host.querySelector('#workspace-'+group).appendChild(el)});
  Array.from($('modulePanels').children).forEach(el=>{const key=el.id.replace(/^tab-/,'');host.querySelector('#workspace-'+(pg[key]||'website')).appendChild(el)});
- const mediaForm=$('mediaForm'),priceFields=$('mediaPricingFields');
- ['mediaTitle','mediaDescription','mediaPrice','mediaPriceConfirmed','mediaPublished'].forEach(id=>{
-  const control=$(id),label=control?.closest('label');if(!control||!label)return;
-  control.setAttribute('form','mediaForm');priceFields.appendChild(label);
- });
+ // Keep title, description, price, confirmation, and publish controls beside the upload field.
+ // Moving these controls into a separate tab made the upload form appear to have no title or price on mobile.
  const mediaList=$('mediaList');if(mediaList)$('mediaPricingList').appendChild(mediaList);
  $('portfolioSettingsForm').addEventListener('submit',e=>{e.preventDefault();$('homeForm').requestSubmit()});
  $('portfolioReload').addEventListener('click',loadHome);
