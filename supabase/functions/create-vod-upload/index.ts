@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const response = await fetch("https://livepeer.studio/api/asset", {
+    const response = await fetch("https://livepeer.studio/api/asset/request-upload", {
       method: "POST",
       headers: { Authorization: "Bearer " + livepeerKey, "Content-Type": "application/json" },
       body: JSON.stringify({
