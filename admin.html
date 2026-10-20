@@ -227,12 +227,20 @@ let activeGroup='website';
 function organizePanels(){
  const host=$('workspacePanels');if(!host)return;
  host.innerHTML=['media','tickets','portfolio','website','purchases','admin'].map(key=>'<div id="workspace-'+key+'" class="space-y-4 min-w-0"></div>').join('');
+ const pricingPanel=document.createElement('section');pricingPanel.id='tab-media_pricing';pricingPanel.className='panel p-5 hidden';pricingPanel.innerHTML='<h2 class="head text-2xl uppercase mb-1">Media Pricing & Listings</h2><p class="muted text-sm mb-5">Edit listing titles, descriptions, confirmed prices, and publication status here. The original upload and storage controls remain in Media. These controls are associated with the existing media form and preserve the same media records.</p><div id="mediaPricingFields" class="grid md:grid-cols-2 gap-4"></div><div id="mediaPricingList" class="mt-6 space-y-3"></div>';
+ host.querySelector('#workspace-purchases').appendChild(pricingPanel);
  const portfolioPanel=document.createElement('section');portfolioPanel.id='tab-portfolio_settings';portfolioPanel.className='panel p-5 hidden';
  portfolioPanel.innerHTML='<h2 class="head text-2xl uppercase mb-1">Sasha Branding & Presentation</h2><p class="muted text-sm mb-5">These settings control Sasha’s portfolio title, introduction, banner, and booking request wording. They are saved with the existing public-site settings and do not create duplicate records.</p><form id="portfolioSettingsForm" class="space-y-4"><div class="grid md:grid-cols-2 gap-4"><label class="block text-sm md:col-span-2">Sasha portfolio title<input id="homePortfolioTitle" class="field" maxlength="120" placeholder="Sasha’s Portfolio"></label><label class="block text-sm md:col-span-2">Portfolio introduction<textarea id="homePortfolioIntro" class="field" rows="2" maxlength="500" placeholder="Photography and videography portfolio introduction"></textarea></label><label class="block text-sm md:col-span-2">Portfolio banner image URL (optional)<input id="homePortfolioBanner" class="field" type="url" maxlength="2000" placeholder="https://…"></label><label class="block text-sm">Booking form heading<input id="homePortfolioBookingTitle" class="field" maxlength="120" placeholder="Request a Sasha Portfolio Booking"></label><label class="block text-sm">Booking form introduction<textarea id="homePortfolioBookingIntro" class="field" rows="2" maxlength="500" placeholder="Explain the booking request process"></textarea></label></div><div class="flex flex-wrap gap-2"><button class="btn" type="submit">Save portfolio settings</button><button id="portfolioReload" class="btn2" type="button">Discard changes / reload saved settings</button></div></form>';
  host.querySelector('#workspace-portfolio').appendChild(portfolioPanel);
- const pg={home:'website',events:'website',fighters:'website',schedule:'website',chat:'website',ticket_options:'tickets',event_streams:'tickets',media:'media',sasha_media:'media',site_assets:'media',portfolio_settings:'portfolio',sasha_portfolio:'portfolio',bookings:'portfolio',products:'purchases',ticket_purchases:'purchases',sales:'purchases',stream_sales:'purchases',promotions:'purchases',access_management:'purchases',admin_permissions:'admin'};
+ const pg={home:'website',events:'website',fighters:'website',schedule:'website',chat:'website',ticket_options:'tickets',event_streams:'tickets',media:'media',sasha_media:'media',site_assets:'media',portfolio_settings:'portfolio',sasha_portfolio:'portfolio',bookings:'portfolio',media_pricing:'purchases',products:'purchases',ticket_purchases:'purchases',sales:'purchases',stream_sales:'purchases',promotions:'purchases',access_management:'purchases',admin_permissions:'admin'};
  Object.entries(pg).forEach(([key,group])=>{const el=$('tab-'+key);if(el)host.querySelector('#workspace-'+group).appendChild(el)});
  Array.from($('modulePanels').children).forEach(el=>{const key=el.id.replace(/^tab-/,'');host.querySelector('#workspace-'+(pg[key]||'website')).appendChild(el)});
+ const mediaForm=$('mediaForm'),priceFields=$('mediaPricingFields');
+ ['mediaTitle','mediaDescription','mediaPrice','mediaPriceConfirmed','mediaPublished'].forEach(id=>{
+  const control=$(id),label=control?.closest('label');if(!control||!label)return;
+  control.setAttribute('form','mediaForm');priceFields.appendChild(label);
+ });
+ const mediaList=$('mediaList');if(mediaList)$('mediaPricingList').appendChild(mediaList);
  $('portfolioSettingsForm').addEventListener('submit',e=>{e.preventDefault();$('homeForm').requestSubmit()});
  $('portfolioReload').addEventListener('click',loadHome);
 }
@@ -247,12 +255,13 @@ function renderSubTabs(){
  $('subTabs').classList.toggle('hidden',group.tabs.length===1);
 }
 function activateTab(tab){
- activeTab=tab;const aliases={sasha_portfolio:'sasha_media',media_cleanup:'media',media_pricing:'media'};const panelTab=aliases[tab]||tab;
+ activeTab=tab;const aliases={sasha_portfolio:'sasha_media',media_cleanup:'media'};const panelTab=aliases[tab]||tab;
  const group=tabGroups.find(g=>g.tabs.some(t=>t[0]===tab));if(group)activeGroup=group.key;
  document.querySelectorAll('[data-group]').forEach(b=>b.classList.toggle('active',b.dataset.group===activeGroup));renderSubTabs();
  Object.entries(modules).forEach(([key,m])=>{const el=$('tab-'+m.table);if(el)el.classList.toggle('hidden',key!==panelTab)});
- ['home','media','site_assets','chat','ticket_purchases','sales','stream_sales','access_management','bookings','admin_permissions','promotions','portfolio_settings'].forEach(key=>{const el=$('tab-'+key);if(el)el.classList.toggle('hidden',key!==panelTab&&!(key==='media'&&panelTab==='sasha_media'))});
+ ['home','media','site_assets','chat','ticket_purchases','sales','stream_sales','access_management','bookings','admin_permissions','promotions','portfolio_settings','media_pricing'].forEach(key=>{const el=$('tab-'+key);if(el)el.classList.toggle('hidden',key!==panelTab&&!(key==='media'&&panelTab==='sasha_media'))});
  if(modules[panelTab])loadTable(modules[panelTab].table);
+ if(panelTab==='media_pricing'){ $('mediaCollection').value=activeMediaCollection||'mma_event'; loadMedia(); }
  if(panelTab==='media'){
   clearMediaForm();activeMediaCollection=(tab==='sasha_media'||tab==='sasha_portfolio')?'sasha_portfolio':'mma_event';$('mediaCollection').value=activeMediaCollection;
   $('mediaSectionTitle').textContent=activeMediaCollection==='sasha_portfolio'?'Sasha Portfolio':'Fight Media';
