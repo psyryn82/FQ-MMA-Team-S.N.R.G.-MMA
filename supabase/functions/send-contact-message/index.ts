@@ -196,7 +196,7 @@ Deno.serve(async (req: Request) => {
     console.error("Contact email service is not configured: RESEND_API_KEY or CONTACT_FROM_EMAIL is missing.");
     return jsonResponse(503, {
       success: false,
-      error: "Contact email service is not configured (RESEND_API_KEY / CONTACT_FROM_EMAIL).",
+      error: "The contact form is temporarily unavailable. Please try again later.",
     }, origin);
   }
 
