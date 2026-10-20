@@ -63,13 +63,46 @@ Deno.serve(async (req: Request) => {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      // Log only the HTTP status and response field names. Never log credentials,
-      // upload URLs, playback URLs, or the raw response body.
+      // Extract only validation metadata and short messages. Redact URLs and
+      // credential-like strings; never log the raw response or request headers.
+      const redactDiagnostic = (value: unknown): string => String(value ?? "")
+        .replace(/https?:\/\/[^\s"'<>]+/gi, "[redacted-url]")
+        .replace(/\bBearer\s+\S+/gi, "Bearer [redacted]")
+        .replace(/\b(sk|pk|api[_-]?key|token|secret)[=: _-]*[A-Za-z0-9._-]{8,}/gi, "[redacted-credential]")
+        .replace(/[A-Za-z0-9_-]{48,}/g, "[redacted-long-value]")
+        .slice(0, 300);
+      const extractSafeErrors = (value: unknown, depth = 0): unknown => {
+        if (depth > 3 || value == null) return undefined;
+        if (typeof value === "string") return redactDiagnostic(value);
+        if (Array.isArray(value)) return value.slice(0, 5).map((item) => extractSafeErrors(item, depth + 1));
+        if (typeof value === "object") {
+          const input = value as Record<string, unknown>;
+          const output: Record<string, unknown> = {};
+          for (const key of ["field", "param", "type", "code", "message", "detail", "reason"]) {
+            if (input[key] !== undefined && ["string", "number", "boolean"].includes(typeof input[key])) {
+              output[key] = redactDiagnostic(input[key]);
+            }
+          }
+          if (Object.keys(output).length) return output;
+          return Object.keys(input).slice(0, 10);
+        }
+        return redactDiagnostic(value);
+      };
+      const safeErrors = extractSafeErrors((payload as Record<string, unknown> | null)?.errors);
       console.error("Livepeer asset creation failed", {
         status: response.status,
         responseKeys: payload && typeof payload === "object" ? Object.keys(payload) : [],
+        validation: safeErrors ?? "No safe validation details returned",
       });
-      return respond({ error: "Livepeer could not create the video upload. Check the Livepeer account and try again." }, 502, origin);
+      const diagnostic = response.status === 422
+        ? safeErrors
+        : undefined;
+      return respond({
+        error: response.status === 422
+          ? "Livepeer rejected the upload request. See the sanitized validation details below."
+          : "Livepeer could not create the video upload. Check the Livepeer account and try again.",
+        ...(diagnostic !== undefined ? { details: diagnostic } : {}),
+      }, 502, origin);
     }
 
     // Livepeer's response may wrap the asset differently across API/SDK versions.
