@@ -32,3 +32,9 @@ verify_jwt = false
 # Public media checkout is rate-limited and validates every item and price server-side.
 [functions.create-media-checkout]
 verify_jwt = false
+# Public forms verify Cloudflare Turnstile server-side before accepting submissions.
+[functions.send-contact-message]
+verify_jwt = false
+
+[functions.create-booking-request]
+verify_jwt = false
