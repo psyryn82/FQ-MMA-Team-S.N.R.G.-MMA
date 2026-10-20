@@ -72,7 +72,7 @@
 </section>
 <section id="tab-media" class="panel p-5 hidden">
 <h2 id="mediaSectionTitle" class="head text-2xl uppercase mb-1">Fight Media</h2>
-<p id="mediaSectionDescription" class="muted text-sm mb-4">Upload fight photos/videos for purchase and download. Portfolio Media is managed separately under Portfolio. Originals remain private; photos use a separate listing image. Videos are never streamed from this library. Maximum original file size: 5 GB.</p>
+<p id="mediaSectionDescription" class="muted text-sm mb-4">Upload fight photos/videos for purchase and download. Portfolio Media is managed separately under Portfolio. Originals remain private; photos use a separate listing image. Paid videos are streamed securely through Livepeer after confirmed payment. Existing videos uploaded before this integration may need their original file uploaded again to create a playback asset. Maximum original file size: 5 GB.</p>
 <form id="mediaForm" class="space-y-4">
 <input id="mediaRecordId" type="hidden">
 <div class="grid md:grid-cols-2 gap-4">
@@ -82,7 +82,7 @@
 <label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
 <label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" placeholder="Leave blank or enter 0 for contact pricing"><span class="muted text-xs">Leave blank or enter $0 to show “Contact us for pricing.” This does not make the media free. Confirm any positive price before it can be purchased.</span></label><label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaPriceConfirmed" type="checkbox" class="mt-1"><span><strong>Confirm this exact price.</strong> I have verified the amount above. If the price is $0, customers will be asked to contact us for pricing, never told the item is free. A positive price must be confirmed before checkout; unconfirmed prices display “Contact us for pricing.”</span></label>
-<label class="block text-sm md:col-span-2">Upload original photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Photos are stored privately with a separate listing image. Videos are stored privately for authorized purchase downloads only. This upload does not create or configure a livestream.</span></label><p class="muted text-xs md:col-span-2">Paid originals stay private. After a confirmed purchase, customers receive authorized, time-limited download access. Videos are not played or livestreamed from this listing. The site never displays a direct download URL. Screen recording cannot be completely prevented.</p>
+<label class="block text-sm md:col-span-2">Upload original photo/video<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"><span class="muted text-xs">Photos are stored privately with a separate listing image. Videos are stored privately and uploaded separately to Livepeer for secure on-demand playback. This does not create or configure a livestream.</span></label><p class="muted text-xs md:col-span-2">Paid originals stay private. After confirmed payment, customers can watch eligible videos through a temporary, signed Livepeer playback URL and receive time-limited download access where available. The site never displays the private original URL. Screen recording cannot be completely prevented.</p>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
@@ -597,7 +597,7 @@ $('mediaForm').addEventListener('submit',async e=>{
   if(!id&&!file){message.textContent='Choose an original photo or video to upload for a new listing.';return}
   if(file&&file.size>5*1024*1024*1024){message.textContent='Media exceeds the 5 GB upload limit.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
-  const button=$('mediaSaveButton'),buttonLabel=id?'Saving changes…':'Uploading media…';button.disabled=true;button.textContent=buttonLabel;const uploaded=[];startMediaProgress();
+  const button=$('mediaSaveButton'),buttonLabel=id?'Saving changes…':'Uploading media…';button.disabled=true;button.textContent=buttonLabel;const uploaded=[];let livepeerMediaId=null,livepeerSiblingId=null;startMediaProgress();
   try{
     const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,price_confirmed:price>0?$('mediaPriceConfirmed').checked:true,is_published:published};let existing=null,sibling=null;
     if(id){
@@ -649,7 +649,7 @@ $('mediaForm').addEventListener('submit',async e=>{
         const {id:ignoredId,created_at:ignoredCreatedAt,...baseFields}=base;
         const siblingPatch={...baseFields,...patch,collection:otherCollection,media_destination:otherCollection==='sasha_portfolio'?'portfolio':'site',event_id:otherCollection==='sasha_portfolio'?null:eventId,updated_at:new Date().toISOString()};
         if(sibling){const {error}=await client.from('media').update(siblingPatch).eq('id',sibling.id);if(error)throw error;}
-        else{const {error}=await client.from('media').insert(siblingPatch);if(error)throw error;}
+        else{const {data:newSibling,error}=await client.from('media').insert(siblingPatch).select('id').single();if(error)throw error;sibling=newSibling;}
       }else if(sibling){
         const siblingPurchases=await client.from('media_purchases').select('id',{count:'exact',head:true}).eq('media_id',sibling.id);if(siblingPurchases.error)throw siblingPurchases.error;
         if((siblingPurchases.count||0)>0){const {error}=await client.from('media').update({is_published:false,updated_at:new Date().toISOString()}).eq('id',sibling.id);if(error)throw error;}
@@ -665,7 +665,8 @@ $('mediaForm').addEventListener('submit',async e=>{
         if(refs.error)throw refs.error;
         if((refs.count||0)===0){const removed=await client.storage.from(object.bucket).remove([object.path]);if(removed.error)throw removed.error;}
       }
-      message.textContent=file?'Original updated privately for purchase/download.':(alsoListInOther?'Listing details updated in both catalogs.':'Listing details updated.');
+      if(file&&file.type.startsWith('video/')){livepeerMediaId=Number(id);livepeerSiblingId=alsoListInOther?sibling?.id||null:null;}
+      message.textContent=file?'Original updated privately.':(alsoListInOther?'Listing details updated in both catalogs.':'Listing details updated.');
     }else{
       const insertRows=[{...patch}];
       if(alsoListInOther){
@@ -676,7 +677,23 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(insertError)throw insertError;
       if(!Array.isArray(insertedRows)||insertedRows.length!==insertRows.length)throw new Error('The media listings were not all saved. Refresh the catalog and verify both destinations before retrying.');
       uploaded.length=0;
-      message.textContent=alsoListInOther?'Listing created in Fight Media and Portfolio Media. Both listings share one private original; each catalog has separate sales history.':'Listing created. The original is private for purchase/download. Video uploads do not create livestreams or public playback. A $0 price displays “Contact us for pricing,” not free access.';
+      if(file&&file.type.startsWith('video/')){livepeerMediaId=Number(insertedRows[0].id);livepeerSiblingId=alsoListInOther?Number(insertedRows[1].id):null;}
+      message.textContent=alsoListInOther?'Listing created in Fight Media and Portfolio Media. Both listings share one private original; each catalog has separate sales history.':'Listing created. The original is private. A $0 price displays “Contact us for pricing,” not free access.';
+    }
+    if(file&&file.type.startsWith('video/')&&livepeerMediaId){
+      try{
+        if(!window.tus?.Upload)throw new Error('The resumable Livepeer uploader did not load. Refresh the admin page and retry with the original file.');
+        updateMediaProgress('Preparing secure video playback…',0,'Creating a private Livepeer asset with JWT-protected playback.');
+        const {data:livepeerSession,error:livepeerSessionError}=await client.functions.invoke('create-vod-upload',{body:{media_id:livepeerMediaId,title}});
+        if(livepeerSessionError)throw livepeerSessionError;
+        if(!livepeerSession?.tus_endpoint||!livepeerSession?.playback_id||!livepeerSession?.asset_id)throw new Error(livepeerSession?.error||'Livepeer did not return a complete upload session.');
+        await new Promise((resolve,reject)=>{
+          const upload=new window.tus.Upload(file,{endpoint:livepeerSession.tus_endpoint,chunkSize:50*1024*1024,retryDelays:[0,1000,3000,5000,10000],metadata:{name:title,filename:file.name,filetype:file.type},onProgress:(sent,total)=>updateMediaProgress('Uploading video to Livepeer…',Math.round(sent/Math.max(total,1)*100),(sent/1048576).toFixed(1)+' MB of '+(total/1048576).toFixed(1)+' MB sent to secure video processing.'),onError:error=>reject(error),onSuccess:()=>resolve()});
+          upload.start();
+        });
+        if(livepeerSiblingId){const {error:siblingLivepeerError}=await client.from('media').update({livepeer_asset_id:livepeerSession.asset_id,livepeer_playback_id:livepeerSession.playback_id,livepeer_status:livepeerSession.status||'waiting',livepeer_playback_policy:'jwt',updated_at:new Date().toISOString()}).eq('id',livepeerSiblingId);if(siblingLivepeerError)throw siblingLivepeerError;}
+        message.textContent='Video uploaded privately and sent to Livepeer. Secure playback will become available after Livepeer finishes processing. The listing is saved; no payment was taken.';
+      }catch(livepeerError){message.textContent='The listing and private original were saved, but Livepeer video upload did not finish. This video will not play until its Livepeer asset is completed. Details: '+(livepeerError?.message||String(livepeerError))+'. Do not delete the listing or original; ask for help before retrying so we do not create duplicate Livepeer assets.';}
     }
     updateMediaProgress('Refreshing media catalog…',null,'Finishing up and refreshing the list.');
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
