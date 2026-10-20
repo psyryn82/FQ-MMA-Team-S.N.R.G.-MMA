@@ -684,16 +684,23 @@ $('mediaForm').addEventListener('submit',async e=>{
       try{
         if(!window.tus?.Upload)throw new Error('The resumable Livepeer uploader did not load. Refresh the admin page and retry with the original file.');
         updateMediaProgress('Preparing secure video playback…',0,'Creating a private Livepeer asset with JWT-protected playback.');
-        const {data:livepeerSession,error:livepeerSessionError}=await client.functions.invoke('create-vod-upload',{body:{media_id:livepeerMediaId,title}});
-        if(livepeerSessionError)throw livepeerSessionError;
-        if(!livepeerSession?.tus_endpoint||!livepeerSession?.playback_id||!livepeerSession?.asset_id)throw new Error(livepeerSession?.error||'Livepeer did not return a complete upload session.');
-        await new Promise((resolve,reject)=>{
+        const resumeKey='fqmma-livepeer-upload:'+livepeerMediaId;
+        let livepeerSession=null;
+        try{const saved=sessionStorage.getItem(resumeKey);if(saved)livepeerSession=JSON.parse(saved);}catch{sessionStorage.removeItem(resumeKey);}
+        if(!livepeerSession?.tus_endpoint||!livepeerSession?.playback_id||!livepeerSession?.asset_id){
+          const {data,error:livepeerSessionError}=await client.functions.invoke('create-vod-upload',{body:{media_id:livepeerMediaId,title}});
+          if(livepeerSessionError)throw livepeerSessionError;
+          if(!data?.tus_endpoint||!data?.playback_id||!data?.asset_id)throw new Error(data?.error||'Livepeer did not return a complete upload session.');
+          livepeerSession=data;sessionStorage.setItem(resumeKey,JSON.stringify(livepeerSession));
+        }
+        await new Promise(async(resolve,reject)=>{
           const upload=new window.tus.Upload(file,{endpoint:livepeerSession.tus_endpoint,chunkSize:50*1024*1024,retryDelays:[0,1000,3000,5000,10000],metadata:{name:title,filename:file.name,filetype:file.type},onProgress:(sent,total)=>updateMediaProgress('Uploading video to Livepeer…',Math.round(sent/Math.max(total,1)*100),(sent/1048576).toFixed(1)+' MB of '+(total/1048576).toFixed(1)+' MB sent to secure video processing.'),onError:error=>reject(error),onSuccess:()=>resolve()});
-          upload.start();
+          try{const previous=await upload.findPreviousUploads();if(previous.length)upload.resumeFromPreviousUpload(previous[0]);else upload.start();}catch(error){reject(error);}
         });
+        sessionStorage.removeItem(resumeKey);
         if(livepeerSiblingId){const {error:siblingLivepeerError}=await client.from('media').update({livepeer_asset_id:livepeerSession.asset_id,livepeer_playback_id:livepeerSession.playback_id,livepeer_status:livepeerSession.status||'waiting',livepeer_playback_policy:'jwt',updated_at:new Date().toISOString()}).eq('id',livepeerSiblingId);if(siblingLivepeerError)throw siblingLivepeerError;}
         message.textContent='Video uploaded privately and sent to Livepeer. Secure playback will become available after Livepeer finishes processing. The listing is saved; no payment was taken.';
-      }catch(livepeerError){message.textContent='The listing and private original were saved, but Livepeer video upload did not finish. This video will not play until its Livepeer asset is completed. Details: '+(livepeerError?.message||String(livepeerError))+'. Do not delete the listing or original; ask for help before retrying so we do not create duplicate Livepeer assets.';}
+      }catch(livepeerError){message.textContent='The listing and private original were saved, but Livepeer video upload did not finish. This video will not play until its Livepeer asset is completed. Details: '+(livepeerError?.message||String(livepeerError))+'. The upload session is saved in this browser tab; edit this listing and select the same original file to resume. Do not create a duplicate listing.';}
     }
     updateMediaProgress('Refreshing media catalog…',null,'Finishing up and refreshing the list.');
     const savedMessage=message.textContent;clearMediaForm();await loadMedia();if(savedMessage)message.textContent=savedMessage;
