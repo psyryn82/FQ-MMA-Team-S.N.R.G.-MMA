@@ -684,35 +684,41 @@ async function listAllStorageFiles(bucket,folder=''){
   }
   return files;
 }
+async function findLegacyPublicVideoPreviews(){
+  const [mmaFiles,rootFiles]=await Promise.all([
+    listAllStorageFiles('fqmma-media','mma_event'),
+    listAllStorageFiles('fqmma-media','')
+  ]);
+  return [...new Set([
+    ...mmaFiles.filter(item=>item.id!==null&&/public-preview-/i.test(item.name)&&/\.(mp4|webm)$/i.test(item.name)).map(item=>'mma_event/'+item.name),
+    ...rootFiles.filter(item=>item.id!==null&&/public-preview-/i.test(item.name)&&/\.(mp4|webm)$/i.test(item.name)).map(item=>item.name)
+  ])];
+}
 $('cleanupPublicVideoPreviews')?.addEventListener('click',async()=>{
   const button=$('cleanupPublicVideoPreviews'),message=$('mediaMessage');
   if(!client){message.textContent='Admin database connection is not ready.';return}
-  if(!confirm('Remove unreferenced public video files named public-preview-* from the MMA media folder? This will not delete private originals, referenced previews, or ordinary public photos.'))return;
-  button.disabled=true;message.textContent='Finding legacy public video previews…';
+  if(!confirm('Remove unreferenced legacy public video previews? This checks every matching video against media records and will not delete private originals, referenced previews, or ordinary public photos.'))return;
+  button.disabled=true;message.textContent='Checking all storage pages for legacy public video previews…';
   try{
     const {data:mediaRows,error:mediaError}=await client.from('media').select('id,file_path,preview_path,storage_bucket');
     if(mediaError)throw mediaError;
-    const [mmaFiles,rootFiles]=await Promise.all([
-      listAllStorageFiles('fqmma-media','mma_event'),
-      listAllStorageFiles('fqmma-media','')
-    ]);
-    const candidates=[
-      ...mmaFiles.map(item=>({path:'mma_event/'+item.name,item})),
-      ...rootFiles.map(item=>({path:item.name,item}))
-    ].filter(({path,item})=>item.id!==null&&path.includes('public-preview-')&&/\.(mp4|webm)$/i.test(path));
+    const candidates=await findLegacyPublicVideoPreviews();
     const originalPaths=new Set((mediaRows||[]).map(m=>String(m.file_path||'')).filter(Boolean));
     const referencedPreviewPaths=new Set((mediaRows||[]).map(m=>String(m.preview_path||'')).filter(Boolean));
-    const safePaths=[...new Set(candidates.map(x=>x.path))].filter(path=>!originalPaths.has(path)&&!referencedPreviewPaths.has(path));
+    const safePaths=candidates.filter(path=>!originalPaths.has(path)&&!referencedPreviewPaths.has(path));
     if(!safePaths.length){
       message.textContent=candidates.length
-        ?'Legacy preview files were found, but none were safe to remove because they are referenced by a media record. No files were changed.'
-        :'No matching legacy public video preview objects were found in the fully paginated storage listing. No files were changed.';
+        ?'Matching legacy video previews were found, but all are referenced by media records. No files were changed.'
+        :'Verified storage listings contain no matching legacy public video previews. No files were changed.';
       return
     }
-    const {data:removed,error:removeError}=await client.storage.from('fqmma-media').remove(safePaths);
+    const {error:removeError}=await client.storage.from('fqmma-media').remove(safePaths);
     if(removeError)throw removeError;
-    const removedCount=(removed||[]).filter(item=>item.name).length;
-    message.textContent='Removed '+(removedCount||safePaths.length)+' unreferenced legacy public preview file(s). Private originals, referenced previews, and regular public photos were left untouched.';
+    const remaining=await findLegacyPublicVideoPreviews();
+    const stillPresent=remaining.filter(path=>safePaths.includes(path));
+    message.textContent=stillPresent.length
+      ?'Cleanup attempted, but '+stillPresent.length+' matching preview file(s) remain. Check storage delete permissions. Private originals were not changed.'
+      :'Verified: removed '+safePaths.length+' unreferenced legacy public video preview file(s). No private originals or referenced media were changed.';
     await loadMedia();
   }catch(err){message.textContent='Preview cleanup failed: '+(err?.message||String(err))}
   finally{button.disabled=false}
