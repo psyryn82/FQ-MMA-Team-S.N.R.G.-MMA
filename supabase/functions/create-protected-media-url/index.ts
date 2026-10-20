@@ -288,7 +288,7 @@ Deno.serve(async (req) => {
     return respond({ permission, revoked: true }, 200, origin);
   }
 
-  if (action !== "download") return respond({ error: "Unsupported action." }, 400, origin);
+  if (action !== "download" && action !== "playback") return respond({ error: "Unsupported action." }, 400, origin);
 
   const token = String(input.token || "").trim().toLowerCase();
   if (token) {
@@ -318,6 +318,8 @@ Deno.serve(async (req) => {
     if (consumeError || !consumed) return respond({ error: "This download link has already been used. Ask staff to send a new one." }, 403, origin);
     return respond({ url: signed.signedUrl, title: media.title, expires_in: 900, mode: action }, 200, origin);
   }
+
+  if (action !== "download") return respond({ error: "A valid one-time playback token is required." }, 400, origin);
 
   const mediaId = Number(input.media_id);
   const email = String(input.buyer_email || "").trim().toLowerCase();
