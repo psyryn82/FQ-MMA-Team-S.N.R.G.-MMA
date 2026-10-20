@@ -54,7 +54,7 @@
                     empty.value = '';
                     empty.textContent = 'No stream available';
                     select.appendChild(empty);
-                    price.textContent = 'One-time access: $35.00';
+                    price.textContent = 'Pricing will appear when a stream is available.';
                     message.textContent = 'No live-stream event is available yet. No payment will be taken.';
                     return;
                 }
