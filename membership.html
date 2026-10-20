@@ -33,7 +33,7 @@
 </div>
 <div class="panel account-card">
 <h2 class="head text-2xl uppercase mb-2">Your account</h2>
-<p id="sessionInfo" class="muted text-sm">Sign in to purchase a ticket. Your account email will be used for the ticket purchase.</p>
+<p id="sessionInfo" class="muted text-sm">Sign in to message the team and use fan chat. Event tickets are one-time purchases and do not require an account.</p>
 <div id="membershipInfo" class="mt-4 space-y-2"></div><div class="border-t border-gray-800 my-5"></div><h3 class="head text-xl uppercase mb-2">Message the team</h3><p class="muted text-xs mb-3">Sign in to send a message and see replies from the FQ MMA team.</p><div id="userChatList" class="space-y-2 mb-3"></div><form id="userChatForm" class="space-y-2 hidden"><textarea id="userChatMessage" class="field" rows="3" maxlength="5000" placeholder="Write your message..." required></textarea><button class="btn" type="submit">Send message</button></form>
 </div>
 </section>
@@ -109,7 +109,7 @@ async function loadUserChat(){if(!currentSession)return;const {data,error}=await
 $("userChatForm").addEventListener("submit",async e=>{e.preventDefault();if(!currentSession){msg("Sign in before messaging.",true);return}const message=$("userChatMessage").value.trim();if(!message)return;const {error}=await client.from("chat_messages").insert({user_id:currentSession.user.id,sender_name:currentSession.user.user_metadata?.full_name||"",sender_email:currentSession.user.email||"",message,is_admin_reply:false});if(error){msg(error.message,true);return}$("userChatMessage").value="";msg("Message sent.");await loadUserChat()});
 async function checkout(){msg("Ticket checkout is available from each event on the main website.",true)}
 $("refreshPlans").onclick=loadPlans;
-async function refreshSession(session){currentSession=session;$("sessionInfo").textContent=session?"Signed in as "+(session.user.email||"member"):"Sign in to purchase a ticket. Your account email will be used for the ticket purchase.";$("signOutBtn").classList.toggle("hidden",!session);$("authSubmit").classList.toggle("hidden",!!session);$("googleBtn").classList.toggle("hidden",!!session);$("email").disabled=!!session;$("password").disabled=!!session;await loadMembershipInfo()}
+async function refreshSession(session){currentSession=session;$("sessionInfo").textContent=session?"Signed in as "+(session.user.email||"member"):"Sign in to message the team and use fan chat. Event tickets are one-time purchases and do not require an account.";$("signOutBtn").classList.toggle("hidden",!session);$("authSubmit").classList.toggle("hidden",!!session);$("googleBtn").classList.toggle("hidden",!!session);$("email").disabled=!!session;$("password").disabled=!!session;await loadMembershipInfo()}
 client.auth.getSession().then(({data})=>refreshSession(data.session));
 client.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>refreshSession(session),0)});
 loadPlans();

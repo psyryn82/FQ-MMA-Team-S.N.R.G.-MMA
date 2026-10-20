@@ -93,14 +93,15 @@ Deno.serve(async (req) => {
         }
         if (session.payment_status === "paid") {
           const { data: media, error: mediaError } = await db.from("media")
-            .select("id,is_published,price,file_path,storage_bucket").eq("id", mediaId).maybeSingle();
+            .select("id,is_published,price,price_confirmed,file_path,storage_bucket").eq("id", mediaId).maybeSingle();
           if (mediaError) throw mediaError;
-          if (!media || !media.is_published || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") {
+          if (!media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") {
             throw new Error("Paid media is unavailable or not configured for private delivery");
           }
-          const expectedAmountCents = Math.round(Number(media.price) * 100);
-          if (session.amount_total !== expectedAmountCents || String(session.currency || "").toLowerCase() !== "usd") {
-            throw new Error("Media checkout amount or currency does not match the published media price");
+          const expectedAmountText = String(session.metadata?.expected_amount_cents || "");
+          const expectedAmountCents = expectedAmountText ? Number(expectedAmountText) : NaN;
+          if (!Number.isSafeInteger(expectedAmountCents) || expectedAmountCents < 1 || session.amount_total !== expectedAmountCents || String(session.currency || "").toLowerCase() !== "usd") {
+            throw new Error("Media checkout amount or currency does not match the amount recorded when checkout was created");
           }
           const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
           const { error: purchaseError } = await db.from("media_purchases").upsert({

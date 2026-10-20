@@ -8,6 +8,36 @@ function respond(body: unknown, status = 200, origin = "") {
   return new Response(JSON.stringify(body), { status, headers: { ...headers, "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://fq-snrg-mma.com", "Vary": "Origin" } });
 }
 
+
+async function checkoutRateLimit(req: Request, email: string, supabaseUrl: string, serviceKey: string): Promise<{ allowed: boolean; status: number; message: string }> {
+  const hashBucket = async (value: string) => {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${serviceKey}:${value}`));
+    return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+  };
+  const consume = async (value: string, limit: number, windowSeconds: number): Promise<boolean | null> => {
+    try {
+      const response = await fetch(`${supabaseUrl.endsWith("/") ? supabaseUrl.slice(0, -1) : supabaseUrl}/rest/v1/rpc/consume_contact_form_rate_limit`, {
+        method: "POST",
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ p_bucket_hash: await hashBucket(value), p_limit: limit, p_window_seconds: windowSeconds })
+      });
+      if (!response.ok) return null;
+      return await response.json() === true;
+    } catch { return null; }
+  };
+  const forwarded = req.headers.get("x-forwarded-for");
+  const ip = req.headers.get("cf-connecting-ip")?.trim() || req.headers.get("x-real-ip")?.trim() || forwarded?.split(",").map(v => v.trim()).filter(Boolean).at(-1) || "";
+  if (ip) {
+    const ipAllowed = await consume(`checkout-ip:${ip}`, 10, 900);
+    if (ipAllowed === null) return { allowed: false, status: 503, message: "Checkout is temporarily unavailable. Please try again later." };
+    if (!ipAllowed) return { allowed: false, status: 429, message: "Too many checkout attempts. Please wait 15 minutes before trying again." };
+  }
+  const emailAllowed = await consume(`checkout-email:${email.toLowerCase()}`, 5, 3600);
+  if (emailAllowed === null) return { allowed: false, status: 503, message: "Checkout is temporarily unavailable. Please try again later." };
+  if (!emailAllowed) return { allowed: false, status: 429, message: "Too many checkout attempts for this email. Please try again in an hour." };
+  return { allowed: true, status: 200, message: "" };
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
   if (req.method === "OPTIONS") return new Response("ok", { headers: { ...headers, "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://fq-snrg-mma.com", "Vary": "Origin" } });
@@ -29,6 +59,8 @@ Deno.serve(async (req) => {
   const promotionCode = String(input.promotion_code || "").trim().toUpperCase();
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(eventId)) return respond({ error: "Choose a valid stream event." }, 400, origin);
   if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return respond({ error: "Enter a valid email address for stream access." }, 400, origin);
+  const rateLimit = await checkoutRateLimit(req, email, supabaseUrl, serviceKey);
+  if (!rateLimit.allowed) return respond({ error: rateLimit.message }, rateLimit.status, origin);
 
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: config, error: configError } = await db.from("event_streams")
@@ -37,9 +69,10 @@ Deno.serve(async (req) => {
   if (configError || !config || !config.livepeer_playback_id) return respond({ error: "Paid stream access is not available for that event yet." }, 409, origin);
 
   const { data: event, error: eventError } = await db.from("events")
-    .select("id,title,event_date,venue,status").eq("id", eventId).maybeSingle();
-  if (eventError || !event || !["upcoming", "live"].includes(event.status)) return respond({ error: "Stream checkout is not available for that event." }, 409, origin);
-  if (!Number.isInteger(config.stream_price_cents) || config.stream_price_cents < 50) return respond({ error: "Stream price is not configured correctly." }, 503, origin);
+    .select("id,title,event_date,venue,status,is_published").eq("id", eventId).maybeSingle();
+  if (eventError || !event || event.is_published !== true || !["upcoming", "live"].includes(event.status)) return respond({ error: "Stream checkout is not available for that event." }, 409, origin);
+  if (!Number.isInteger(config.stream_price_cents) || config.stream_price_cents < 0) return respond({ error: "Stream price is not configured correctly." }, 503, origin);
+  if (config.stream_price_cents === 0) return respond({ free_url: siteUrl + "/watch.html?free_event_id=" + encodeURIComponent(event.id), free: true }, 200, origin);
 
   let finalAmountCents = config.stream_price_cents;
   let redemptionId: string | null = null;

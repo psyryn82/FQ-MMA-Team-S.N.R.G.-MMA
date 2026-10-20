@@ -116,12 +116,12 @@ Deno.serve(async (req) => {
 
     const { data: media, error: mediaError } = await db
       .from("media")
-      .select("id,title,file_path,storage_bucket,is_published")
+      .select("id,title,file_path,storage_bucket,is_published,price_confirmed,price")
       .eq("id", mediaId)
       .eq("is_published", true)
       .maybeSingle();
-    if (mediaError || !media || !media.file_path || media.storage_bucket !== "fqmma-private") {
-      return respond({ error: "Only published media with a private original can receive download approval." }, 404, origin);
+    if (mediaError || !media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") {
+      return respond({ error: "Only published media with a confirmed listing and a private original can receive download approval." }, 404, origin);
     }
 
     const { data: existing, error: existingError } = await db
@@ -136,7 +136,16 @@ Deno.serve(async (req) => {
     if (existing) {
       const stillActive = !existing.expires_at || new Date(existing.expires_at).getTime() > Date.now();
       if (stillActive) {
-        return respond({ error: "An active approval already exists. Revoke it before creating a replacement." }, 409, origin);
+        // Reuse an active approval so the admin's combined approve-and-send action can proceed.
+        const { data: activePermission, error: activePermissionError } = await db
+          .from("media_download_permissions")
+          .select("id,media_id,authorized_email,reason,created_at,expires_at")
+          .eq("id", existing.id)
+          .single();
+        if (activePermissionError || !activePermission) {
+          return respond({ error: "An active approval exists, but its details could not be loaded. Use Send / resend link." }, 500, origin);
+        }
+        return respond({ permission: activePermission, updated: true, reused: true }, 200, origin);
       }
       const { error: expireError } = await db
         .from("media_download_permissions")
@@ -175,8 +184,8 @@ Deno.serve(async (req) => {
       .select("id,media_id,authorized_email,expires_at,revoked_at").eq("media_id", mediaId).eq("authorized_email", email).is("revoked_at", null).maybeSingle();
     if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) return respond({ error: "No active download approval was found for this media item and email." }, 404, origin);
     const { data: media, error: mediaError } = await db.from("media")
-      .select("id,title,file_path,storage_bucket,is_published").eq("id", mediaId).eq("is_published", true).maybeSingle();
-    if (mediaError || !media || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This item is not available for private download." }, 404, origin);
+      .select("id,title,file_path,storage_bucket,is_published,price_confirmed,price").eq("id", mediaId).eq("is_published", true).maybeSingle();
+    if (mediaError || !media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This item is not available for private download." }, 404, origin);
     const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { count, error: rateError } = await db.from("media_download_tokens")
       .select("id", { count: "exact", head: true }).eq("permission_id", permission.id).gt("created_at", since);
@@ -211,6 +220,44 @@ Deno.serve(async (req) => {
       .update({ consumed_at: new Date().toISOString() })
       .eq("permission_id", permission.id).is("consumed_at", null).neq("id", tokenRow.id);
     return respond({ sent: true, expires_in: 1800, message: "One-time download link sent." }, 200, origin);
+  }
+
+  if (action === "create_download_link") {
+    const staff = await requireStaff();
+    if ("error" in staff) return respond({ error: staff.error }, staff.status, origin);
+    const mediaId = Number(input.media_id);
+    const email = String(input.authorized_email || "").trim().toLowerCase();
+    if (!Number.isSafeInteger(mediaId) || mediaId < 1 || !validEmail(email)) {
+      return respond({ error: "A valid media item and approved email are required." }, 400, origin);
+    }
+    const { data: permission, error: permissionError } = await db.from("media_download_permissions")
+      .select("id,media_id,authorized_email,expires_at,revoked_at")
+      .eq("media_id", mediaId).eq("authorized_email", email).is("revoked_at", null).maybeSingle();
+    if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) {
+      return respond({ error: "No active download approval was found for this media item and email." }, 404, origin);
+    }
+    const { data: media, error: mediaError } = await db.from("media")
+      .select("id,title,file_path,storage_bucket,is_published,price_confirmed,price")
+      .eq("id", mediaId).eq("is_published", true).maybeSingle();
+    if (mediaError || !media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") {
+      return respond({ error: "This item is not available for private download." }, 404, origin);
+    }
+    const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { count, error: rateError } = await db.from("media_download_tokens")
+      .select("id", { count: "exact", head: true }).eq("permission_id", permission.id).gt("created_at", since);
+    if (rateError) return respond({ error: "Could not verify recent download-link requests." }, 500, origin);
+    if ((count || 0) >= 3) return respond({ error: "For security, only three download links can be created per approval every five minutes." }, 429, origin);
+    const token = randomToken(), tokenHash = await sha256Hex(token);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    const { data: tokenRow, error: tokenError } = await db.from("media_download_tokens")
+      .insert({ permission_id: permission.id, token_hash: tokenHash, expires_at: expiresAt, sent_by: staff.user.id })
+      .select("id").single();
+    if (tokenError || !tokenRow) return respond({ error: "Could not create a secure download link." }, 500, origin);
+    await db.from("media_download_tokens")
+      .update({ consumed_at: new Date().toISOString() })
+      .eq("permission_id", permission.id).is("consumed_at", null).neq("id", tokenRow.id);
+    const link = "https://fq-snrg-mma.com/media-download.html#token=" + token;
+    return respond({ link, title: media.title, expires_in: 1800, expires_at: expiresAt, message: "One-time download link created. Copy it into your text message before it expires." }, 200, origin);
   }
 
   if (action === "revoke") {
@@ -254,17 +301,19 @@ Deno.serve(async (req) => {
       .select("id,media_id,authorized_email,expires_at,revoked_at").eq("id", tokenRow.permission_id).is("revoked_at", null).maybeSingle();
     if (permissionError || !permission || (permission.expires_at && new Date(permission.expires_at).getTime() <= Date.now())) return respond({ error: "This approval is no longer active. Contact FQ MMA support." }, 403, origin);
     const { data: media, error: mediaError } = await db.from("media")
-      .select("id,title,file_path,storage_bucket,is_published").eq("id", permission.media_id).eq("is_published", true).maybeSingle();
-    if (mediaError || !media || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This media is not configured for private delivery." }, 404, origin);
+      .select("id,title,file_path,storage_bucket,is_published,price_confirmed,price").eq("id", permission.media_id).eq("is_published", true).maybeSingle();
+    if (mediaError || !media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This media is not configured for private delivery." }, 404, origin);
+    // Prepare the signed URL before consuming the one-time token. A transient
+    // storage signing failure should not burn a valid recipient link.
+    const { data: signed, error: signedError } = await db.storage.from("fqmma-private").createSignedUrl(media.file_path, 900, { download: true });
+    if (signedError || !signed?.signedUrl) return respond({ error: "The download is temporarily unavailable. Ask staff to send a new link." }, 502, origin);
+    const { data: stillApproved, error: recheckError } = await db.from("media_download_permissions")
+      .select("id").eq("id", permission.id).is("revoked_at", null).maybeSingle();
+    if (recheckError || !stillApproved) return respond({ error: "This approval is no longer active. Contact FQ MMA support." }, 403, origin);
     const consumeNow = new Date().toISOString();
     const { data: consumed, error: consumeError } = await db.from("media_download_tokens")
       .update({ consumed_at: consumeNow }).eq("id", tokenRow.id).is("consumed_at", null).gt("expires_at", consumeNow).select("id").maybeSingle();
     if (consumeError || !consumed) return respond({ error: "This download link has already been used. Ask staff to send a new one." }, 403, origin);
-    const { data: stillApproved, error: recheckError } = await db.from("media_download_permissions")
-      .select("id").eq("id", permission.id).is("revoked_at", null).maybeSingle();
-    if (recheckError || !stillApproved) return respond({ error: "This approval is no longer active. Contact FQ MMA support." }, 403, origin);
-    const { data: signed, error: signedError } = await db.storage.from("fqmma-private").createSignedUrl(media.file_path, 900, { download: true });
-    if (signedError || !signed?.signedUrl) return respond({ error: "The download is temporarily unavailable. Ask staff to send a new link." }, 502, origin);
     return respond({ url: signed.signedUrl, title: media.title, expires_in: 900 }, 200, origin);
   }
 
@@ -277,11 +326,10 @@ Deno.serve(async (req) => {
 
   const { data: media, error: mediaError } = await db
     .from("media")
-    .select("id,title,file_path,storage_bucket,is_published,price")
+    .select("id,title,file_path,storage_bucket,price,price_confirmed")
     .eq("id", mediaId)
-    .eq("is_published", true)
     .maybeSingle();
-  if (mediaError || !media || !media.file_path || media.storage_bucket !== "fqmma-private") {
+  if (mediaError || !media || media.price_confirmed !== true || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") {
     return respond({ error: "This media is not configured for private delivery." }, 404, origin);
   }
 

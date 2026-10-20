@@ -54,7 +54,7 @@
                     empty.value = '';
                     empty.textContent = 'No stream available';
                     select.appendChild(empty);
-                    price.textContent = 'One-time access: $35.00';
+                    price.textContent = 'Pricing will appear when a stream is available.';
                     message.textContent = 'No live-stream event is available yet. No payment will be taken.';
                     return;
                 }
@@ -62,19 +62,19 @@
                     const option = document.createElement('option');
                     option.value = stream.event_id;
                     const dateText = stream.event_date ? ' · ' + formatLongDateTime(stream.event_date) : ' · Date to be announced';
-                    const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: stream.currency || 'USD' }).format((stream.price_cents || 0) / 100);
+                    const amount = Number(stream.price_cents || 0) <= 0 ? 'FREE' : new Intl.NumberFormat('en-US', { style: 'currency', currency: stream.currency || 'USD' }).format(stream.price_cents / 100);
                     option.textContent = (stream.title || 'FQ MMA event') + dateText + ' · ' + amount;
                     select.appendChild(option);
                 }
                 const updatePrice = () => {
                     const selected = availableStreamOptions.find((stream) => stream.event_id === select.value);
                     if (!selected) return;
-                    price.textContent = 'One-time access: ' + new Intl.NumberFormat('en-US', { style: 'currency', currency: selected.currency || 'USD' }).format((selected.price_cents || 0) / 100);
+                    price.textContent = Number(selected.price_cents || 0) <= 0 ? 'Temporary free access' : 'One-time access: ' + new Intl.NumberFormat('en-US', { style: 'currency', currency: selected.currency || 'USD' }).format((selected.price_cents || 0) / 100);
                 };
                 select.onchange = updatePrice;
                 updatePrice();
                 submit.disabled = false;
-                message.textContent = 'Enter your email to continue to secure checkout.';
+                message.textContent = Number(availableStreamOptions.find((stream) => stream.event_id === select.value)?.price_cents || 0) <= 0 ? 'Enter your email to open the free live stream.' : 'Enter your email to continue to secure checkout.';
             } catch (error) {
                 availableStreamOptions = [];
                 submit.disabled = true;
@@ -94,13 +94,14 @@
                 return;
             }
             submit.disabled = true;
-            submit.textContent = 'Preparing secure checkout…';
+            submit.textContent = 'Preparing stream access…';
             message.textContent = '';
             try {
                 const { data, error } = await window.sb.functions.invoke('create-stream-checkout', {
                     body: { event_id: select.value, buyer_email: email, promotion_code: document.getElementById('streamCheckoutPromotionCode').value.trim() }
                 });
                 if (error) throw error;
+                if (data?.free_url && data.free_url.startsWith('https://fq-snrg-mma.com/watch.html?free_event_id=')) { window.location.assign(data.free_url); return; }
                 if (!data?.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
                 window.location.assign(data.url);
             } catch (error) {
@@ -415,6 +416,17 @@
 
         function renderAllContent() {
             document.getElementById('header-ticker-text').textContent = siteData.general.tickerText || 'FQ MMA / TEAM S.N.R.G. MMA • OFFICIAL SITE';
+            const portfolioTitle=document.getElementById('portfolio-main-title');
+            if(portfolioTitle)portfolioTitle.textContent=siteData.general.portfolioTitle||'Sasha’s Portfolio';
+            const portfolioIntro=document.getElementById('portfolio-main-intro');
+            if(portfolioIntro)portfolioIntro.textContent=siteData.general.portfolioIntro||'Explore Sasha’s professional work and send a booking request. Booking requests are reviewed before any payment or deposit is requested.';
+            const portfolioBookingTitle=document.getElementById('portfolio-booking-title');
+            if(portfolioBookingTitle)portfolioBookingTitle.textContent=siteData.general.portfolioBookingTitle||'Request a Sasha Portfolio Booking';
+            const portfolioBookingIntro=document.getElementById('portfolio-booking-intro');
+            if(portfolioBookingIntro)portfolioBookingIntro.textContent=siteData.general.portfolioBookingIntro||'Send a booking request first. The team will review your request and, if approved, email you a payment or deposit link. Submitting a request does not reserve a date or require payment.';
+            const portfolioBanner=document.getElementById('portfolio-banner-image');
+            const portfolioBannerUrl=getSafeHttpUrl(siteData.general.portfolioBannerUrl||'');
+            if(portfolioBanner){portfolioBanner.classList.toggle('hidden',!portfolioBannerUrl);if(portfolioBannerUrl)portfolioBanner.src=portfolioBannerUrl;else portfolioBanner.removeAttribute('src');}
             updateEventCountdown();
 
             // 0. Disciplines
@@ -431,7 +443,7 @@
                 const trainingUrl = getSafeHttpUrl(d.link || '');
                 return `
                     <article class="bg-gray-900/95 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 overflow-hidden flex flex-col justify-between gap-0 ${glowStyle}">
-                        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${disciplineName} training" loading="lazy" referrerpolicy="no-referrer" class="w-full h-48 object-cover bg-black">` : `<div class="h-28 flex items-center justify-center bg-gradient-to-br from-gray-900 to-black border-b border-gray-800"><i class="fa-solid fa-hand-fist text-4xl ${isRed ? 'text-brand-red' : 'text-gray-300'}" aria-hidden="true"></i><span class="sr-only">${disciplineName} photo not added yet</span></div>`}
+                        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${disciplineName} training" loading="lazy" referrerpolicy="no-referrer" class="w-full h-48 object-cover bg-black">` : ''}
                         <div class="p-6 space-y-4 flex flex-col flex-grow justify-between">
                           <div class="space-y-2">
                             <span class="${tagColor} text-xs font-heading font-black px-2.5 py-1 rounded uppercase tracking-wider border inline-block">Combat Discipline</span>
@@ -543,22 +555,21 @@
                     const isRed = index % 2 === 0;
                     const borderColor = isRed ? 'border-brand-red' : 'border-white';
                     const glowStyle = isRed ? 'shadow-neon-red' : 'shadow-neon-white';
-                    // Structured media records may expose a separate photo listing image.
-                    // Uploaded videos are never embedded or played on public listing cards.
+                    // Public listings may show photos, but never embed a public video preview.
+                    // Paid originals stay private and are delivered only after Stripe confirms payment.
                     const safeListing = !!(item.mediaId && item.protectedMedia === true);
-                    const mediaUrl = safeListing ? getSafeHttpUrl(item.image, true) : '';
-                    const itemUrl = safeListing ? getSafeHttpUrl(item.link, true) : '';
                     const isVideo = String(item.category || '').toLowerCase() === 'video';
-                    const media = mediaUrl && !isVideo
-                        ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`
-                        : '';
-                    const action = safeListing
-                        ? (Number(item.priceAmount) > 0
-                            ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'Digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase original · ${escapeHtml(item.price || '')}</button>`
-                            : `<span class="inline-flex rounded-lg border border-gray-600 px-4 py-2 text-xs font-black uppercase text-gray-300">No download included</span>`)
-                        : (itemUrl
-                            ? `<a href="${escapeHtml(itemUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">${item.price && item.price !== 'Free' ? 'Purchase' : 'View media'}</a>`
-                            : '');
+                    const mediaUrl = safeListing && !isVideo ? getSafeHttpUrl(item.image, true) : '';
+                    const itemUrl = safeListing ? getSafeHttpUrl(item.link, true) : '';
+                    const isPaid = Number(item.priceAmount || 0) > 0 && item.priceConfirmed === true;
+                    const downloadUrl = safeListing && !isPaid ? itemUrl : '';
+                    const media = isVideo
+                        ? `<div class="w-full min-h-40 flex flex-col items-center justify-center rounded-lg bg-black text-sm font-bold uppercase tracking-widest text-gray-300 text-center p-4"><span>Video available for purchase and download</span><span class="normal-case tracking-normal font-normal text-xs mt-2">Secure download access is provided after confirmed payment. Videos are not streamed on this page.</span></div>`
+                        : (mediaUrl ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">` : '');
+                    const contactForPrice = !isPaid;
+                    const action = isPaid
+                        ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase digital media</button>`
+                        : `<button type="button" data-contact-pricing="true" data-media-title="${escapeHtml(item.title || 'digital media')}" data-media-collection="${item.collection === 'sasha_portfolio' ? 'photography' : 'MMA media'}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase transition-all ${isRed ? 'bg-brand-red text-white hover:bg-red-700 hover:shadow-neon-red' : 'bg-white text-black hover:bg-gray-200'}">Contact us for pricing</button>`;
                     return `
                         <article class="bg-gray-900/95 p-5 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 space-y-3 ${glowStyle}">
                             ${media}
@@ -569,7 +580,7 @@
                                     ${item.eventTitle ? `<p class="text-xs text-brand-red mt-1">Event: ${escapeHtml(item.eventTitle)}</p>` : ''}
                                     ${item.description ? `<p class="text-sm text-gray-400 mt-2">${escapeHtml(item.description)}</p>` : ''}
                                 </div>
-                                <span class="shrink-0 font-heading font-bold ${isRed ? 'text-brand-neon' : 'text-white'}">${escapeHtml(item.price || 'Free')}</span>
+                                <span class="shrink-0 font-heading font-bold ${isRed ? 'text-brand-neon' : 'text-white'}">${isPaid ? escapeHtml(item.price || 'One-time purchase') : 'Contact us for pricing'}</span>
                             </div>
                             ${action}
                         </article>
@@ -578,8 +589,8 @@
                 if (!items.length) container.innerHTML = `<p class="text-center text-sm text-gray-400 md:col-span-2">${emptyMessage}</p>`;
             };
             // Legacy free-form links stay hidden until they are re-uploaded through the protected media workflow.
-            const mmaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedPreview === true && item.collection !== 'sasha_portfolio');
-            const sashaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedPreview === true && item.collection === 'sasha_portfolio');
+            const mmaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedMedia === true && item.collection !== 'sasha_portfolio');
+            const sashaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedMedia === true && item.collection === 'sasha_portfolio');
             renderMediaCards(mmaMedia, document.getElementById('mma-event-media-container'), 'MMA fight photos and videos will be posted here when available.');
             renderMediaCards(sashaMedia, document.getElementById('sasha-portfolio-container'), 'Sasha’s portfolio photos and videos will be posted here when available.');
 
@@ -1059,9 +1070,13 @@
                 form.reset();
             } catch (error) {
                 console.error('Contact form submission failed.', error);
-                status.textContent = (error?.message?.includes('RESEND_API_KEY') || error?.message?.includes('CONTACT_FROM_EMAIL'))
-                    ? 'The contact form needs its email service configured before it can send. Please try again later.'
-                    : 'We could not send your message right now. Please try again in a few minutes.';
+                const errorMessage = String(error?.message || '');
+                const statusCode = error?.context?.status;
+                status.textContent = (statusCode === 429 || errorMessage.includes('Too many messages'))
+                    ? 'Too many messages have been sent. Please wait before trying again.'
+                    : ((errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('CONTACT_FROM_EMAIL'))
+                        ? 'The contact form needs its email service configured before it can send. Please try again later.'
+                        : 'We could not send your message right now. Please try again in a few minutes.');
                 status.className = 'text-sm text-red-400';
             } finally {
                 button.disabled = false;
@@ -1144,14 +1159,24 @@
             if (data?.content_value) applySiteContent(data.content_value);
             // Keep the public roster, event schedule, and product list connected to their structured tables.
             try {
-                const [fightersResult, eventsResult, scheduleResult, productsResult, streamsResult, mediaResult] = await Promise.all([
+                const structuredResults = await Promise.allSettled([
                     window.sb.from('fighters').select('id,name,nickname,record,bio,image_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.from('events').select('id,title,event_date,venue,main_event,description,flyer_image_url,status,is_published').eq('is_published', true).in('status', ['upcoming','live','completed']).order('event_date', {ascending:true}),
                     window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
                     window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.functions.invoke('list-available-streams'),
-                    window.sb.from('media').select('id,title,category,description,file_url,preview_path,price,is_published,collection,media_destination,event_id').eq('is_published', true).order('created_at', {ascending:false})
+                    window.sb.from('public_media_catalog').select('id,title,category,description,file_url,price,price_confirmed,is_published,collection,media_destination,event_id,created_at').eq('is_published', true).order('created_at', {ascending:false})
                 ]);
+                // A stream-function/network failure must not prevent unrelated content, especially videos, from rendering.
+                const settledValue = (result, label) => {
+                    if (result.status === 'rejected') {
+                        console.warn(label + ' request failed.', result.reason);
+                        return { data: null, error: result.reason };
+                    }
+                    return result.value;
+                };
+                const [fightersResult, eventsResult, scheduleResult, productsResult, streamsResult, mediaResult] =
+                    structuredResults.map((result, index) => settledValue(result, ['fighters','events','schedule','products','live streams','media'][index]));
                 if (fightersResult.error) console.warn('Could not load published fighters from Supabase.', fightersResult.error);
                 else siteData.fighters = (fightersResult.data || []).map(f => ({id:f.id,name:f.name,record:f.record||'',desc:f.bio||f.nickname||'',initials:(f.name||'').substring(0,2).toUpperCase(),image:f.image_url||''}));
                 if (eventsResult.error) console.warn('Could not load events from Supabase.', eventsResult.error);
@@ -1172,11 +1197,11 @@
                 if (mediaResult.error) console.warn('Could not load published media from Supabase.', mediaResult.error);
                 else {
                     const eventTitleMap = new Map((eventsResult.data || []).map(e => [e.id, e.title]));
-                    const databaseMedia = (mediaResult.data || []).filter(m => m.collection !== 'sasha_portfolio' && m.media_destination !== 'portfolio').map(m => ({
+                    const databaseMedia = (mediaResult.data || []).map(m => ({
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
-                        priceAmount: Number(m.price || 0), price: Number(m.price || 0) > 0 ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'No download included',
-                        image: String(m.category || '').toLowerCase() !== 'video' && m.preview_path && m.file_url ? m.file_url : '', link: '',
+                        priceAmount: Number(m.price || 0), priceConfirmed: m.price_confirmed === true, price: Number(m.price || 0) > 0 && m.price_confirmed === true ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Contact us for pricing',
+                        image: String(m.category || '').toLowerCase() !== 'video' && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', livepeerPlaybackId: '', livepeerStatus: 'not_used', previewUrl: '', link: m.file_url || '',
                         protectedMedia: true, description: m.description || ''
                     }));
                     siteData.portfolio = [...databaseMedia, ...siteData.portfolio.filter(p => !p.mediaId)];
@@ -1271,6 +1296,23 @@
             document.getElementById('mediaPurchaseEmail').focus();
         }
         document.addEventListener('click',event=>{
+            const pricingButton=event.target.closest('[data-contact-pricing]');
+            if(pricingButton) {
+                const contactTabButton=document.querySelector('[data-tab="contact"]');
+                if(typeof window.setActiveTab === 'function') window.setActiveTab('contact');
+                else contactTabButton?.click();
+                const category=document.getElementById('contact-category');
+                const message=document.getElementById('contact-message');
+                const title=pricingButton.dataset.mediaTitle || 'digital media';
+                const collection=pricingButton.dataset.mediaCollection || 'media';
+                if(category) category.value=collection === 'photography' ? 'Portfolio / Photography Inquiry' : 'Media Purchase Inquiry';
+                if(message) {
+                    message.value=`Hello, I would like pricing and purchase details for "${title}" (${collection}). Please let me know the available options.\n\n`;
+                    message.focus();
+                }
+                document.getElementById('tab-contact')?.scrollIntoView({behavior:'smooth',block:'start'});
+                return;
+            }
             const button=event.target.closest('[data-buy-media]');
             if(button) openMediaCheckout(button.dataset.buyMedia,button.dataset.mediaTitle);
         });
@@ -1409,7 +1451,16 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            // Always load structured public content after the Supabase client finishes initializing.
+            // The content bridge may run before Supabase is ready and skip its initial load.
             await window.ensureSupabaseClient().catch(() => null);
+            if (window.supabaseReady && window.sb) {
+                try {
+                    await loadSiteContentFromSupabase();
+                } catch (error) {
+                    console.warn('Supabase public content load failed after client initialization.', error);
+                }
+            }
             window.renderAllContent();
             cleanupExpiredPromos();
             if (window.location.hash === '#tab-schedule') {
