@@ -16,7 +16,7 @@ async function checkoutRateLimit(req: Request, email: string, supabaseUrl: strin
   };
   const consume = async (value: string, limit: number, windowSeconds: number): Promise<boolean | null> => {
     try {
-      const response = await fetch(`${supabaseUrl.replace(/\\/$/, "")}/rest/v1/rpc/consume_contact_form_rate_limit`, {
+      const response = await fetch(`${supabaseUrl.endsWith("/") ? supabaseUrl.slice(0, -1) : supabaseUrl}/rest/v1/rpc/consume_contact_form_rate_limit`, {
         method: "POST",
         headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({ p_bucket_hash: await hashBucket(value), p_limit: limit, p_window_seconds: windowSeconds })
