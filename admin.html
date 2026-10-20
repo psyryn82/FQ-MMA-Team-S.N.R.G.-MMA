@@ -561,29 +561,60 @@ $('mediaForm').addEventListener('submit',async e=>{
       }
       const safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),stamp=Date.now(),originalPath=collection+'/'+stamp+'-original-'+safeName;
       const originalBucket='fqmma-private';
-      updateMediaProgress('Uploading original file…',0,'Uploading the original to private storage.');
-      await uploadStorageFileWithProgress(originalBucket,originalPath,file,'Uploading original file…');
-      uploaded.push({bucket:originalBucket,path:originalPath});
       const originalUrl=null;
       if(listingImageFile){
+        updateMediaProgress('Uploading original photo…',0,'Saving the original privately.');
+        await uploadStorageFileWithProgress(originalBucket,originalPath,file,'Uploading original photo…');
+        uploaded.push({bucket:originalBucket,path:originalPath});
         const listingImagePath=collection+'/'+stamp+'-listing-'+listingImageFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
         await uploadStorageFileWithProgress('fqmma-media',listingImagePath,listingImageFile,'Uploading photo listing image…');
         uploaded.push({bucket:'fqmma-media',path:listingImagePath});
         const listingImageUrl=client.storage.from('fqmma-media').getPublicUrl(listingImagePath).data.publicUrl;
         Object.assign(patch,{category:'Photo',file_path:originalPath,file_url:listingImageUrl,preview_path:listingImagePath,storage_bucket:originalBucket});
       }else{
+        // Defer the private-original transfer until the Livepeer session is ready,
+        // then send both copies concurrently to reduce total wall-clock time.
         Object.assign(patch,{category:'Video',file_path:originalPath,file_url:originalUrl,preview_path:null,storage_bucket:originalBucket});
       }
     }
     if(file&&file.type.startsWith('video/')) {
-       updateMediaProgress('Preparing Livepeer video upload…',8,'Creating a secure upload session. Do not close this page.');
-       const {data:session,error:sessionError}=await client.functions.invoke('create-vod-upload',{body:{name:title,file_name:file.name,file_size:file.size,is_paid:price>0&&$('mediaPriceConfirmed').checked}});
-       if(sessionError)throw sessionError;
-       if(!session?.assetId||!session?.playbackId||!session?.uploadUrl)throw new Error('Livepeer did not return a complete upload session. No listing was published.');
-       await new Promise((resolve,reject)=>{
-         const tusUpload=new window.tus.Upload(file,{endpoint:session.uploadUrl,chunkSize:10*1024*1024,retryDelays:[0,1000,3000,5000,10000],metadata:{filename:file.name,filetype:file.type,name:title},onError:reject,onProgress:(sent,total)=>updateMediaProgress('Uploading video to Livepeer…',Math.round(10+(sent/total)*78),Math.round(sent/1048576)+' MB of '+Math.round(total/1048576)+' MB uploaded.'),onSuccess:resolve});
+       updateMediaProgress('Preparing video uploads…',8,'Requesting a fresh Livepeer upload session.');
+       const requestLivepeerSession=async()=>{
+         const {data:session,error:sessionError}=await client.functions.invoke('create-vod-upload',{body:{name,title,file_name:file.name,file_size:file.size,is_paid:price>0&&$('mediaPriceConfirmed').checked}});
+         if(sessionError)throw sessionError;
+         if(!session?.assetId||!session?.playbackId||!session?.uploadUrl)throw new Error('Livepeer did not return a complete upload session. No listing was published.');
+         return session;
+       };
+       let session=await requestLivepeerSession();
+       const uploadToLivepeer=(activeSession)=>new Promise((resolve,reject)=>{
+         const tusUpload=new window.tus.Upload(file,{
+           endpoint:activeSession.uploadUrl,
+           chunkSize:10*1024*1024,
+           retryDelays:[0,1000,3000,5000,10000],
+           metadata:{filename:file.name,filetype:file.type,name:title},
+           onError:error=>{
+             const detail=String(error?.message||error||'Unknown Livepeer upload error');
+             if(/exp.{0,40}claim|timestamp check failed|token.{0,20}expired/i.test(detail)){
+               reject(new Error('Livepeer rejected the upload session token as expired. A fresh session will be requested once.'));
+             }else reject(new Error('Livepeer video upload failed: '+detail));
+           },
+           onProgress:(sent,total)=>updateMediaProgress('Uploading video to Livepeer…',Math.round(10+(sent/total)*78),Math.round(sent/1048576)+' MB of '+Math.round(total/1048576)+' MB uploaded.'),
+           onSuccess:resolve
+         });
          tusUpload.start();
        });
+       // Both full-size copies start together. Keep the private original required
+       // for authorized downloads while Livepeer ingests the streaming copy.
+       uploaded.push({bucket:originalBucket,path:originalPath});
+       const privateOriginalUpload=uploadStorageFileWithProgress(originalBucket,originalPath,file,'Uploading private original…');
+       try {
+         await Promise.all([privateOriginalUpload,uploadToLivepeer(session)]);
+       } catch(firstError) {
+         if(!/fresh session will be requested once/i.test(String(firstError?.message||firstError)))throw firstError;
+         updateMediaProgress('Refreshing Livepeer upload session…',10,'The upload token expired. Retrying with a newly issued session.');
+         session=await requestLivepeerSession();
+         await uploadToLivepeer(session);
+       }
        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:null,preview_path:null,storage_bucket:originalBucket,livepeer_asset_id:session.assetId,livepeer_playback_id:session.playbackId,livepeer_status:'processing',livepeer_playback_policy:price>0&&$('mediaPriceConfirmed').checked?'jwt':'public'});
      }
     updateMediaProgress('Saving listing…',null,'The files are uploaded. Saving the listing details now.');
