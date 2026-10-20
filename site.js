@@ -1464,7 +1464,7 @@
             const requestedTab = tabFromHash(window.location.hash);
             const availableTabs = getPublicTabAvailability();
             const initialTab = requestedTab && availableTabs[requestedTab] ? requestedTab : (availableTabs.schedule ? 'schedule' : (availableTabs.disciplines ? 'disciplines' : 'live'));
-            setActiveTab(initialTab, false);
+            setActiveTab(initialTab, true);
             window.addEventListener('hashchange', () => { const requested = tabFromHash(window.location.hash); if (requested) setActiveTab(requested, false); });
             const ticketResult = new URLSearchParams(window.location.search).get('ticket_purchase');
             if (ticketResult === 'success') showNotification('Checkout returned successfully. Keep your Stripe receipt; the team can verify ticket payment from the admin dashboard.', 'info');
