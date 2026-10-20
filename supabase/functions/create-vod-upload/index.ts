@@ -27,7 +27,7 @@ Deno.serve(async (req: Request) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const livepeerKey = Deno.env.get("LIVEPEER_API_KEY");
   const authorization = req.headers.get("Authorization") || "";
-  const bearer = authorization.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const bearer = authorization.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!supabaseUrl || !anonKey || !serviceKey || !livepeerKey) return respond({ error: "VOD upload service is not fully configured." }, 503, origin);
   if (!bearer || !req.headers.get("apikey")) return respond({ error: "Sign in as authorized staff to upload videos." }, 401, origin);
 
