@@ -24,3 +24,7 @@ verify_jwt = false
 
 [functions.create-ticket-checkout]
 verify_jwt = false
+
+# Paid VOD playback verifies Stripe payment and the purchase ledger server-side.
+[functions.create-protected-media-playback]
+verify_jwt = false
