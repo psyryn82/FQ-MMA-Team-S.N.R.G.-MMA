@@ -825,16 +825,9 @@
 
             <div id="admin-panel-uploads" class="admin-panel-section space-y-4 hidden">
                 <div class="bg-gray-900 p-5 rounded-xl border border-gray-800 space-y-3">
-                    <h4 class="font-heading text-sm font-black uppercase text-brand-red">Upload photos or videos</h4>
-                    <p class="text-xs text-gray-400">Choose a file. It uploads to your Supabase Storage bucket and adds the public URL to the portfolio list.</p>
-                    <form id="media-upload-form" class="space-y-3" onsubmit="uploadSiteMedia(event)">
-                      <input id="media-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" required class="block w-full text-xs text-gray-300 file:mr-3 file:rounded file:border-0 file:bg-red-700 file:px-3 file:py-2 file:text-white">
-                      <label class="block text-xs text-gray-300">Catalog<select id="media-collection" required class="mt-1 w-full rounded border border-gray-700 bg-black p-2 text-xs text-white"><option value="mma_event">MMA Events · live streams & event media</option><option value="sasha_portfolio">Sasha’s Portfolio</option></select></label>
-                      <input id="media-title" type="text" placeholder="Media title" required class="w-full rounded border border-gray-700 bg-black p-2 text-xs text-white">
-                      <input id="media-price" type="number" min="0" max="9999" step="0.01" value="0" placeholder="Price in USD (0 = free)" required class="w-full rounded border border-gray-700 bg-black p-2 text-xs text-white">
-                      <p class="text-[11px] text-gray-500">Free files are public. Paid files are stored privately and delivered with a time-limited download after verified payment.</p>
-                      <div class="flex flex-wrap gap-2"><button class="rounded bg-brand-red px-4 py-2 text-xs font-black uppercase" type="submit">Upload & add to portfolio</button><button type="button" onclick="switchAdminTab('portfolio')" class="rounded bg-gray-700 px-4 py-2 text-xs font-black uppercase">Manage portfolio items</button></div>
-                    </form><p id="media-upload-status" class="text-xs text-gray-400" role="status"></p>
+                    <h4 class="font-heading text-sm font-black uppercase text-brand-red">Media management</h4>
+                    <p class="text-xs text-gray-400">The old embedded uploader is retired. Use the main admin dashboard so originals stay private, prices are confirmed, and downloads are granted only through the approved purchase/access workflow.</p>
+                    <a href="./admin.html" class="inline-flex rounded bg-brand-red px-4 py-2 text-xs font-black uppercase text-white">Open Media & Portfolio Admin ↗</a>
                 </div>
             </div>
             <div id="admin-panel-tickets" class="admin-panel-section space-y-4 hidden">
