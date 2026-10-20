@@ -585,7 +585,7 @@ $('mediaForm').addEventListener('submit',async e=>{
        updateMediaProgress('Uploading private video original…',12,'Saving the video in private storage for purchase downloads. No livestream or public playback asset is created.');
        uploaded.push({bucket:originalBucket,path:originalPath});
        await uploadStorageFileWithProgress(originalBucket,originalPath,file,'Uploading private video original…');
-       Object.assign(patch,{category:'Video',file_path:originalPath,file_url:null,preview_path:null,storage_bucket:originalBucket,livepeer_asset_id:null,livepeer_playback_id:null,livepeer_status:'not_uploaded',livepeer_playback_policy:null});
+       Object.assign(patch,{category:'Video',file_path:originalPath,file_url:null,preview_path:null,storage_bucket:originalBucket,livepeer_asset_id:null,livepeer_playback_id:null,livepeer_status:'not_uploaded',livepeer_playback_policy:'none'});
     }
     updateMediaProgress('Saving listing…',null,'The files are uploaded. Saving the listing details now.');
     if(id){
