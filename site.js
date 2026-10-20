@@ -560,13 +560,13 @@
                     const safeListing = !!(item.mediaId && item.protectedMedia === true);
                     const isVideo = String(item.category || '').toLowerCase() === 'video';
                     const mediaUrl = safeListing && !isVideo ? getSafeHttpUrl(item.image, true) : '';
-                    const videoPreviewUrl = safeListing && isVideo ? getSafeHttpUrl(item.previewUrl || '', true) : '';
+                    const livepeerPlaybackId = safeListing && isVideo && !(Number(item.priceAmount || 0) > 0 && item.priceConfirmed === true) ? String(item.livepeerPlaybackId || '') : '';
                     const itemUrl = safeListing ? getSafeHttpUrl(item.link, true) : '';
                     const isPaid = Number(item.priceAmount || 0) > 0 && item.priceConfirmed === true;
                     const downloadUrl = safeListing && !isPaid ? itemUrl : '';
                     const media = mediaUrl && !isVideo
                         ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`
-                        : (isVideo ? (videoPreviewUrl ? `<video class="w-full max-h-72 rounded-lg bg-black" controls controlsList="nodownload noplaybackrate" disablepictureinpicture playsinline preload="metadata" oncontextmenu="return false" aria-label="${escapeHtml(item.title || 'Video preview')}"><source src="${escapeHtml(videoPreviewUrl)}">Your browser does not support video playback.</video>` : '<div class="w-full h-40 flex flex-col items-center justify-center rounded-lg bg-black text-sm font-bold uppercase tracking-widest text-gray-300 text-center p-4"><span>Video preview coming soon</span><span class="normal-case tracking-normal font-normal text-xs mt-2">The original stays private.</span></div>') : '');
+                        : (isVideo ? (livepeerPlaybackId ? `<iframe class="w-full aspect-video rounded-lg bg-black" src="https://lvpr.tv/?v=${encodeURIComponent(livepeerPlaybackId)}" title="${escapeHtml(item.title || 'Video playback')}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>` : '<div class="w-full min-h-40 flex flex-col items-center justify-center rounded-lg bg-black text-sm font-bold uppercase tracking-widest text-gray-300 text-center p-4"><span>'+ (isPaid ? 'Purchase required' : 'Video processing or playback unavailable') +'</span><span class="normal-case tracking-normal font-normal text-xs mt-2">The original stays private. Direct download links are not displayed.</span></div>') : '');
                     const contactForPrice = !isPaid;
                     const action = isPaid
                         ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase digital media</button>`
@@ -1166,7 +1166,7 @@
                     window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
                     window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.functions.invoke('list-available-streams'),
-                    window.sb.from('media').select('id,title,category,description,file_url,preview_path,price,price_confirmed,is_published,collection,media_destination,event_id').eq('is_published', true).order('created_at', {ascending:false})
+                    window.sb.from('media').select('id,title,category,description,file_url,preview_path,price,price_confirmed,is_published,collection,media_destination,event_id,livepeer_playback_id,livepeer_status').eq('is_published', true).order('created_at', {ascending:false})
                 ]);
                 // A stream-function/network failure must not prevent unrelated content, especially videos, from rendering.
                 const settledValue = (result, label) => {
@@ -1202,7 +1202,7 @@
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
                         priceAmount: Number(m.price || 0), priceConfirmed: m.price_confirmed === true, price: Number(m.price || 0) > 0 && m.price_confirmed === true ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Contact us for pricing',
-                        image: String(m.category || '').toLowerCase() !== 'video' && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', previewUrl: String(m.category || '').toLowerCase() === 'video' && m.preview_path ? window.sb.storage.from('fqmma-media').getPublicUrl(m.preview_path).data.publicUrl : '', link: m.file_url || '',
+                        image: String(m.category || '').toLowerCase() !== 'video' && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', livepeerPlaybackId: Number(m.price || 0) > 0 && m.price_confirmed === true ? '' : (m.livepeer_playback_id || ''), livepeerStatus: m.livepeer_status || '', previewUrl: '', link: m.file_url || '',
                         protectedMedia: true, description: m.description || ''
                     }));
                     siteData.portfolio = [...databaseMedia, ...siteData.portfolio.filter(p => !p.mediaId)];
