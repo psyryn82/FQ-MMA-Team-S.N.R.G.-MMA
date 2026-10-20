@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
   const paidEmail = String(session.customer_details?.email || session.customer_email || "").trim().toLowerCase();
   if (!paidEmail) return respond({ error: "The checkout email could not be verified." }, 403, origin);
   const { data: purchase, error: purchaseError } = await db.from("media_purchases")
-    .select("id,media_id,checkout_session_id,customer_email,payment_status,amount_cents,currency")
+    .select("id,media_id,checkout_session_id,payment_intent_id,customer_email,payment_status,amount_cents,currency")
     .eq("media_id", mediaId).eq("checkout_session_id", session.id)
     .eq("customer_email", paidEmail).eq("payment_status", "paid").maybeSingle();
   if (purchaseError || !purchase || purchase.checkout_session_id !== session.id ||
