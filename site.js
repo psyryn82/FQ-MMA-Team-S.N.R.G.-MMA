@@ -1072,7 +1072,7 @@
                 status.textContent = (statusCode === 429 || errorMessage.includes('Too many messages'))
                     ? 'Too many messages have been sent. Please wait before trying again.'
                     : ((errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('CONTACT_FROM_EMAIL'))
-                        ? 'The contact form needs its email service configured before it can send. Please try again later.'
+                        ? 'The contact form is temporarily unavailable. Please try again later.'
                         : 'We could not send your message right now. Please try again in a few minutes.');
                 status.className = 'text-sm text-red-400';
             } finally {
