@@ -560,13 +560,12 @@
                     const safeListing = !!(item.mediaId && item.protectedMedia === true);
                     const isVideo = String(item.category || '').toLowerCase() === 'video';
                     const mediaUrl = safeListing && !isVideo ? getSafeHttpUrl(item.image, true) : '';
-                    const livepeerPlaybackId = safeListing && isVideo && !(Number(item.priceAmount || 0) > 0 && item.priceConfirmed === true) ? String(item.livepeerPlaybackId || '') : '';
                     const itemUrl = safeListing ? getSafeHttpUrl(item.link, true) : '';
                     const isPaid = Number(item.priceAmount || 0) > 0 && item.priceConfirmed === true;
                     const downloadUrl = safeListing && !isPaid ? itemUrl : '';
-                    const media = mediaUrl && !isVideo
-                        ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">`
-                        : (isVideo ? (livepeerPlaybackId ? `<iframe class="w-full aspect-video rounded-lg bg-black" src="https://lvpr.tv/?v=${encodeURIComponent(livepeerPlaybackId)}" title="${escapeHtml(item.title || 'Video playback')}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>` : '<div class="w-full min-h-40 flex flex-col items-center justify-center rounded-lg bg-black text-sm font-bold uppercase tracking-widest text-gray-300 text-center p-4"><span>'+ (isPaid ? 'Purchase required' : 'Video processing or playback unavailable') +'</span><span class="normal-case tracking-normal font-normal text-xs mt-2">The original stays private. Direct download links are not displayed.</span></div>') : '');
+                    const media = isVideo
+                        ? `<div class="w-full min-h-40 flex flex-col items-center justify-center rounded-lg bg-black text-sm font-bold uppercase tracking-widest text-gray-300 text-center p-4"><span>Video available for purchase and download</span><span class="normal-case tracking-normal font-normal text-xs mt-2">Secure download access is provided after confirmed payment. Videos are not streamed on this page.</span></div>`
+                        : (mediaUrl ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">` : '');
                     const contactForPrice = !isPaid;
                     const action = isPaid
                         ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">Purchase digital media</button>`
@@ -1202,7 +1201,7 @@
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
                         priceAmount: Number(m.price || 0), priceConfirmed: m.price_confirmed === true, price: Number(m.price || 0) > 0 && m.price_confirmed === true ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Contact us for pricing',
-                        image: String(m.category || '').toLowerCase() !== 'video' && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', livepeerPlaybackId: Number(m.price || 0) > 0 && m.price_confirmed === true ? '' : (m.livepeer_playback_id || ''), livepeerStatus: m.livepeer_status || '', previewUrl: '', link: m.file_url || '',
+                        image: String(m.category || '').toLowerCase() !== 'video' && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', livepeerPlaybackId: '', livepeerStatus: 'not_used', previewUrl: '', link: m.file_url || '',
                         protectedMedia: true, description: m.description || ''
                     }));
                     siteData.portfolio = [...databaseMedia, ...siteData.portfolio.filter(p => !p.mediaId)];
