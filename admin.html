@@ -398,7 +398,7 @@ async function loadMedia(){
   const message=$('mediaMessage'), list=$('mediaList');
   list.innerHTML='<p class="muted text-sm">Loading media catalog…</p>';
   const queryResults=await Promise.allSettled([
-    client.from('media').select('id,title,category,description,file_url,file_path,preview_path,storage_bucket,price,price_confirmed,is_published,collection,media_destination,event_id,created_at').order('created_at',{ascending:false}).limit(250),
+    client.from('media').select('id,title,category,description,file_url,file_path,preview_path,storage_bucket,price,price_confirmed,is_published,collection,media_destination,event_id,created_at,livepeer_asset_id,livepeer_playback_id,livepeer_status,livepeer_playback_policy').order('created_at',{ascending:false}).limit(250),
     client.from('events').select('id,title,event_date,status').order('created_at',{ascending:false})
   ]);
   const mediaSettled=queryResults[0], eventSettled=queryResults[1];
