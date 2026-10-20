@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       mode: "payment", payment_method_types: ["card"], customer_email: email,
       success_url: String(media.category || "").toLowerCase() === "video"
-        ? siteUrl + "/media-watch.html?media_id=" + media.id + "&session_id={CHECKOUT_SESSION_ID}"
+        ? siteUrl + "/media-stream.html?media_id=" + media.id + "&session_id={CHECKOUT_SESSION_ID}"
         : siteUrl + "/?media_purchase=success&media_id=" + media.id + "&session_id={CHECKOUT_SESSION_ID}",
       cancel_url: siteUrl + "/?media_purchase=cancelled",
       line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: Math.round(Number(media.price) * 100), product_data: { name: String(media.title).slice(0, 200), description: String(media.description || "FQ MMA digital media").slice(0, 500) } } }],
