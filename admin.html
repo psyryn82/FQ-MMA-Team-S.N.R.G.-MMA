@@ -241,7 +241,7 @@ function organizePanels(){
  Array.from($('modulePanels').children).forEach(el=>{const key=el.id.replace(/^tab-/,'');host.querySelector('#workspace-'+(pg[key]||'website')).appendChild(el)});
  // Keep title, description, price, confirmation, and publish controls beside the upload field.
  // Moving these controls into a separate tab made the upload form appear to have no title or price on mobile.
- const mediaList=$('mediaList');if(mediaList)$('mediaPricingList').appendChild(mediaList);
+ // Keep uploaded media cards in the Media Library panel so they remain visible after loading.
  $('portfolioSettingsForm').addEventListener('submit',e=>{e.preventDefault();$('homeForm').requestSubmit()});
  $('portfolioReload').addEventListener('click',loadHome);
  $('mediaPricingClearButton').addEventListener('click',clearMediaForm);
