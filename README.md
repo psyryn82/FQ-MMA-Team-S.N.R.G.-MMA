@@ -40,8 +40,9 @@ Ticket checkout is deliberately restricted to a Stripe **test secret key** (`sk_
 
 ## Media, uploads, and chat
 
-- **Media & purchase links** publishes public listings with an external purchase URL. The customer completes the purchase through that external provider; this site does not currently fulfill paid downloads.
-- `fqmma-media` is for public team/event imagery.
+- **Fight Media** and **Portfolio Media** publish private photo/video originals for confirmed one-time purchase and authorized download. Uploaded videos do not create Livepeer VODs or play on the website; actual event livestreams are managed separately under Tickets → Livestream Access.
+- The public website reads listing-only fields from `public.public_media_catalog`; private object paths, storage bucket names, and Livepeer asset metadata are not part of that public view.
+- `fqmma-private` is the private original bucket. The matching migration sets its per-file limit to 5 GiB, matching the admin uploader. Public listing imagery belongs in `fqmma-media` only when intentionally approved..
 - `fqmma-private` is an admin-only archive. Private archive uploads are not automatically sold or delivered to customers.
 - Fan chat is for signed-in users. The admin inbox can review messages according to the database RLS policies.
 - Homepage content is stored in `public.site_content` under `content_key = 'public'`. The editor expects JSON containing `general`, `disciplines`, `schedule`, `fighters`, `store`, `portfolio`, and `promos`. Validate JSON before saving.
