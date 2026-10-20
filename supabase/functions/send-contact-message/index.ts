@@ -23,6 +23,67 @@ function escapeHtml(value: string): string {
   })[char] || char);
 }
 
+
+function getSupabaseServiceCredential(): { key: string; legacyJwt: boolean } | null {
+  const legacy = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (legacy) return { key: legacy, legacyJwt: true };
+  const rawSecretKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
+  if (rawSecretKeys) {
+    try {
+      const parsed = JSON.parse(rawSecretKeys);
+      if (typeof parsed.default === "string" && parsed.default) {
+        return { key: parsed.default, legacyJwt: false };
+      }
+    } catch {
+      console.error("SUPABASE_SECRET_KEYS is not valid JSON.");
+    }
+  }
+  return null;
+}
+
+async function hashRateLimitBucket(secret: string, value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`${secret}:${value}`),
+  );
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function consumeRateLimit(
+  supabaseUrl: string,
+  credential: { key: string; legacyJwt: boolean },
+  bucketHash: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<boolean | null> {
+  const headers: Record<string, string> = {
+    "apikey": credential.key,
+    "Content-Type": "application/json",
+  };
+  if (credential.legacyJwt) headers["Authorization"] = `Bearer ${credential.key}`;
+  const baseUrl = supabaseUrl.endsWith("/") ? supabaseUrl.slice(0, -1) : supabaseUrl;
+  try {
+    const response = await fetch(`${baseUrl}/rest/v1/rpc/consume_contact_form_rate_limit`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        p_bucket_hash: bucketHash,
+        p_limit: limit,
+        p_window_seconds: windowSeconds,
+      }),
+    });
+    if (!response.ok) {
+      console.error("Contact rate-limit RPC failed with status:", response.status);
+      return null;
+    }
+    const result = await response.json();
+    return result === true;
+  } catch (error) {
+    console.error("Contact rate-limit RPC request failed:", error);
+    return null;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   if (req.method === "OPTIONS") {
@@ -75,6 +136,41 @@ Deno.serve(async (req: Request) => {
   }
   if (!allowedCategories.has(category)) {
     return jsonResponse(400, { success: false, error: "Invalid inquiry category." }, origin);
+  }
+
+
+  // Server-side limits: 5 requests per IP per 15 minutes, plus 3 per sender email per hour.
+  // Hash identifiers with a server-only secret so raw IPs/emails are never stored in the limiter table.
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceCredential = getSupabaseServiceCredential();
+  if (!supabaseUrl || !serviceCredential) {
+    console.error("Contact rate limiting is unavailable: Supabase URL or server credential is missing.");
+    return jsonResponse(503, { success: false, error: "The contact form is temporarily unavailable. Please try again later." }, origin);
+  }
+
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const ipAddress = req.headers.get("cf-connecting-ip")?.trim()
+    || req.headers.get("x-real-ip")?.trim()
+    || forwardedFor?.split(",").map((part) => part.trim()).filter(Boolean).at(-1)
+    || "";
+  if (ipAddress) {
+    const ipHash = await hashRateLimitBucket(serviceCredential.key, `ip:${ipAddress}`);
+    const ipAllowed = await consumeRateLimit(supabaseUrl, serviceCredential, ipHash, 5, 900);
+    if (ipAllowed === null) {
+      return jsonResponse(503, { success: false, error: "The contact form is temporarily unavailable. Please try again later." }, origin);
+    }
+    if (!ipAllowed) {
+      return jsonResponse(429, { success: false, error: "Too many messages have been sent. Please wait 15 minutes before trying again." }, origin);
+    }
+  }
+
+  const emailHash = await hashRateLimitBucket(serviceCredential.key, `email:${email.toLowerCase()}`);
+  const emailAllowed = await consumeRateLimit(supabaseUrl, serviceCredential, emailHash, 3, 3600);
+  if (emailAllowed === null) {
+    return jsonResponse(503, { success: false, error: "The contact form is temporarily unavailable. Please try again later." }, origin);
+  }
+  if (!emailAllowed) {
+    return jsonResponse(429, { success: false, error: "Too many messages were sent from this email address. Please try again in an hour." }, origin);
   }
 
   const apiKey = Deno.env.get("RESEND_API_KEY");
