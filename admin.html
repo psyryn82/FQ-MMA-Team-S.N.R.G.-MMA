@@ -307,6 +307,7 @@ async function loadEventOverview(){
   const failed=[eventsR,ticketsR,streamsR,ticketSalesR,streamSalesR].find(r=>r.error);
   if(failed)throw failed.error;
   const events=eventsR.data||[],ticketOptions=ticketsR.data||[],streams=streamsR.data||[],ticketSales=ticketSalesR.data||[],streamSales=streamSalesR.data||[];
+  records.events=events;records.event_ticket_options=ticketOptions;records.event_streams=streams;
   const money=(cents,currency='USD')=>new Intl.NumberFormat('en-US',{style:'currency',currency:currency||'USD'}).format((Number(cents)||0)/100);
   const statusBadge=status=>'<span class="inline-flex rounded-full border border-gray-700 px-2 py-1 text-xs '+(String(status).toLowerCase()==='paid'?'text-green-300':'text-amber-200')+'">'+esc(status||'unknown')+'</span>';
   list.innerHTML=events.map(ev=>{
