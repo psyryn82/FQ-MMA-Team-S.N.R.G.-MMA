@@ -17,7 +17,7 @@ function respond(body: unknown, status = 200, origin = "") {
   }});
 }
 function pemToDer(pem: string): Uint8Array<ArrayBuffer> {
-  const body = pem.replace(/-----BEGIN [^-]+-----/g, "").replace(/-----END [^-]+-----/g, "").replace(/\\s/g, "");
+  const body = pem.replace(/-----BEGIN [^-]+-----/g, "").replace(/-----END [^-]+-----/g, "").replace(/\s/g, "");
   const binary = atob(body);
   const bytes = new Uint8Array(new ArrayBuffer(binary.length));
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
@@ -26,7 +26,7 @@ function pemToDer(pem: string): Uint8Array<ArrayBuffer> {
 function base64Url(bytes: Uint8Array): string {
   let binary = "";
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary).replace(/=/g, "").replace(/\\+/g, "-").replace(/\\//g, "_");
+  return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 function base64UrlText(value: string): string { return base64Url(new TextEncoder().encode(value)); }
 
