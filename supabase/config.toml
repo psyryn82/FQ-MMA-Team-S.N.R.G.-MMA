@@ -7,9 +7,9 @@ verify_jwt = false
 [functions.create-checkout-session]
 verify_jwt = true
 
-# Private media URLs require an authenticated user; the function then checks active entitlement.
+# Private media delivery uses one-time tokens for recipients and verifies staff JWTs for admin actions.
 [functions.create-protected-media-url]
-verify_jwt = true
+verify_jwt = false
 
 # These endpoints intentionally implement their own checks (public API key, origin,
 # Stripe payment verification, and server-side purchase-ledger authorization).
