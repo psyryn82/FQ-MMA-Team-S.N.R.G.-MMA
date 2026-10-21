@@ -365,12 +365,23 @@
         function updateEventCountdown() {
             const title = document.getElementById('countdown-event-title');
             const timer = document.getElementById('event-countdown');
+            if (!title || !timer) return;
+
             const now = Date.now();
+            const fallbackEventTime = new Date('2026-11-07T18:00:00-08:00').getTime();
+            const fallbackEventTitle = 'FIGHT QUEST XVI · SATURDAY, NOVEMBER 7, 2026 · DOORS 6 PM · FIGHTS 7 PM';
             const nextEvent = (siteData.schedule || [])
                 .filter(item => item.type === 'event' && item.eventDate && item.status === 'upcoming' && new Date(item.eventDate).getTime() > now)
                 .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())[0];
             const configuredTime = siteData.general.countdownDate ? new Date(siteData.general.countdownDate).getTime() : NaN;
-            const eventTime = nextEvent ? new Date(nextEvent.eventDate).getTime() : configuredTime;
+            const configuredTimeIsFuture = Number.isFinite(configuredTime) && configuredTime > now;
+            const fallbackIsFuture = Number.isFinite(fallbackEventTime) && fallbackEventTime > now;
+            const eventTime = nextEvent
+                ? new Date(nextEvent.eventDate).getTime()
+                : configuredTimeIsFuture ? configuredTime : fallbackIsFuture ? fallbackEventTime : NaN;
+            const configuredHeading = String(siteData.general.countdownTitle || '').trim();
+            const placeholderHeading = !configuredHeading || /coming soon|date tba/i.test(configuredHeading);
+            const usingFightQuestFallback = !nextEvent && fallbackIsFuture && (!configuredTimeIsFuture || placeholderHeading);
 
             if (countdownInterval !== null) {
                 clearInterval(countdownInterval);
@@ -378,27 +389,31 @@
             }
 
             if (!Number.isFinite(eventTime) || eventTime <= now) {
-                title.textContent = 'Date TBA';
+                title.textContent = 'Next fight card announcement coming soon.';
                 timer.classList.add('hidden');
                 return;
             }
 
-            const configuredHeading = String(siteData.general.countdownTitle || '').trim();
             title.textContent = nextEvent
-                ? (configuredHeading && !/coming soon/i.test(configuredHeading) ? configuredHeading : 'Countdown to ' + nextEvent.title + ' · ' + formatLongDate(nextEvent.eventDate))
-                : (configuredHeading || 'Date TBA');
+                ? (placeholderHeading ? 'Countdown to ' + nextEvent.title + ' · ' + formatLongDate(nextEvent.eventDate) : configuredHeading)
+                : (usingFightQuestFallback || placeholderHeading ? fallbackEventTitle : configuredHeading);
             timer.classList.remove('hidden');
 
             const update = () => {
                 const remaining = Math.max(0, eventTime - Date.now());
+                if (remaining === 0) {
+                    timer.classList.add('hidden');
+                    title.textContent = 'Fight Quest XVI · Doors open now · Fights begin at 7 PM.';
+                    if (countdownInterval !== null) {
+                        clearInterval(countdownInterval);
+                        countdownInterval = null;
+                    }
+                    return;
+                }
                 document.getElementById('countdown-days').textContent = String(Math.floor(remaining / 86400000)).padStart(2, '0');
                 document.getElementById('countdown-hours').textContent = String(Math.floor((remaining % 86400000) / 3600000)).padStart(2, '0');
                 document.getElementById('countdown-minutes').textContent = String(Math.floor((remaining % 3600000) / 60000)).padStart(2, '0');
                 document.getElementById('countdown-seconds').textContent = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
-                if (remaining === 0 && countdownInterval !== null) {
-                    clearInterval(countdownInterval);
-                    countdownInterval = null;
-                }
             };
 
             update();
@@ -429,8 +444,24 @@
             const portfolioBookingIntro=document.getElementById('portfolio-booking-intro');
             if(portfolioBookingIntro)portfolioBookingIntro.textContent=siteData.general.portfolioBookingIntro||'Send a booking request first. The team will review your request and, if approved, email you a payment or deposit link. Submitting a request does not reserve a date or require payment.';
             const portfolioBanner=document.getElementById('portfolio-banner-image');
-            const portfolioBannerUrl=getSafeHttpUrl(siteData.general.portfolioBannerUrl||'');
-            if(portfolioBanner){portfolioBanner.classList.toggle('hidden',!portfolioBannerUrl);if(portfolioBannerUrl)portfolioBanner.src=portfolioBannerUrl;else portfolioBanner.removeAttribute('src');}
+            const featuredPortfolioImage=(siteData.portfolio||[]).find(item=>{
+                const category=String(item.category||'').toLowerCase();
+                const imageUrl=getSafeHttpUrl(item.image||item.imageUrl||item.file_url||'');
+                return category!=='video'&&!!imageUrl;
+            });
+            const portfolioBannerUrl=getSafeHttpUrl(siteData.general.portfolioBannerUrl||'')||
+                (featuredPortfolioImage?getSafeHttpUrl(featuredPortfolioImage.image||featuredPortfolioImage.imageUrl||featuredPortfolioImage.file_url||''):'');
+            if(portfolioBanner){
+                if(portfolioBannerUrl){
+                    portfolioBanner.src=portfolioBannerUrl;
+                    portfolioBanner.loading='lazy';
+                    portfolioBanner.decoding='async';
+                    portfolioBanner.classList.remove('hidden');
+                }else{
+                    portfolioBanner.removeAttribute('src');
+                    portfolioBanner.classList.add('hidden');
+                }
+            }
             updateEventCountdown();
 
             // 0. Disciplines
@@ -1004,7 +1035,15 @@
             const details = document.getElementById('booking-details').value.trim();
             const turnstileToken = form.querySelector('[name="cf-turnstile-response"]')?.value || '';
             if (!name || !email || !service || !details) { status.textContent = 'Please complete every required field.'; status.className = 'text-sm text-red-400'; return; }
-            if (!turnstileToken) { status.textContent = 'Please complete the security check before submitting.'; status.className = 'text-sm text-red-400'; return; }
+            if (!turnstileToken) {
+                const widget = form.querySelector('.cf-turnstile[data-sitekey]');
+                const key = widget?.dataset.sitekey || '';
+                status.textContent = /REPLACE_WITH|YOUR_SITE_KEY|PLACEHOLDER/i.test(key)
+                    ? 'Online security verification is not configured yet. Please email fqsnrgmma.info@gmail.com to request a booking.'
+                    : 'Please complete the security check before submitting.';
+                status.className = 'text-sm text-red-400';
+                return;
+            }
             if (!window.sb || !window.supabaseReady) { status.textContent = 'The booking service is temporarily unavailable. Please try again later.'; status.className = 'text-sm text-red-400'; return; }
             button.disabled = true; button.textContent = 'Submitting…'; status.textContent = 'Submitting your request securely…'; status.className = 'text-sm text-gray-400';
             try {
@@ -1037,7 +1076,15 @@
             const turnstileToken = form.querySelector('[name="cf-turnstile-response"]')?.value || '';
 
             if (honeypot) return;
-            if (!turnstileToken) { status.textContent = 'Please complete the security check before sending.'; status.className = 'text-sm text-red-400'; return; }
+            if (!turnstileToken) {
+                const widget = form.querySelector('.cf-turnstile[data-sitekey]');
+                const key = widget?.dataset.sitekey || '';
+                status.textContent = /REPLACE_WITH|YOUR_SITE_KEY|PLACEHOLDER/i.test(key)
+                    ? 'Online security verification is not configured yet. Please email fqsnrgmma.info@gmail.com directly.'
+                    : 'Please complete the security check before sending.';
+                status.className = 'text-sm text-red-400';
+                return;
+            }
             if (!name || !email || !category || !message) {
                 status.textContent = 'Please complete every field before sending.';
                 status.className = 'text-sm text-red-400';
@@ -1453,7 +1500,75 @@
             subscribeLiveChat();
         }
 
+        function setupAccessibleDialogs() {
+            const dialogs = Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"]'));
+            if (!dialogs.length) return;
+            const focusableSelector = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+            let recentTrigger = null;
+            let recentTriggerAt = 0;
+
+            document.addEventListener('click', event => {
+                const target = event.target instanceof Element ? event.target.closest('button,a,[role="button"]') : null;
+                if (target && !target.closest('[role="dialog"]')) {
+                    recentTrigger = target;
+                    recentTriggerAt = Date.now();
+                }
+            }, true);
+
+            const syncDialog = dialog => {
+                const open = !dialog.classList.contains('hidden') && !dialog.hasAttribute('hidden');
+                const wasOpen = dialog.dataset.accessibleOpen === 'true';
+                dialog.setAttribute('aria-hidden', open ? 'false' : 'true');
+                dialog.dataset.accessibleOpen = String(open);
+                if (open && !wasOpen) {
+                    dialog._returnFocus = recentTrigger && Date.now() - recentTriggerAt < 1500 ? recentTrigger : null;
+                    recentTrigger = null;
+                    recentTriggerAt = 0;
+                    if (!dialog.contains(document.activeElement)) {
+                        const items = Array.from(dialog.querySelectorAll(focusableSelector)).filter(el => el.getClientRects().length > 0 && !el.closest('[hidden]'));
+                        if (items[0]) items[0].focus({ preventScroll: true });
+                        else { dialog.setAttribute('tabindex', '-1'); dialog.focus({ preventScroll: true }); }
+                    }
+                } else if (!open && wasOpen) {
+                    if (dialog._returnFocus && dialog._returnFocus.isConnected) dialog._returnFocus.focus({ preventScroll: true });
+                    dialog._returnFocus = null;
+                }
+            };
+
+            dialogs.forEach(dialog => {
+                dialog.setAttribute('aria-hidden', dialog.classList.contains('hidden') || dialog.hasAttribute('hidden') ? 'true' : 'false');
+                dialog.dataset.accessibleOpen = String(!dialog.classList.contains('hidden') && !dialog.hasAttribute('hidden'));
+            });
+            const observer = new MutationObserver(records => {
+                Array.from(new Set(records.map(record => record.target))).forEach(syncDialog);
+            });
+            dialogs.forEach(dialog => observer.observe(dialog, { attributes: true, attributeFilter: ['class', 'hidden'] }));
+
+            document.addEventListener('keydown', event => {
+                const dialog = dialogs.slice().reverse().find(item => item.dataset.accessibleOpen === 'true');
+                if (!dialog) return;
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    const closeButton = dialog.querySelector('[data-dialog-close],button[aria-label*="close" i],button[id$="Close"],button[id$="close"]');
+                    if (closeButton) closeButton.click();
+                    else dialog.classList.add('hidden');
+                    return;
+                }
+                if (event.key !== 'Tab') return;
+                const items = Array.from(dialog.querySelectorAll(focusableSelector)).filter(el => el.getClientRects().length > 0 && !el.closest('[hidden]'));
+                if (!items.length) { event.preventDefault(); dialog.focus(); return; }
+                const first = items[0];
+                const last = items[items.length - 1];
+                if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+                    event.preventDefault(); last.focus();
+                } else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+                    event.preventDefault(); first.focus();
+                }
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
+            setupAccessibleDialogs();
             // Select the requested tab immediately, before any network/Supabase waits, so
             // the static HTML's initial panel cannot flash and then jump to another section.
             const requestedTabAtStart = tabFromHash(window.location.hash);

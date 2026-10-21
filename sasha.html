@@ -179,8 +179,49 @@ footer{background:#fff!important;border-color:var(--line)!important}
     }catch(err){msg.textContent=err.message||'Checkout could not be started. No payment was taken.'}
     finally{button.disabled=false;button.textContent='Continue to secure checkout'}
   });
+  (function setupPortfolioCheckoutAccessibility(){
+    const modal=$('media-checkout-modal');
+    if(!modal)return;
+    const focusableSelector='a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+    let opener=null;
+    modal.setAttribute('aria-hidden','true');
+    modal.dataset.accessibleOpen='false';
+    document.addEventListener('click',event=>{
+      const target=event.target instanceof Element?event.target.closest('button,a,[role="button"]'):null;
+      if(target&&!modal.contains(target))opener=target;
+    },true);
+    const observer=new MutationObserver(()=>{
+      const open=!modal.classList.contains('hidden')&&!modal.hasAttribute('hidden');
+      const wasOpen=modal.dataset.accessibleOpen==='true';
+      modal.setAttribute('aria-hidden',open?'false':'true');
+      modal.dataset.accessibleOpen=String(open);
+      if(open&&!wasOpen&&!modal.contains(document.activeElement))$('media-checkout-email').focus();
+      if(!open&&wasOpen){if(opener&&opener.isConnected)opener.focus({preventScroll:true});opener=null}
+    });
+    observer.observe(modal,{attributes:true,attributeFilter:['class','hidden']});
+    document.addEventListener('keydown',event=>{
+      if(modal.classList.contains('hidden'))return;
+      if(event.key==='Escape'){event.preventDefault();$('media-checkout-close').click();return}
+      if(event.key!=='Tab')return;
+      const items=Array.from(modal.querySelectorAll(focusableSelector)).filter(el=>el.getClientRects().length>0&&!el.closest('[hidden]'));
+      if(!items.length){event.preventDefault();modal.focus();return}
+      if(event.shiftKey&&(document.activeElement===items[0]||!modal.contains(document.activeElement))){event.preventDefault();items[items.length-1].focus()}
+      else if(!event.shiftKey&&(document.activeElement===items[items.length-1]||!modal.contains(document.activeElement))){event.preventDefault();items[0].focus()}
+    });
+  })();
   const eventTarget=new Date('2026-11-07T18:00:00-08:00').getTime();
-  function updateCountdown(){const remaining=Math.max(0,eventTarget-Date.now());const vals={days:Math.floor(remaining/86400000),hours:Math.floor(remaining%86400000/3600000),minutes:Math.floor(remaining%3600000/60000),seconds:Math.floor(remaining%60000/1000)};for(const [key,value] of Object.entries(vals)){const el=$('event-'+key);if(el)el.textContent=String(value).padStart(2,'0')}}
+  function updateCountdown(){
+    const remaining=Math.max(0,eventTarget-Date.now());
+    if(remaining===0){
+      const countdown=$('event-countdown');
+      if(countdown)countdown.hidden=true;
+      const status=$('event-countdown-status');
+      if(status)status.textContent='Fight Quest XVI doors are open. Fights begin at 7 PM.';
+      return;
+    }
+    const vals={days:Math.floor(remaining/86400000),hours:Math.floor(remaining%86400000/3600000),minutes:Math.floor(remaining%3600000/60000),seconds:Math.floor(remaining%60000/1000)};
+    for(const [key,value] of Object.entries(vals)){const el=$('event-'+key);if(el)el.textContent=String(value).padStart(2,'0')}
+  }
   updateCountdown();setInterval(updateCountdown,1000);
   loadPortfolio();
 })();
