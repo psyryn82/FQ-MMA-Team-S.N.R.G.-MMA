@@ -1466,7 +1466,7 @@
             syncPublicTabs();
             const requestedTab = tabFromHash(window.location.hash);
             const availableTabs = getPublicTabAvailability();
-            const initialTab = requestedTab && availableTabs[requestedTab] ? requestedTab : (availableTabs.schedule ? 'schedule' : (availableTabs.disciplines ? 'disciplines' : 'live'));
+            const initialTab = requestedTab && availableTabs[requestedTab] ? requestedTab : 'live';
             setActiveTab(initialTab, true);
             window.addEventListener('hashchange', () => { const requested = tabFromHash(window.location.hash); if (requested) setActiveTab(requested, false); });
             const ticketResult = new URLSearchParams(window.location.search).get('ticket_purchase');
