@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
   if (configError || !config || !config.livepeer_playback_id) return respond({ error: "Paid stream access is not available for that event yet." }, 409, origin);
 
   const { data: event, error: eventError } = await db.from("events")
-    .select("id,title,event_date,venue,status,is_published").eq("id", eventId).maybeSingle();
+    .select("id,title,event_date,venue,main_event,description,status,is_published").eq("id", eventId).maybeSingle();
   if (eventError || !event || event.is_published !== true || !["upcoming", "live"].includes(event.status)) return respond({ error: "Stream checkout is not available for that event." }, 409, origin);
   if (!Number.isInteger(config.stream_price_cents) || config.stream_price_cents < 0) return respond({ error: "Stream price is not configured correctly." }, 503, origin);
   if (config.stream_price_cents === 0) return respond({ free_url: siteUrl + "/watch.html?free_event_id=" + encodeURIComponent(event.id), free: true }, 200, origin);
@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
 
   const stripe = new Stripe(stripeKey, { httpClient: Stripe.createFetchHttpClient() });
   try {
-    const eventDetails = [event.title, event.venue, event.event_date ? new Date(event.event_date).toLocaleString("en-US", { timeZone: "UTC" }) : "Date to be announced"].filter(Boolean).join(" • ");
+    const eventDetails = [event.title, event.venue, event.event_date ? new Date(event.event_date).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "Date to be announced", event.main_event, event.description].filter(Boolean).join(" • ");
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
