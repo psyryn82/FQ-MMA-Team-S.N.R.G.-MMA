@@ -564,7 +564,7 @@
                 `;
             }).join('');
 
-            if (!siteData.fighters.length) rosterContainer.innerHTML = '<p class="text-center text-sm text-gray-400">No athlete profiles have been published yet. Please check back soon.</p>';
+            if (!siteData.fighters.length) rosterContainer.innerHTML = '<div class="md:col-span-2 rounded-xl border border-gray-800 bg-gray-900/90 p-6 text-center"><p class="font-heading text-lg font-black uppercase tracking-wide text-white">Fight Quest XVI athlete profiles are being confirmed</p><p class="mt-2 text-sm text-gray-300">Official fighter profiles will appear here once the event team publishes the confirmed lineup.</p><a href="#contact" class="mt-4 inline-flex rounded-lg bg-brand-red px-5 py-3 text-xs font-black uppercase text-white hover:bg-red-700">Contact the Event Team</a></div>';
 
             // 3. Store
             const storeContainer = document.getElementById('store-container');
