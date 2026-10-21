@@ -5,7 +5,7 @@
         let siteData = {
             general: {
                 tickerText: "FQ MMA / TEAM S.N.R.G. MMA • OFFICIAL SITE",
-                countdownTitle: "Event announcements coming soon.",
+                countdownTitle: "Date TBA",
                 countdownDate: "",
                 paysiteUrl: ""
             },
@@ -26,7 +26,8 @@
             document.getElementById('streamCheckoutModal').classList.add('hidden');
         }
 
-        async function openStreamCheckout() {
+        async function openStreamCheckout(options = {}) {
+            const focusPromo = options.focusPromo === true;
             if (!window.sb || !window.supabaseReady) {
                 showNotification("Live-stream checkout is not available right now. No payment will be taken.", "info");
                 return;
@@ -40,10 +41,10 @@
             select.innerHTML = '';
             const loading = document.createElement('option');
             loading.value = '';
-            loading.textContent = 'Loading available streams…';
+            loading.textContent = 'Choose an event';
             select.appendChild(loading);
             submit.disabled = true;
-            message.textContent = 'Checking available stream events…';
+            message.textContent = 'Checking event availability…';
             try {
                 const { data, error } = await window.sb.functions.invoke('list-available-streams', { body: {} });
                 if (error) throw error;
@@ -54,8 +55,8 @@
                     empty.value = '';
                     empty.textContent = 'No stream available';
                     select.appendChild(empty);
-                    price.textContent = 'Pricing will appear when a stream is available.';
-                    message.textContent = 'No live-stream event is available yet. No payment will be taken.';
+                    price.textContent = 'One-time access is available when an event is listed.';
+                    message.textContent = 'No live-stream event is available right now.';
                     return;
                 }
                 for (const stream of availableStreamOptions) {
@@ -78,7 +79,9 @@
             } catch (error) {
                 availableStreamOptions = [];
                 submit.disabled = true;
-                message.textContent = error?.message || 'Stream listings are unavailable. No payment will be taken.';
+                message.textContent = 'Live-stream checkout is temporarily unavailable. No payment was taken.';
+            } finally {
+                if (focusPromo) document.getElementById('streamCheckoutPromotionCode')?.focus();
             }
         }
 
@@ -176,7 +179,7 @@
         }
 
         function togglePaywallModal() {
-            document.getElementById('paywall-modal').classList.toggle('hidden');
+            openStreamCheckout({ focusPromo: true });
         }
 
         function openAdminModal() {
@@ -198,7 +201,7 @@
         async function activateAdminSession(user) {
             if (!await isCurrentUserAdmin(user)) {
                 await window.sb.auth.signOut();
-                throw new Error('This account is not an authorized administrator. Add its user ID to admin_users in Supabase first.');
+                throw new Error('This account is not authorized to access the administrator dashboard. Contact the site owner.');
             }
             isAdminLoggedIn = true;
             window.__snrgAdminUser = user;
@@ -213,7 +216,7 @@
             e.preventDefault();
             const errorBox = document.getElementById('admin-login-error'); errorBox.textContent = '';
             try {
-                if (!window.supabaseReady) throw new Error('Add your Supabase project URL and publishable/anon key near the top of this HTML file first.');
+                if (!window.supabaseReady) throw new Error('Administrator sign-in is temporarily unavailable. Please try again later.');
                 const email = document.getElementById('admin-email-input').value.trim();
                 const password = document.getElementById('admin-pin-input').value;
                 const { data, error } = await window.sb.auth.signInWithPassword({ email, password });
@@ -232,7 +235,7 @@
             errorBox.className = 'text-xs text-red-400';
             errorBox.textContent = '';
             try {
-                if (!window.supabaseReady) throw new Error('Email sign-in is not configured yet.');
+                if (!window.supabaseReady) throw new Error('Email sign-in is temporarily unavailable. Please try again later.');
                 const emailInput = document.getElementById('admin-email-input');
                 if (!emailInput.reportValidity()) return;
                 const redirectUrl = new URL(window.location.href);
@@ -260,7 +263,7 @@
         async function signInAdminWithGoogle() {
             const errorBox = document.getElementById('admin-login-error'); errorBox.textContent = '';
             try {
-                if (!window.supabaseReady) throw new Error('Add your Supabase project URL and publishable/anon key near the top of this HTML file first.');
+                if (!window.supabaseReady) throw new Error('Administrator sign-in is temporarily unavailable. Please try again later.');
                 const { error } = await window.sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname + '?admin=1' } });
                 if (error) throw error;
             } catch (err) { errorBox.textContent = err.message || 'Google sign-in failed.'; }
@@ -374,7 +377,7 @@
             }
 
             if (!Number.isFinite(eventTime) || eventTime <= now) {
-                title.textContent = 'Event announcements coming soon.';
+                title.textContent = 'Date TBA';
                 timer.classList.add('hidden');
                 return;
             }
@@ -382,7 +385,7 @@
             const configuredHeading = String(siteData.general.countdownTitle || '').trim();
             title.textContent = nextEvent
                 ? (configuredHeading && !/coming soon/i.test(configuredHeading) ? configuredHeading : 'Countdown to ' + nextEvent.title + ' · ' + formatLongDate(nextEvent.eventDate))
-                : (configuredHeading || 'Event announcements coming soon.');
+                : (configuredHeading || 'Date TBA');
             timer.classList.remove('hidden');
 
             const update = () => {
@@ -402,7 +405,7 @@
         }
 
         function verifyPromoCode() {
-            showNotification("Promo code redemption is not configured yet.", "info");
+            openStreamCheckout({ focusPromo: true });
         }
 
         function cleanupExpiredPromos() {
@@ -451,7 +454,7 @@
                             <p class="text-sm text-gray-300 leading-relaxed">${escapeHtml(d.desc || '')}</p>
                           </div>
                           <div class="pt-3 border-t border-gray-800 flex items-center justify-between gap-3">
-                            <span class="text-[11px] text-gray-400 font-mono">${trainingUrl ? 'Official link' : (imageUrl ? 'Training discipline' : 'Photo can be added in admin')}</span>
+                            <span class="text-[11px] text-gray-400 font-mono">${trainingUrl ? 'Official link' : (imageUrl ? 'Training discipline' : 'Training details coming soon')}</span>
                             ${trainingUrl ? `<a href="${escapeHtml(trainingUrl)}" target="_blank" rel="noopener noreferrer" class="${btnStyle} font-heading text-xs font-black uppercase px-4 py-2 rounded-lg shadow whitespace-nowrap">Visit link <i class="fa-solid fa-arrow-right ml-1"></i></a>` : ''}
                           </div>
                         </div>
@@ -593,6 +596,7 @@
             const sashaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedMedia === true && item.collection === 'sasha_portfolio');
             renderMediaCards(mmaMedia, document.getElementById('mma-event-media-container'), 'MMA fight photos and videos will be posted here when available.');
             renderMediaCards(sashaMedia, document.getElementById('sasha-portfolio-container'), 'Sasha’s portfolio photos and videos will be posted here when available.');
+            syncPublicTabs();
 
         }
 
@@ -932,14 +936,41 @@
             window.location.reload();
         }
 
-        function setActiveTab(tabId) {
-
+        const publicTabHashes = { live: 'live-stream', schedule: 'events', fighters: 'roster', disciplines: 'disciplines', store: 'media', portfolio: 'portfolio', contact: 'contact' };
+        function getPublicTabAvailability() {
+            return { live: true, schedule: Array.isArray(siteData.schedule) && siteData.schedule.length > 0, fighters: Array.isArray(siteData.fighters) && siteData.fighters.length > 0, disciplines: Array.isArray(siteData.disciplines) && siteData.disciplines.length > 0, store: Array.isArray(siteData.store) && siteData.store.length > 0, portfolio: Array.isArray(siteData.portfolio) && siteData.portfolio.length > 0, contact: true };
+        }
+        function syncPublicTabs() {
+            const available = getPublicTabAvailability();
+            document.querySelectorAll('header nav .nav-btn').forEach((button) => {
+                const id = button.dataset.tab || (button.id.startsWith('nav-') ? button.id.slice(4) : '');
+                if (!id || !(id in available)) return;
+                button.classList.toggle('hidden', !available[id]);
+                button.setAttribute('aria-hidden', String(!available[id]));
+                button.tabIndex = available[id] ? 0 : -1;
+            });
+            document.querySelectorAll('.tab-content').forEach((panel) => {
+                const id = panel.id.replace(/^tab-/, '');
+                if (id in available && !available[id]) panel.classList.add('hidden');
+            });
+            const active = document.querySelector('.tab-content:not(.hidden)');
+            if (active && available[active.id.replace(/^tab-/, '')] === false) {
+                const next = Object.keys(available).find((id) => available[id]);
+                if (next) setActiveTab(next, false);
+            }
+        }
+        function tabFromHash(hash) {
+            const slug = String(hash || '').replace(/^#/, '');
+            if (slug === 'tab-schedule') return 'schedule';
+            return Object.keys(publicTabHashes).find((id) => publicTabHashes[id] === slug || id === slug) || '';
+        }
+        function setActiveTab(tabId, updateHash = true) {
+            const available = getPublicTabAvailability();
             const activeTab = document.getElementById(`tab-${tabId}`);
-            if (!activeTab) return;
+            if (!activeTab || available[tabId] === false) return;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             activeTab.classList.remove('hidden');
-
-            document.querySelectorAll('.nav-btn').forEach(btn => {
+            document.querySelectorAll('header nav .nav-btn').forEach(btn => {
                 btn.classList.remove('text-brand-red', 'bg-brand-red/10', 'border', 'border-brand-red/30');
                 btn.classList.add('text-gray-300');
                 btn.setAttribute('aria-current', 'false');
@@ -948,8 +979,8 @@
                     btn.classList.add('text-brand-red', 'bg-brand-red/10', 'border', 'border-brand-red/30');
                     btn.setAttribute('aria-current', 'page');
                 }
-
             });
+            if (updateHash && publicTabHashes[tabId]) window.history.replaceState(null, '', window.location.pathname + window.location.search + '#' + publicTabHashes[tabId]);
         }
 
         async function submitBookingRequest(event) {
@@ -967,63 +998,25 @@
             const time = document.getElementById('booking-time').value.trim();
             const location = document.getElementById('booking-location').value.trim();
             const details = document.getElementById('booking-details').value.trim();
-            if (!name || !email || !service || !details) {
-                status.textContent = 'Please complete your name, email, service, and booking details.';
-                status.className = 'text-sm text-red-400';
-                return;
-            }
-            if (name.length > 120 || email.length > 254 || phone.length > 40 || details.length > 3000) {
-                status.textContent = 'Please shorten one or more fields and try again.';
-                status.className = 'text-sm text-red-400';
-                return;
-            }
-            if (!window.sb || !window.supabaseReady) {
-                status.textContent = 'The booking service is temporarily unavailable. Please try again later.';
-                status.className = 'text-sm text-red-400';
-                return;
-            }
-            button.disabled = true;
-            button.textContent = 'Submitting…';
-            status.textContent = 'Submitting your request securely…';
-            status.className = 'text-sm text-gray-400';
+            const turnstileToken = form.querySelector('[name="cf-turnstile-response"]')?.value || '';
+            if (!name || !email || !service || !details) { status.textContent = 'Please complete every required field.'; status.className = 'text-sm text-red-400'; return; }
+            if (!turnstileToken) { status.textContent = 'Please complete the security check before submitting.'; status.className = 'text-sm text-red-400'; return; }
+            if (!window.sb || !window.supabaseReady) { status.textContent = 'The booking service is temporarily unavailable. Please try again later.'; status.className = 'text-sm text-red-400'; return; }
+            button.disabled = true; button.textContent = 'Submitting…'; status.textContent = 'Submitting your request securely…'; status.className = 'text-sm text-gray-400';
             try {
-                const booking = { id: crypto.randomUUID() };
-                const { error } = await window.sb.from('booking_requests').insert({
-                    id: booking.id,
-                    customer_name: name, customer_email: email, customer_phone: phone,
-                    service_type: service, preferred_date: date, preferred_time: time,
-                    location, details, status: 'pending'
-                });
+                const { data, error } = await window.sb.functions.invoke('create-booking-request', { body: { name, email, phone, service, date, time, location, details, company: honeypot, turnstileToken } });
                 if (error) throw error;
-                let notified = false;
-                try {
-                    const notice = await window.sb.functions.invoke('send-contact-message', {
-                        body: {
-                            name, email, category: 'Portfolio / Photography Inquiry',
-                            company: '',
-                            message: 'NEW SASHA PORTFOLIO BOOKING REQUEST\nBooking ID: ' + booking.id +
-                                '\nService: ' + service + '\nPreferred date: ' + (date || 'Not specified') +
-                                '\nPreferred time: ' + (time || 'Not specified') + '\nPhone: ' + (phone || 'Not provided') +
-                                '\nLocation: ' + (location || 'Not specified') + '\n\nDetails:\n' + details
-                        }
-                    });
-                    notified = !notice.error && notice.data?.success === true;
-                } catch (noticeError) {
-                    console.warn('Booking was saved but admin email notification failed.', noticeError);
-                }
-                status.textContent = notified
-                    ? 'Request received! The team has been notified. Your date is not confirmed until the request is approved.'
-                    : 'Your request was saved, but the team notification could not be confirmed. If you need a quick reply, use Contact Us.';
-                status.className = notified ? 'text-sm text-emerald-400' : 'text-sm text-yellow-300';
+                if (!data?.success) throw new Error(data?.error || 'The request could not be submitted.');
+                status.textContent = data.notified ? 'Request received! The team has been notified. Your date is not confirmed until the request is approved.' : 'Your request was received. The team will review it; your date is not confirmed until approved.';
+                status.className = 'text-sm text-emerald-400';
                 form.reset();
+                const widget = form.querySelector('.cf-turnstile');
+                if (widget?.dataset.widgetId) window.turnstile?.reset(widget.dataset.widgetId);
             } catch (error) {
                 console.error('Booking request submission failed.', error);
-                status.textContent = 'We could not submit your request. Please try again in a few minutes.';
+                status.textContent = 'We could not submit your request. Please refresh the security check and try again.';
                 status.className = 'text-sm text-red-400';
-            } finally {
-                button.disabled = false;
-                button.textContent = 'Send booking request';
-            }
+            } finally { button.disabled = false; button.textContent = 'Send booking request'; }
         }
         document.getElementById('booking-request-form')?.addEventListener('submit', submitBookingRequest);
 
@@ -1037,8 +1030,10 @@
             const category = document.getElementById('contact-category').value;
             const message = document.getElementById('contact-message').value.trim();
             const honeypot = document.getElementById('contact-company').value.trim();
+            const turnstileToken = form.querySelector('[name="cf-turnstile-response"]')?.value || '';
 
             if (honeypot) return;
+            if (!turnstileToken) { status.textContent = 'Please complete the security check before sending.'; status.className = 'text-sm text-red-400'; return; }
             if (!name || !email || !category || !message) {
                 status.textContent = 'Please complete every field before sending.';
                 status.className = 'text-sm text-red-400';
@@ -1061,13 +1056,15 @@
             status.className = 'text-sm text-gray-400';
             try {
                 const { data, error } = await window.sb.functions.invoke('send-contact-message', {
-                    body: { name, email, category, message, company: honeypot }
+                    body: { name, email, category, message, company: honeypot, turnstileToken }
                 });
                 if (error) throw error;
                 if (!data?.success) throw new Error(data?.error || 'The message could not be sent.');
                 status.textContent = 'Message sent! The FQ MMA team will be in touch.';
                 status.className = 'text-sm text-emerald-400';
                 form.reset();
+                const widget = form.querySelector('.cf-turnstile');
+                if (widget?.dataset.widgetId) window.turnstile?.reset(widget.dataset.widgetId);
             } catch (error) {
                 console.error('Contact form submission failed.', error);
                 const errorMessage = String(error?.message || '');
@@ -1075,7 +1072,7 @@
                 status.textContent = (statusCode === 429 || errorMessage.includes('Too many messages'))
                     ? 'Too many messages have been sent. Please wait before trying again.'
                     : ((errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('CONTACT_FROM_EMAIL'))
-                        ? 'The contact form needs its email service configured before it can send. Please try again later.'
+                        ? 'The contact form is temporarily unavailable. Please try again later.'
                         : 'We could not send your message right now. Please try again in a few minutes.');
                 status.className = 'text-sm text-red-400';
             } finally {
@@ -1093,14 +1090,14 @@
             e.preventDefault(); const input=document.getElementById('chat-input-text'); const val=input.value.trim();
             if(!val) return;
             try {
-                if(!window.supabaseReady) throw new Error('Live chat is not configured yet.');
+                if(!window.supabaseReady) throw new Error('Live chat is temporarily unavailable. Please try again later.');
                 if(val.length>500) throw new Error('Messages must be 500 characters or fewer.');
                 const {data:{user},error:authError}=await window.sb.auth.getUser();
                 if(authError) throw authError;
                 if(!user) throw new Error('Sign in before sending a chat message.');
                 const {error}=await window.sb.from('chat_messages').insert({user_id:user.id,sender_name:user.user_metadata?.full_name||'Fan',sender_email:user.email||'',message:val,is_admin_reply:false,channel:'fan_chat'});
                 if(error) throw error; input.value='';
-            } catch(err) { showNotification(err.message || 'Could not send chat message.','error'); }
+            } catch(err) { showNotification('Could not send your chat message. Please try again later.','error'); }
         }
         function sendQuickReaction(text) { const input=document.getElementById('chat-input-text'); input.value=text; input.focus(); }
         function appendChatMessage(user, message, colorClass) {
@@ -1394,7 +1391,7 @@
             try { const {data,error}=await window.sb.from('chat_messages').select('id,sender_name,message,created_at').order('created_at',{ascending:false}).limit(100); if(error) throw error;
               if(!data?.length){box.innerHTML='<p class="text-xs text-gray-400">No messages yet.</p>';return;}
               box.innerHTML=data.map(m=>`<div class="flex items-start justify-between gap-3 rounded border border-gray-800 bg-black p-3"><div><div class="text-[10px] text-gray-500">${escapeHtml(m.sender_name||'Fan')} • ${formatLongDateTime(m.created_at)}</div><div class="mt-1 text-xs">${escapeHtml(m.message)}</div></div><button onclick="deleteChatMessage('${m.id}')" class="text-xs text-red-400">Delete</button></div>`).join('');
-            } catch(err) { box.innerHTML=`<p class="text-xs text-red-400">${escapeHtml(err.message)}. Confirm the Supabase setup SQL has been run.</p>`; }
+            } catch(err) { box.textContent='Chat moderation is temporarily unavailable. Refresh the dashboard or contact the site owner.'; }
         }
         async function deleteChatMessage(id) { const {error}=await window.sb.from('chat_messages').delete().eq('id',id); if(error) showNotification(error.message,'error'); else await loadAdminChat(); }
 
@@ -1403,7 +1400,7 @@
             const {data,error}=await window.sb.from('chat_messages').select('sender_name,message,created_at').eq('channel','fan_chat').order('created_at',{ascending:true}).limit(60);
             const feed=document.getElementById('chat-feed'); if(!feed) return;
             if(error) {
-                feed.innerHTML='<div class="text-center text-red-400 text-[10px]">Could not load chat. Run the latest Supabase schema, then try again.</div>';
+                feed.innerHTML='<div class="text-center text-red-400 text-[10px]">Live chat is temporarily unavailable. Please try again later.</div>';
                 console.error('Live chat could not load.',error);
                 return;
             }
@@ -1463,13 +1460,12 @@
             }
             window.renderAllContent();
             cleanupExpiredPromos();
-            if (window.location.hash === '#tab-schedule') {
-                setActiveTab('schedule');
-                document.getElementById('tab-schedule')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } else {
-                // Prefer events when there is public schedule content; otherwise show the populated disciplines section.
-                setActiveTab(siteData.schedule.length ? 'schedule' : 'disciplines');
-            }
+            syncPublicTabs();
+            const requestedTab = tabFromHash(window.location.hash);
+            const availableTabs = getPublicTabAvailability();
+            const initialTab = requestedTab && availableTabs[requestedTab] ? requestedTab : (availableTabs.schedule ? 'schedule' : (availableTabs.disciplines ? 'disciplines' : 'live'));
+            setActiveTab(initialTab, true);
+            window.addEventListener('hashchange', () => { const requested = tabFromHash(window.location.hash); if (requested) setActiveTab(requested, false); });
             const ticketResult = new URLSearchParams(window.location.search).get('ticket_purchase');
             if (ticketResult === 'success') showNotification('Checkout returned successfully. Keep your Stripe receipt; the team can verify ticket payment from the admin dashboard.', 'info');
             else if (ticketResult === 'cancelled') showNotification('Checkout was cancelled. No ticket payment was completed.', 'info');

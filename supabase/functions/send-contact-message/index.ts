@@ -13,6 +13,22 @@ function jsonResponse(status: number, body: Record<string, unknown>, origin?: st
   return new Response(JSON.stringify(body), { status, headers });
 }
 
+async function verifyTurnstile(token: string, action: string, remoteIp: string): Promise<"valid" | "invalid" | "unavailable"> {
+  const secret = Deno.env.get("TURNSTILE_SECRET_KEY");
+  if (!secret) { console.error("Turnstile server verification secret is missing."); return "unavailable"; }
+  if (!token) return "invalid";
+  try {
+    const form = new URLSearchParams({ secret, response: token });
+    if (remoteIp) form.set("remoteip", remoteIp);
+    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", body: form });
+    if (!response.ok) return "unavailable";
+    const result = await response.json();
+    return result.success === true
+      && new Set(["fq-snrg-mma.com", "www.fq-snrg-mma.com"]).has(String(result.hostname || ""))
+      && result.action === action ? "valid" : "invalid";
+  } catch (error) { console.error("Turnstile verification request failed:", error); return "unavailable"; }
+}
+
 function cleanText(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
@@ -111,9 +127,15 @@ Deno.serve(async (req: Request) => {
   }
 
   // Quietly accept honeypot submissions without forwarding spam.
-  if (cleanText(input.company, 200)) {
-    return jsonResponse(200, { success: true }, origin);
-  }
+  if (cleanText(input.company, 200)) return jsonResponse(200, { success: true }, origin);
+
+  const ipAddress = req.headers.get("cf-connecting-ip")?.trim()
+    || req.headers.get("x-real-ip")?.trim()
+    || req.headers.get("x-forwarded-for")?.split(",").map((part) => part.trim()).filter(Boolean).at(-1)
+    || "";
+  const turnstileStatus = await verifyTurnstile(cleanText(input.turnstileToken, 4096), "contact", ipAddress);
+  if (turnstileStatus === "unavailable") return jsonResponse(503, { success: false, error: "The security check is temporarily unavailable. Please try again later." }, origin);
+  if (turnstileStatus !== "valid") return jsonResponse(400, { success: false, error: "Please complete the security check and try again." }, origin);
 
   const name = cleanText(input.name, 120);
   const email = cleanText(input.email, 254);
@@ -148,11 +170,6 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(503, { success: false, error: "The contact form is temporarily unavailable. Please try again later." }, origin);
   }
 
-  const forwardedFor = req.headers.get("x-forwarded-for");
-  const ipAddress = req.headers.get("cf-connecting-ip")?.trim()
-    || req.headers.get("x-real-ip")?.trim()
-    || forwardedFor?.split(",").map((part) => part.trim()).filter(Boolean).at(-1)
-    || "";
   if (ipAddress) {
     const ipHash = await hashRateLimitBucket(serviceCredential.key, `ip:${ipAddress}`);
     const ipAllowed = await consumeRateLimit(supabaseUrl, serviceCredential, ipHash, 5, 900);
