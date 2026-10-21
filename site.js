@@ -102,7 +102,7 @@
             message.textContent = '';
             try {
                 const { data, error } = await window.sb.functions.invoke('create-stream-checkout', {
-                    body: { event_id: select.value, buyer_email: email, promotion_code: document.getElementById('streamCheckoutPromotionCode').value.trim() }
+                    body: { event_id: select.value, buyer_email: email, promotion_code: document.getElementById('streamCheckoutPromotionCode').value.trim(), accepted_terms: document.getElementById('streamCheckoutTermsAccepted').checked }
                 });
                 if (error) throw error;
                 if (data?.free_url && data.free_url.startsWith('https://fq-snrg-mma.com/watch.html?free_event_id=')) { window.location.assign(data.free_url); return; }
@@ -151,7 +151,7 @@
             message.textContent = '';
             try {
                 const { data, error } = await window.sb.functions.invoke('create-ticket-checkout', {
-                    body: { ticket_option_id: document.getElementById('ticketCheckoutOptionId').value, quantity, buyer_email: email, promotion_code: document.getElementById('ticketCheckoutPromotionCode').value.trim() }
+                    body: { ticket_option_id: document.getElementById('ticketCheckoutOptionId').value, quantity, buyer_email: email, promotion_code: document.getElementById('ticketCheckoutPromotionCode').value.trim(), accepted_terms: document.getElementById('ticketCheckoutTermsAccepted').checked }
                 });
                 if (error) throw error;
                 if (!data || !data.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
@@ -1456,7 +1456,7 @@
             try {
                 await window.ensureSupabaseClient();
                 if(!window.supabaseReady||!window.sb) throw new Error('Secure checkout is temporarily unavailable.');
-                const {data,error}=await window.sb.functions.invoke('create-media-checkout',{body:{media_id:Number(document.getElementById('mediaPurchaseId').value),buyer_email:document.getElementById('mediaPurchaseEmail').value.trim()}});
+                const {data,error}=await window.sb.functions.invoke('create-media-checkout',{body:{media_id:Number(document.getElementById('mediaPurchaseId').value),buyer_email:document.getElementById('mediaPurchaseEmail').value.trim(),accepted_terms:document.getElementById('mediaPurchaseTermsAccepted').checked}});
                 if(error) throw error;
                 if(!data?.url||!data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error||'Could not open secure checkout.');
                 window.location.assign(data.url);
