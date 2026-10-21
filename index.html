@@ -389,8 +389,18 @@
     <script src="./turnstile-init.js"></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoaded&render=explicit" async defer></script>
     <style>
-      @media (min-width: 1024px) { header nav[aria-label="Mobile navigation"] { display: none !important; } }
-      @media (max-width: 1023.98px) { header nav[aria-label="Main navigation"] { display: none !important; } }
+      @media (min-width: 1024px) {
+        header nav[aria-label="Main navigation"] { display: flex !important; flex-wrap: wrap; }
+        header nav[aria-label="Mobile navigation"] { display: none !important; }
+      }
+      @media (max-width: 1023.98px) {
+        header nav[aria-label="Main navigation"] { display: none !important; }
+        header nav[aria-label="Mobile navigation"] { display: flex !important; flex-wrap: wrap; overflow: visible; }
+      }
+      #event-countdown.hidden { display: none !important; }
+      #main-content { scroll-margin-top: 9rem; }
+      #sasha-work { scroll-margin-top: 8rem; }
+      .nav-external-link:focus-visible { outline: 3px solid #d9ff6a; outline-offset: 3px; }
       :where(a, button, input, select, textarea, [tabindex]):focus-visible { outline: 3px solid #d9ff6a !important; outline-offset: 3px !important; box-shadow: 0 0 0 2px #07080a !important; }
     </style>
 </head>
@@ -437,6 +447,40 @@
         </div>
     </section>
 
+    <script>
+      (function initFightQuestCountdownImmediately() {
+        const targetTime = Date.parse('2026-11-07T19:00:00-08:00');
+        const timer = document.getElementById('event-countdown');
+        const heading = document.getElementById('countdown-event-title');
+        const fields = {
+          days: document.getElementById('countdown-days'),
+          hours: document.getElementById('countdown-hours'),
+          minutes: document.getElementById('countdown-minutes'),
+          seconds: document.getElementById('countdown-seconds')
+        };
+        if (!timer || !heading || !Number.isFinite(targetTime) || Object.values(fields).some(field => !field)) return;
+        heading.textContent = 'FIGHT QUEST XVI · SATURDAY, NOVEMBER 7, 2026 · DOORS 6 PM · FIGHTS 7 PM';
+        let intervalId = null;
+        const tick = () => {
+          const remaining = targetTime - Date.now();
+          if (remaining <= 0) {
+            timer.classList.add('hidden');
+            heading.textContent = 'Fight Quest XVI is underway or has concluded. Watch for the next fight-card announcement.';
+            if (intervalId !== null) window.clearInterval(intervalId);
+            intervalId = null;
+            return;
+          }
+          timer.classList.remove('hidden');
+          fields.days.textContent = String(Math.floor(remaining / 86400000)).padStart(2, '0');
+          fields.hours.textContent = String(Math.floor((remaining % 86400000) / 3600000)).padStart(2, '0');
+          fields.minutes.textContent = String(Math.floor((remaining % 3600000) / 60000)).padStart(2, '0');
+          fields.seconds.textContent = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
+        };
+        tick();
+        if (targetTime > Date.now()) intervalId = window.setInterval(tick, 1000);
+      })();
+    </script>
+
     <header class="sticky top-0 z-40 glass-panel border-b border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="relative flex flex-col items-center">
@@ -470,6 +514,7 @@
                 <button aria-controls="tab-contact" onclick="setActiveTab('contact')" id="nav-contact" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
                     Contact
                 </button>
+                <a href="/sasha.html" data-sasha-full-portfolio="true" aria-label="Open Sasha’s full photography and videography portfolio" class="nav-external-link inline-flex items-center px-3 py-2 rounded-md font-heading text-xs tracking-wider uppercase font-extrabold text-brand-neon hover:text-white hover:bg-white/5 transition-all border border-gray-700">Full Sasha Portfolio ↗</a>
             </nav>
 
             <nav class="lg:hidden flex items-center gap-2 overflow-x-auto pb-3" aria-label="Mobile navigation">
@@ -480,6 +525,7 @@
                 <button aria-controls="tab-store" onclick="setActiveTab('store')" data-tab="store" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Media</button>
                 <button aria-controls="tab-portfolio" onclick="setActiveTab('portfolio')" data-tab="portfolio" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Sasha Portfolio</button>
                 <button aria-controls="tab-contact" onclick="setActiveTab('contact')" data-tab="contact" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Contact</button>
+                <a href="/sasha.html" data-sasha-full-portfolio="true" aria-label="Open Sasha’s full photography and videography portfolio" class="nav-external-link shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-brand-neon underline">Full Sasha Portfolio ↗</a>
             </nav>
         </div>
     </header>
@@ -780,7 +826,7 @@
 </div>
 
 
-<script src="./site.js?v=20261021-accessibility-countdown" defer></script>
+<script src="./site.js?v=20261021-countdown-nav-empty-state" defer></script>
 
 <div id="mediaPurchaseModal" class="hidden fixed inset-0 z-[130] bg-black/85 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="mediaPurchaseTitle">
   <div class="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-950 p-6">

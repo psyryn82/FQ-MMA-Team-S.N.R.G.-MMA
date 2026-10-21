@@ -368,20 +368,32 @@
             if (!title || !timer) return;
 
             const now = Date.now();
-            const fallbackEventTime = new Date('2026-11-07T18:00:00-08:00').getTime();
+            const fallbackEventTime = new Date('2026-11-07T19:00:00-08:00').getTime();
             const fallbackEventTitle = 'FIGHT QUEST XVI · SATURDAY, NOVEMBER 7, 2026 · DOORS 6 PM · FIGHTS 7 PM';
             const nextEvent = (siteData.schedule || [])
                 .filter(item => item.type === 'event' && item.eventDate && item.status === 'upcoming' && new Date(item.eventDate).getTime() > now)
                 .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())[0];
             const configuredTime = siteData.general.countdownDate ? new Date(siteData.general.countdownDate).getTime() : NaN;
+            const configuredHeading = String(siteData.general.countdownTitle || '').trim();
             const configuredTimeIsFuture = Number.isFinite(configuredTime) && configuredTime > now;
             const fallbackIsFuture = Number.isFinite(fallbackEventTime) && fallbackEventTime > now;
-            const eventTime = nextEvent
-                ? new Date(nextEvent.eventDate).getTime()
-                : configuredTimeIsFuture ? configuredTime : fallbackIsFuture ? fallbackEventTime : NaN;
-            const configuredHeading = String(siteData.general.countdownTitle || '').trim();
+            const doorsTime = new Date('2026-11-07T18:00:00-08:00').getTime();
+            const nextEventTime = nextEvent ? new Date(nextEvent.eventDate).getTime() : NaN;
+            const nextEventIsFightQuest = !!nextEvent && (
+                /fight quest xvi/i.test(String(nextEvent.title || '')) ||
+                (Number.isFinite(nextEventTime) && Math.abs(nextEventTime - doorsTime) < 5 * 60 * 1000)
+            );
+            const configuredIsFightQuest = /fight quest xvi/i.test(configuredHeading) ||
+                (Number.isFinite(configuredTime) && Math.abs(configuredTime - doorsTime) < 5 * 60 * 1000);
+            const usingFightQuestFallback = fallbackIsFuture && (
+                nextEventIsFightQuest || (!nextEvent && configuredIsFightQuest)
+            );
+            const eventTime = usingFightQuestFallback
+                ? fallbackEventTime
+                : nextEvent ? nextEventTime
+                : configuredTimeIsFuture ? configuredTime
+                : fallbackIsFuture ? fallbackEventTime : NaN;
             const placeholderHeading = !configuredHeading || /coming soon|date tba/i.test(configuredHeading);
-            const usingFightQuestFallback = !nextEvent && fallbackIsFuture && (!configuredTimeIsFuture || placeholderHeading);
 
             if (countdownInterval !== null) {
                 clearInterval(countdownInterval);
@@ -394,9 +406,11 @@
                 return;
             }
 
-            title.textContent = nextEvent
-                ? (placeholderHeading ? 'Countdown to ' + nextEvent.title + ' · ' + formatLongDate(nextEvent.eventDate) : configuredHeading)
-                : (usingFightQuestFallback || placeholderHeading ? fallbackEventTitle : configuredHeading);
+            title.textContent = usingFightQuestFallback
+                ? fallbackEventTitle
+                : nextEvent
+                    ? (placeholderHeading ? 'Countdown to ' + nextEvent.title + ' · ' + formatLongDate(nextEvent.eventDate) : configuredHeading)
+                    : (placeholderHeading ? fallbackEventTitle : configuredHeading);
             timer.classList.remove('hidden');
 
             const update = () => {
@@ -494,7 +508,7 @@
                 `;
             }).join('');
 
-            if (!siteData.disciplines.length) discContainer.innerHTML = '<p class="text-center text-sm text-gray-400 md:col-span-2">Discipline information will be posted here when available.</p>';
+            if (!siteData.disciplines.length) discContainer.innerHTML = '<p class="text-center text-sm text-gray-400 md:col-span-2">No training disciplines have been published yet. Please check back soon.</p>';
 
             // 1. Schedule
             const schContainer = document.getElementById('schedule-container');
@@ -521,7 +535,7 @@
                 `;
             }).join('');
 
-            if (!siteData.schedule.length) schContainer.innerHTML = '<p class="text-center text-sm text-gray-400">Event announcements will be posted here when available.</p>';
+            if (!siteData.schedule.length) schContainer.innerHTML = '<p class="text-center text-sm text-gray-400">No events or classes have been published yet. Please check back soon.</p>';
 
             // 2. Fighters
             const rosterContainer = document.getElementById('roster-container');
@@ -550,7 +564,7 @@
                 `;
             }).join('');
 
-            if (!siteData.fighters.length) rosterContainer.innerHTML = '<p class="text-center text-sm text-gray-400">Fighter profiles will be posted here when available.</p>';
+            if (!siteData.fighters.length) rosterContainer.innerHTML = '<p class="text-center text-sm text-gray-400">No athlete profiles have been published yet. Please check back soon.</p>';
 
             // 3. Store
             const storeContainer = document.getElementById('store-container');
@@ -582,7 +596,7 @@
                 if (button && button.dataset.productUrl) openCustomLink(button.dataset.productUrl);
             };
 
-            if (!siteData.store.length) storeContainer.innerHTML = '<p class="text-center text-sm text-gray-400">Official products and purchase links will be posted here when available.</p>';
+            if (!siteData.store.length) storeContainer.innerHTML = '<p class="text-center text-sm text-gray-400">No products have been published yet. Please check back soon.</p>';
 
             // 4. Separate public catalogs: FQ MMA event media and Sasha's portfolio.
             const renderMediaCards = (items, container, emptyMessage) => {
@@ -621,13 +635,13 @@
                         </article>
                     `;
                 }).join('');
-                if (!items.length) container.innerHTML = `<p class="text-center text-sm text-gray-400 md:col-span-2">${emptyMessage}</p>`;
+                if (!Array.isArray(items) || items.length === 0) container.innerHTML = `<p class="text-center text-sm text-gray-400 md:col-span-2">No items have been published yet. ${emptyMessage || 'Please check back soon.'}</p>`;
             };
             // Legacy free-form links stay hidden until they are re-uploaded through the protected media workflow.
             const mmaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedMedia === true && item.collection !== 'sasha_portfolio');
             const sashaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedMedia === true && item.collection === 'sasha_portfolio');
-            renderMediaCards(mmaMedia, document.getElementById('mma-event-media-container'), 'MMA fight photos and videos will be posted here when available.');
-            renderMediaCards(sashaMedia, document.getElementById('sasha-portfolio-container'), 'Sasha’s portfolio photos and videos will be posted here when available.');
+            renderMediaCards(mmaMedia, document.getElementById('mma-event-media-container'), 'New MMA event photos and videos will appear here when available.');
+            renderMediaCards(sashaMedia, document.getElementById('sasha-portfolio-container'), 'New Sasha portfolio photos and videos will appear here when available.');
             syncPublicTabs();
 
         }
@@ -994,9 +1008,50 @@
                 if (next) setActiveTab(next, false);
             }
         }
+        function ensurePublicNavigation() {
+            const tabs = [
+                { id: 'live', label: 'Live Stream' },
+                { id: 'disciplines', label: 'Disciplines' },
+                { id: 'schedule', label: 'Events' },
+                { id: 'fighters', label: 'Roster' },
+                { id: 'store', label: 'Media' },
+                { id: 'portfolio', label: 'Sasha Portfolio' },
+                { id: 'contact', label: 'Contact' }
+            ];
+            document.querySelectorAll('header nav[aria-label="Main navigation"], header nav[aria-label="Mobile navigation"]').forEach(nav => {
+                if (!nav.querySelector('.nav-btn')) {
+                    const mobile = nav.getAttribute('aria-label') === 'Mobile navigation';
+                    nav.innerHTML = tabs.map(tab => mobile
+                        ? '<button type="button" aria-controls="tab-' + tab.id + '" data-tab="' + tab.id + '" onclick="setActiveTab(\'' + tab.id + '\')" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">' + tab.label + '</button>'
+                        : '<button type="button" aria-controls="tab-' + tab.id + '" id="nav-' + tab.id + '" onclick="setActiveTab(\'' + tab.id + '\')" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300">' + tab.label + '</button>'
+                    ).join('');
+                }
+                if (!nav.querySelector('[data-sasha-full-portfolio]')) {
+                    const link = document.createElement('a');
+                    link.href = '/sasha.html';
+                    link.textContent = 'Full Sasha Portfolio ↗';
+                    link.setAttribute('data-sasha-full-portfolio', 'true');
+                    link.setAttribute('aria-label', 'Open Sasha’s full photography and videography portfolio');
+                    link.className = nav.getAttribute('aria-label') === 'Mobile navigation'
+                        ? 'nav-external-link shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-brand-neon underline'
+                        : 'nav-external-link inline-flex items-center px-3 py-2 rounded-md font-heading text-xs tracking-wider uppercase font-extrabold text-brand-neon hover:text-white hover:bg-white/5 transition-all border border-gray-700';
+                    nav.appendChild(link);
+                }
+            });
+        }
+
         function tabFromHash(hash) {
             const slug = String(hash || '').replace(/^#/, '');
-            if (slug === 'tab-schedule') return 'schedule';
+            const aliases = {
+                'main-content': 'live',
+                'live-stream': 'live',
+                'tab-schedule': 'schedule',
+                'schedule': 'schedule',
+                'roster': 'fighters',
+                'media': 'store',
+                'sasha-work': 'portfolio'
+            };
+            if (aliases[slug]) return aliases[slug];
             return Object.keys(publicTabHashes).find((id) => publicTabHashes[id] === slug || id === slug) || '';
         }
         function setActiveTab(tabId, updateHash = true) {
@@ -1016,6 +1071,19 @@
                 }
             });
             if (updateHash && publicTabHashes[tabId]) window.history.replaceState(null, '', window.location.pathname + window.location.search + '#' + publicTabHashes[tabId]);
+            const main = document.getElementById('main-content');
+            if (main && document.activeElement && document.activeElement.closest && document.activeElement.closest('header nav')) {
+                main.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+            }
+        }
+
+        function goToSashaWork() {
+            setActiveTab('portfolio', false);
+            window.history.replaceState(null, '', window.location.pathname + window.location.search + '#sasha-work');
+            window.setTimeout(() => {
+                const work = document.getElementById('sasha-work');
+                if (work) work.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+            }, 60);
         }
 
         async function submitBookingRequest(event) {
@@ -1280,8 +1348,12 @@
                     ? { ...def, ...item, id: item.id ?? def.id, name: def.name, desc: def.desc, link: item.link || '', imageUrl: item.imageUrl || item.image || def.imageUrl }
                     : { ...def, ...item, id: item.id ?? def.id, imageUrl: item.imageUrl || item.image || def.imageUrl };
             });
-            for (const def of DEFAULT_DISCIPLINES) {
-                if (!merged.some(item => disciplineAliasKey(item.name) === disciplineAliasKey(def.name))) merged.push({ ...def });
+            // Preserve an explicitly empty published list so the public page can show its empty state.
+            // For non-empty legacy lists, continue filling missing standard disciplines for compatibility.
+            if (saved.length > 0) {
+                for (const def of DEFAULT_DISCIPLINES) {
+                    if (!merged.some(item => disciplineAliasKey(item.name) === disciplineAliasKey(def.name))) merged.push({ ...def });
+                }
             }
             content.disciplines = merged;
             content.disciplineDefaultsVersion = 2;
@@ -1569,6 +1641,7 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             setupAccessibleDialogs();
+            ensurePublicNavigation();
             // Select the requested tab immediately, before any network/Supabase waits, so
             // the static HTML's initial panel cannot flash and then jump to another section.
             const requestedTabAtStart = tabFromHash(window.location.hash);
@@ -1576,15 +1649,45 @@
 
             // Always load structured public content after the Supabase client finishes initializing.
             // The content bridge may run before Supabase is ready and skip its initial load.
-            await window.ensureSupabaseClient().catch(() => null);
-            if (window.supabaseReady && window.sb) {
-                try {
-                    await loadSiteContentFromSupabase();
-                } catch (error) {
-                    console.warn('Supabase public content load failed after client initialization.', error);
+            const publicLoadPromise = (async () => {
+                await window.ensureSupabaseClient().catch(() => null);
+                if (window.supabaseReady && window.sb) {
+                    try {
+                        await loadSiteContentFromSupabase();
+                    } catch (error) {
+                        console.warn('Supabase public content load failed after client initialization.', error);
+                    }
                 }
+            })();
+            let publicLoadTimeout;
+            const publicLoadStatus = await Promise.race([
+                publicLoadPromise.then(() => 'complete', error => {
+                    console.warn('Public content initialization failed; rendering available fallback content.', error);
+                    return 'failed';
+                }),
+                new Promise(resolve => {
+                    publicLoadTimeout = window.setTimeout(() => resolve('timeout'), 10000);
+                })
+            ]);
+            window.clearTimeout(publicLoadTimeout);
+            if (publicLoadStatus === 'timeout') {
+                console.warn('Public content initialization exceeded 10 seconds; rendering available fallback content.');
+                publicLoadPromise.then(() => {
+                    window.renderAllContent();
+                    cleanupExpiredPromos();
+                    syncPublicTabs();
+                }).catch(error => console.warn('Late public content load failed.', error));
             }
-            window.renderAllContent();
+            try {
+                window.renderAllContent();
+            } catch (error) {
+                console.error('Public content rendering failed; preserving loading fallbacks where possible.', error);
+                document.querySelectorAll('#disciplines-container, #schedule-container, #roster-container, #store-container, #mma-event-media-container, #sasha-portfolio-container').forEach(container => {
+                    if (/^loading\b/i.test(container.textContent.trim())) {
+                        container.innerHTML = '<p class="text-center text-sm text-gray-400">Content could not be loaded right now. Please refresh shortly.</p>';
+                    }
+                });
+            }
             cleanupExpiredPromos();
             syncPublicTabs();
             window.addEventListener('hashchange', () => { const requested = tabFromHash(window.location.hash); if (requested) setActiveTab(requested, false); });
