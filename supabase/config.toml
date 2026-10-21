@@ -32,7 +32,7 @@ verify_jwt = false
 # Public media checkout is rate-limited and validates every item and price server-side.
 [functions.create-media-checkout]
 verify_jwt = false
-# Public forms verify Cloudflare Turnstile server-side before accepting submissions.
+# Public forms use Supabase Edge Functions with server-side rate limits and honeypot checks.
 [functions.send-contact-message]
 verify_jwt = false
 
