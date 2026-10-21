@@ -1150,18 +1150,8 @@
             const category = document.getElementById('contact-category').value;
             const message = document.getElementById('contact-message').value.trim();
             const honeypot = document.getElementById('contact-company').value.trim();
-            const turnstileToken = form.querySelector('[name="cf-turnstile-response"]')?.value || '';
 
             if (honeypot) return;
-            if (!turnstileToken) {
-                const widget = form.querySelector('.cf-turnstile[data-sitekey]');
-                const key = widget?.dataset.sitekey || '';
-                status.textContent = /REPLACE_WITH|YOUR_SITE_KEY|PLACEHOLDER/i.test(key)
-                    ? 'Online security verification is not configured yet. Please email support@fq-snrg-mma.com directly.'
-                    : 'Please complete the security check before sending.';
-                status.className = 'text-sm text-red-400';
-                return;
-            }
             if (!name || !email || !category || !message) {
                 status.textContent = 'Please complete every field before sending.';
                 status.className = 'text-sm text-red-400';
@@ -1184,15 +1174,13 @@
             status.className = 'text-sm text-gray-400';
             try {
                 const { data, error } = await window.sb.functions.invoke('send-contact-message', {
-                    body: { name, email, category, message, company: honeypot, turnstileToken }
+                    body: { name, email, category, message, company: honeypot }
                 });
                 if (error) throw error;
                 if (!data?.success) throw new Error(data?.error || 'The message could not be sent.');
                 status.textContent = 'Message sent! The FQ MMA team will be in touch.';
                 status.className = 'text-sm text-emerald-400';
                 form.reset();
-                const widget = form.querySelector('.cf-turnstile');
-                if (widget?.dataset.widgetId) window.turnstile?.reset(widget.dataset.widgetId);
             } catch (error) {
                 console.error('Contact form submission failed.', error);
                 const errorMessage = String(error?.message || '');
