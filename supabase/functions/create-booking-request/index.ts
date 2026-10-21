@@ -29,24 +29,49 @@ function getServiceCredential(): { key: string; legacyJwt: boolean } | null {
   }
   return null;
 }
-async function verifyTurnstile(token: string, action: string, remoteIp: string): Promise<"valid" | "invalid" | "unavailable"> {
-  const secret = Deno.env.get("TURNSTILE_SECRET_KEY");
-  if (!secret) { console.error("Turnstile server verification secret is missing."); return "unavailable"; }
-  if (!token) return "invalid";
+async function hashRateLimitBucket(secret: string, value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`${secret}:${value}`),
+  );
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function consumeRateLimit(
+  supabaseUrl: string,
+  credential: { key: string; legacyJwt: boolean },
+  bucketHash: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<boolean | null> {
+  const headers: Record<string, string> = {
+    "apikey": credential.key,
+    "Content-Type": "application/json",
+  };
+  if (credential.legacyJwt) headers["Authorization"] = `Bearer ${credential.key}`;
+  const baseUrl = supabaseUrl.endsWith("/") ? supabaseUrl.slice(0, -1) : supabaseUrl;
   try {
-    const form = new URLSearchParams({ secret, response: token });
-    if (remoteIp) form.set("remoteip", remoteIp);
-    const resultResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", body: form });
-    if (!resultResponse.ok) return "unavailable";
-    const result = await resultResponse.json();
-    return result.success === true
-      && new Set(["fq-snrg-mma.com", "www.fq-snrg-mma.com"]).has(String(result.hostname || ""))
-      && result.action === action ? "valid" : "invalid";
+    const response = await fetch(`${baseUrl}/rest/v1/rpc/consume_contact_form_rate_limit`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        p_bucket_hash: bucketHash,
+        p_limit: limit,
+        p_window_seconds: windowSeconds,
+      }),
+    });
+    if (!response.ok) {
+      console.error("Contact rate-limit RPC failed with status:", response.status);
+      return null;
+    }
+    const result = await response.json();
+    return result === true;
   } catch (error) {
-    console.error("Turnstile verification request failed:", error);
-    return "unavailable";
+    console.error("Contact rate-limit RPC request failed:", error);
+    return null;
   }
 }
+
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
@@ -73,20 +98,27 @@ Deno.serve(async (req: Request) => {
     return response(400, { success: false, error: "Please select a valid service." }, origin);
   }
 
-  const remoteIp = req.headers.get("cf-connecting-ip")?.trim()
-    || req.headers.get("x-real-ip")?.trim()
-    || req.headers.get("x-forwarded-for")?.split(",").map((part) => part.trim()).filter(Boolean).at(-1)
-    || "";
-  const turnstileStatus = await verifyTurnstile(clean(input.turnstileToken, 4096), "booking", remoteIp);
-  if (turnstileStatus === "unavailable") return response(503, { success: false, error: "The security check is temporarily unavailable. Please try again later." }, origin);
-  if (turnstileStatus !== "valid") return response(400, { success: false, error: "Please complete the security check and try again." }, origin);
-
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const credential = getServiceCredential();
   if (!supabaseUrl || !credential) {
-    console.error("Booking request storage is unavailable.");
+    console.error("Booking request storage or rate limiting is unavailable.");
     return response(503, { success: false, error: "The booking service is temporarily unavailable. Please try again later." }, origin);
   }
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const ipAddress = req.headers.get("x-real-ip")?.trim()
+    || forwardedFor?.split(",").map((part) => part.trim()).filter(Boolean).at(-1)
+    || "";
+  if (ipAddress) {
+    const ipHash = await hashRateLimitBucket(credential.key, `ip:${ipAddress}`);
+    const ipAllowed = await consumeRateLimit(supabaseUrl, credential, ipHash, 5, 900);
+    if (ipAllowed === null) return response(503, { success: false, error: "The booking service is temporarily unavailable. Please try again later." }, origin);
+    if (!ipAllowed) return response(429, { success: false, error: "Too many booking requests. Please wait 15 minutes before trying again." }, origin);
+  }
+  const emailHash = await hashRateLimitBucket(credential.key, `email:${email.toLowerCase()}`);
+  const emailAllowed = await consumeRateLimit(supabaseUrl, credential, emailHash, 3, 3600);
+  if (emailAllowed === null) return response(503, { success: false, error: "The booking service is temporarily unavailable. Please try again later." }, origin);
+  if (!emailAllowed) return response(429, { success: false, error: "Too many booking requests from this email. Please try again in an hour." }, origin);
+
   const bookingId = crypto.randomUUID();
   const headers: Record<string, string> = { apikey: credential.key, "Content-Type": "application/json", Prefer: "return=minimal" };
   if (credential.legacyJwt) headers.Authorization = `Bearer ${credential.key}`;
@@ -140,7 +172,7 @@ Deno.serve(async (req: Request) => {
       const emailResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from, to: ["fqsnrgmma.info@gmail.com"], reply_to: email, subject, text: message, html })
+        body: JSON.stringify({ from, to: ["support@fq-snrg-mma.com"], reply_to: email, subject, text: message, html })
       });
       notified = emailResponse.ok;
       if (!emailResponse.ok) console.error("Booking email notification failed:", emailResponse.status, await emailResponse.text().catch(() => ""));
