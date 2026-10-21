@@ -613,7 +613,7 @@
                     const isPaid = Number(item.priceAmount || 0) > 0 && item.priceConfirmed === true;
                     const downloadUrl = safeListing && !isPaid ? itemUrl : '';
                     const media = isVideo
-                        ? `<div class="w-full min-h-40 flex flex-col items-center justify-center rounded-lg bg-black text-sm font-bold uppercase tracking-widest text-gray-300 text-center p-4"><span>Secure video available after purchase</span><span class="normal-case tracking-normal font-normal text-xs mt-2">After confirmed payment, eligible videos open in the secure Livepeer player. Playback begins after video processing is complete.</span></div>`
+                        ? (mediaUrl ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Video')} thumbnail" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">` : `<div class="w-full min-h-48 flex flex-col items-center justify-center rounded-lg border border-gray-700 bg-gradient-to-br from-gray-950 via-gray-900 to-red-950 text-center p-6"><i class="fa-solid fa-circle-play text-4xl text-brand-red mb-3" aria-hidden="true"></i><span class="text-xs font-black uppercase tracking-widest text-brand-red">FQ · Team S.N.R.G.</span><span class="font-heading text-2xl font-black uppercase text-white mt-2">${escapeHtml(item.title || 'Fight video')}</span><span class="text-xs uppercase tracking-widest text-gray-400 mt-2">Preview unavailable</span></div>`)
                         : (mediaUrl ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">` : '');
                     const contactForPrice = !isPaid;
                     const action = isPaid
@@ -1303,7 +1303,7 @@
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
                         priceAmount: Number(m.price || 0), priceConfirmed: m.price_confirmed === true, price: Number(m.price || 0) > 0 && m.price_confirmed === true ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Contact us for pricing',
-                        image: String(m.category || '').toLowerCase() !== 'video' && m.file_url ? m.file_url : '', previewPath: m.preview_path || '', livepeerPlaybackId: '', livepeerStatus: 'not_used', previewUrl: '', link: m.file_url || '',
+                        image: (m.file_url && /\.(?:avif|gif|jpe?g|png|webp)(?:[?#].*)?$/i.test(String(m.file_url))) ? m.file_url : '', previewPath: m.preview_path || '', livepeerPlaybackId: '', livepeerStatus: 'not_used', previewUrl: '', link: m.file_url || '',
                         protectedMedia: true, description: m.description || ''
                     }));
                     siteData.portfolio = [...databaseMedia, ...siteData.portfolio.filter(p => !p.mediaId)];
