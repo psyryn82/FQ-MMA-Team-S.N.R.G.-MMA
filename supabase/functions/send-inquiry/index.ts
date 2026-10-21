@@ -36,6 +36,22 @@ if (!RESEND_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 
 // Initialize Supabase client once at module scope
 const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+// Hash contact identifiers before sending them to the rate-limit table.
+async function hashRateLimitBucket(secret: string, value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${secret}:${value}`));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function consumeRateLimit(bucketHash: string, limit: number, windowSeconds: number): Promise<boolean> {
+  const { data, error } = await supabase.rpc("consume_contact_form_rate_limit", {
+    p_bucket_hash: bucketHash,
+    p_limit: limit,
+    p_window_seconds: windowSeconds,
+  });
+  if (error) throw new Error("Contact rate-limit check failed.");
+  return data === true;
+}
+
 
 const departmentConfig: Record<string, { email: string; prefix: string; label: string }> = {
   GEN: { email: "fqsnrgmma.info@gmail.com", prefix: "[GENERAL SUPPORT]", label: "General Support" },
@@ -86,6 +102,32 @@ Deno.serve(async (req) => {
     }
     if (!message || typeof message !== "string" || message.trim().length === 0 || message.length > 5000) {
       return jsonResponse({ error: "Invalid or missing message (max 5000 characters)." }, 400, origin);
+    }
+
+    // Rate-limit by IP (5 per 15 minutes) and sender email (3 per hour).
+    // Identifiers are hashed with the server-only service key; raw values are not stored.
+    try {
+      if (!SUPABASE_SERVICE_ROLE_KEY) {
+        return jsonResponse({ error: "The inquiry form is temporarily unavailable. Please try again later." }, 503, origin);
+      }
+      const forwardedFor = req.headers.get("x-forwarded-for");
+      const ipAddress = req.headers.get("cf-connecting-ip")?.trim()
+        || req.headers.get("x-real-ip")?.trim()
+        || forwardedFor?.split(",").map((part) => part.trim()).filter(Boolean).at(-1)
+        || "";
+      if (ipAddress) {
+        const ipHash = await hashRateLimitBucket(SUPABASE_SERVICE_ROLE_KEY, `ip:${ipAddress}`);
+        if (!await consumeRateLimit(ipHash, 5, 900)) {
+          return jsonResponse({ error: "Too many messages have been sent. Please wait 15 minutes before trying again." }, 429, origin);
+        }
+      }
+      const emailHash = await hashRateLimitBucket(SUPABASE_SERVICE_ROLE_KEY, `email:${email.trim().toLowerCase()}`);
+      if (!await consumeRateLimit(emailHash, 3, 3600)) {
+        return jsonResponse({ error: "Too many messages were sent from this email address. Please try again in an hour." }, 429, origin);
+      }
+    } catch (rateLimitError) {
+      console.error("Inquiry rate limiting unavailable:", rateLimitError);
+      return jsonResponse({ error: "The inquiry form is temporarily unavailable. Please try again later." }, 503, origin);
     }
 
     // 1. Resolve Department Config First
