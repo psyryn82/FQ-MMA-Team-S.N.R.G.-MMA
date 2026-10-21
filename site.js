@@ -1116,7 +1116,7 @@
                 const widget = form.querySelector('.cf-turnstile[data-sitekey]');
                 const key = widget?.dataset.sitekey || '';
                 status.textContent = /REPLACE_WITH|YOUR_SITE_KEY|PLACEHOLDER/i.test(key)
-                    ? 'Online security verification is not configured yet. Please email fqsnrgmma.info@gmail.com to request a booking.'
+                    ? 'Online security verification is not configured yet. Please email support@fq-snrg-mma.com to request a booking.'
                     : 'Please complete the security check before submitting.';
                 status.className = 'text-sm text-red-400';
                 return;
@@ -1157,7 +1157,7 @@
                 const widget = form.querySelector('.cf-turnstile[data-sitekey]');
                 const key = widget?.dataset.sitekey || '';
                 status.textContent = /REPLACE_WITH|YOUR_SITE_KEY|PLACEHOLDER/i.test(key)
-                    ? 'Online security verification is not configured yet. Please email fqsnrgmma.info@gmail.com directly.'
+                    ? 'Online security verification is not configured yet. Please email support@fq-snrg-mma.com directly.'
                     : 'Please complete the security check before sending.';
                 status.className = 'text-sm text-red-400';
                 return;
