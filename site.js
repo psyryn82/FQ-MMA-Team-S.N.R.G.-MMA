@@ -608,7 +608,7 @@
                     // Paid originals stay private and are delivered only after Stripe confirms payment.
                     const safeListing = !!(item.mediaId && item.protectedMedia === true);
                     const isVideo = String(item.category || '').toLowerCase() === 'video';
-                    const mediaUrl = safeListing && !isVideo ? getSafeHttpUrl(item.image, true) : '';
+                    const mediaUrl = safeListing ? getSafeHttpUrl(item.image, true) : '';
                     const itemUrl = safeListing ? getSafeHttpUrl(item.link, true) : '';
                     const isPaid = Number(item.priceAmount || 0) > 0 && item.priceConfirmed === true;
                     const downloadUrl = safeListing && !isPaid ? itemUrl : '';
