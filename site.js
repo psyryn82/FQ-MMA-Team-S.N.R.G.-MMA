@@ -638,8 +638,17 @@
                 if (!Array.isArray(items) || items.length === 0) container.innerHTML = `<p class="text-center text-sm text-gray-400 md:col-span-2">No items have been published yet. ${emptyMessage || 'Please check back soon.'}</p>`;
             };
             // Legacy free-form links stay hidden until they are re-uploaded through the protected media workflow.
-            const mmaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedMedia === true && item.collection !== 'sasha_portfolio');
-            const sashaMedia = siteData.portfolio.filter(item => item.mediaId && item.protectedMedia === true && item.collection === 'sasha_portfolio');
+            const uniqueMediaCards = (items) => {
+                const seen = new Set();
+                return items.filter(item => {
+                    const key = [String(item.title || '').trim().toLowerCase(), String(item.category || '').trim().toLowerCase(), String(item.collection || '').trim().toLowerCase()].join('|');
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+            };
+            const mmaMedia = uniqueMediaCards(siteData.portfolio.filter(item => item.mediaId && item.protectedMedia === true && item.mediaDestination !== 'portfolio' && item.collection !== 'sasha_portfolio'));
+            const sashaMedia = uniqueMediaCards(siteData.portfolio.filter(item => item.mediaId && item.protectedMedia === true && (item.mediaDestination === 'portfolio' || item.collection === 'sasha_portfolio')));
             renderMediaCards(mmaMedia, document.getElementById('mma-event-media-container'), 'New MMA event photos and videos will appear here when available.');
             renderMediaCards(sashaMedia, document.getElementById('sasha-portfolio-container'), 'New Sasha portfolio photos and videos will appear here when available.');
             syncPublicTabs();
