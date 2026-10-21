@@ -23,10 +23,10 @@ Deno.serve(async (req: Request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const resendKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("CONTACT_FROM_EMAIL");
+  const from = "FQ MMA Support <support@fq-snrg-mma.com>";
   const authHeader = req.headers.get("Authorization") || "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
-  if (!supabaseUrl || !serviceKey || !resendKey || !from || !token) return json(503, { error: "Booking email service or authentication is not configured." }, origin);
+  if (!supabaseUrl || !serviceKey || !resendKey || !token) return json(503, { error: "Booking email service or authentication is not configured." }, origin);
 
   const adminDb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: authData, error: authError } = await adminDb.auth.getUser(token);
