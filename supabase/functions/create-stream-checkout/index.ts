@@ -51,11 +51,13 @@ Deno.serve(async (req) => {
   const siteUrl = (Deno.env.get("SITE_URL") || "https://fq-snrg-mma.com").replace(/\/$/, "");
   if (!supabaseUrl || !serviceKey || !stripeKey) return respond({ error: "Stream checkout is not configured." }, 503, origin);
 
-  let input: { event_id?: unknown; buyer_email?: unknown; promotion_code?: unknown };
+  let input: { event_id?: unknown; buyer_email?: unknown; promotion_code?: unknown; accepted_terms?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "Choose a stream event and enter your email." }, 400, origin); }
   const eventId = String(input.event_id || "");
   const email = String(input.buyer_email || "").trim().toLowerCase();
   const promotionCode = String(input.promotion_code || "").trim().toUpperCase();
+  if (input.accepted_terms !== true) return respond({ error: "Please agree to the Terms of Service and Refund Policy before checkout." }, 400, origin);
+  const acceptedAt = new Date().toISOString();
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(eventId)) return respond({ error: "Choose a valid stream event." }, 400, origin);
   if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return respond({ error: "Enter a valid email address for stream access." }, 400, origin);
   const rateLimit = await checkoutRateLimit(req, email, supabaseUrl, serviceKey);
@@ -117,8 +119,8 @@ Deno.serve(async (req) => {
           product_data: { name: event.title + " - Live Stream Access", description: [eventDetails, promotionCode ? "Promotion " + promotionCode : ""].filter(Boolean).join(" • ").slice(0, 500) },
         },
       }],
-      metadata: { purchase_type: "stream", stream_purchase_id: purchase.id, event_id: event.id, event_stream_id: config.id, expected_amount_cents: String(finalAmountCents), ...(redemptionId ? { promotion_redemption_id: redemptionId } : {}) },
-      payment_intent_data: { receipt_email: email, metadata: { purchase_type: "stream", stream_purchase_id: purchase.id, event_id: event.id, event_stream_id: config.id, expected_amount_cents: String(finalAmountCents), ...(redemptionId ? { promotion_redemption_id: redemptionId } : {}) } },
+      metadata: { purchase_type: "stream", stream_purchase_id: purchase.id, event_id: event.id, event_stream_id: config.id, expected_amount_cents: String(finalAmountCents), terms_accepted: "true", terms_version: "2026-10-21", terms_accepted_at: acceptedAt, terms_url: "https://fq-snrg-mma.com/terms.html", refund_policy_url: "https://fq-snrg-mma.com/refunds-outages.html", ...(redemptionId ? { promotion_redemption_id: redemptionId } : {}) },
+      payment_intent_data: { receipt_email: email, metadata: { purchase_type: "stream", stream_purchase_id: purchase.id, event_id: event.id, event_stream_id: config.id, expected_amount_cents: String(finalAmountCents), terms_accepted: "true", terms_version: "2026-10-21", terms_accepted_at: acceptedAt, terms_url: "https://fq-snrg-mma.com/terms.html", refund_policy_url: "https://fq-snrg-mma.com/refunds-outages.html", ...(redemptionId ? { promotion_redemption_id: redemptionId } : {}) } },
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     const { error: updateError } = await db.from("stream_purchases").update({
