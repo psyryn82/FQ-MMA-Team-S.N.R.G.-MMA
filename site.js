@@ -1452,6 +1452,11 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            // Select the requested tab immediately, before any network/Supabase waits, so
+            // the static HTML's initial panel cannot flash and then jump to another section.
+            const requestedTabAtStart = tabFromHash(window.location.hash);
+            setActiveTab(requestedTabAtStart || 'live', true);
+
             // Always load structured public content after the Supabase client finishes initializing.
             // The content bridge may run before Supabase is ready and skip its initial load.
             await window.ensureSupabaseClient().catch(() => null);
@@ -1465,10 +1470,6 @@
             window.renderAllContent();
             cleanupExpiredPromos();
             syncPublicTabs();
-            const requestedTab = tabFromHash(window.location.hash);
-            const availableTabs = getPublicTabAvailability();
-            const initialTab = requestedTab && availableTabs[requestedTab] ? requestedTab : 'live';
-            setActiveTab(initialTab, true);
             window.addEventListener('hashchange', () => { const requested = tabFromHash(window.location.hash); if (requested) setActiveTab(requested, false); });
             const ticketResult = new URLSearchParams(window.location.search).get('ticket_purchase');
             if (ticketResult === 'success') showNotification('Checkout returned successfully. Keep your Stripe receipt; the team can verify ticket payment from the admin dashboard.', 'info');
