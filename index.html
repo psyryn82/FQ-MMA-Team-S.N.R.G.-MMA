@@ -129,6 +129,46 @@
 
 
     <style>
+      /* Make the stream checkout action visibly clickable and accessible. */
+      #streamCheckoutSubmit.btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .6rem;
+        width: 100%;
+        min-height: 52px;
+        padding: 14px 18px;
+        margin-top: 8px;
+        border: 1px solid #ff7777;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #ef4444, #b91c1c);
+        color: #fff;
+        font-size: .95rem;
+        font-weight: 850;
+        letter-spacing: .025em;
+        text-align: center;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(239, 68, 68, .22);
+        transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+      }
+      #streamCheckoutSubmit.btn:hover:not(:disabled) {
+        filter: brightness(1.12);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 28px rgba(239, 68, 68, .34);
+      }
+      #streamCheckoutSubmit.btn:focus-visible {
+        outline: 3px solid #fff;
+        outline-offset: 3px;
+      }
+      #streamCheckoutSubmit.btn:disabled {
+        background: #454a55;
+        border-color: #737b8c;
+        color: #e5e7eb;
+        cursor: not-allowed;
+        box-shadow: none;
+        opacity: .9;
+      }
+
       /* High-contrast stream checkout fields: dark controls with readable text. */
       #streamCheckoutModal .field,
       #streamCheckoutModal input,
