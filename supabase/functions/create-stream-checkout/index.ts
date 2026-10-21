@@ -1,4 +1,4 @@
-// Public one-time Livepeer stream checkout. This remains test-mode-only until end-to-end testing is complete.
+// Public one-time Livepeer stream checkout. Stripe mode is controlled by the server-side STRIPE_SECRET_KEY.
 import Stripe from "https://esm.sh/stripe@17.7.0?target=denonext";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -50,7 +50,6 @@ Deno.serve(async (req) => {
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
   const siteUrl = (Deno.env.get("SITE_URL") || "https://fq-snrg-mma.com").replace(/\/$/, "");
   if (!supabaseUrl || !serviceKey || !stripeKey) return respond({ error: "Stream checkout is not configured." }, 503, origin);
-  if (!stripeKey.startsWith("sk_test_")) return respond({ error: "Stream checkout is locked to Stripe test mode until end-to-end testing is complete." }, 503, origin);
 
   let input: { event_id?: unknown; buyer_email?: unknown; promotion_code?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "Choose a stream event and enter your email." }, 400, origin); }
