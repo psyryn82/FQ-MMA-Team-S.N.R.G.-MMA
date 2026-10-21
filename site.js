@@ -1208,7 +1208,8 @@
                 }
             } catch (e) { console.warn('Supabase structured content could not be loaded; retaining homepage defaults.', e); }
             renderAllContent();
-            if (!window.location.hash) setActiveTab(siteData.schedule.length ? 'schedule' : 'disciplines');
+            // Do not override the visitor's selected/default tab after async content loads.
+            // The DOMContentLoaded handler owns initial navigation; this function only refreshes content.
             if (window.__snrgAdminUser) renderAdminManagerLists();
         }
 
