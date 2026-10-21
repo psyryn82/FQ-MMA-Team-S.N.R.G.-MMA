@@ -64,13 +64,14 @@
                     option.value = stream.event_id;
                     const dateText = stream.event_date ? ' · ' + formatLongDateTime(stream.event_date) : ' · Date to be announced';
                     const amount = Number(stream.price_cents || 0) <= 0 ? 'FREE' : new Intl.NumberFormat('en-US', { style: 'currency', currency: stream.currency || 'USD' }).format(stream.price_cents / 100);
-                    option.textContent = (stream.title || 'FQ MMA event') + dateText + ' · ' + amount;
+                    const detailText = [stream.venue, stream.main_event].filter(Boolean).join(' · ');
+                    option.textContent = (stream.title || 'FQ MMA event') + dateText + ' · ' + amount + ' · Live only, no replay' + (detailText ? ' · ' + detailText : '');
                     select.appendChild(option);
                 }
                 const updatePrice = () => {
                     const selected = availableStreamOptions.find((stream) => stream.event_id === select.value);
                     if (!selected) return;
-                    price.textContent = Number(selected.price_cents || 0) <= 0 ? 'Temporary free access' : 'One-time access: ' + new Intl.NumberFormat('en-US', { style: 'currency', currency: selected.currency || 'USD' }).format((selected.price_cents || 0) / 100);
+                    price.textContent = Number(selected.price_cents || 0) <= 0 ? 'Complimentary live access · Live event only · No replay' : 'Live event only: ' + new Intl.NumberFormat('en-US', { style: 'currency', currency: selected.currency || 'USD' }).format((selected.price_cents || 0) / 100) + ' · No replay';
                 };
                 select.onchange = updatePrice;
                 updatePrice();
@@ -1188,10 +1189,11 @@
                     const canSellStream = ['upcoming', 'live'].includes(e.status);
                     const stream = canSellStream ? availableStreams.find(item => item.event_id === e.id) : null;
                     const streamPrice = stream ? new Intl.NumberFormat('en-US',{style:'currency',currency:stream.currency||'USD'}).format((stream.price_cents||0)/100) : '';
-                    return {id:e.id,type:'event',date:e.event_date?formatLongDate(e.event_date):'Date to be announced',eventDate:e.event_date||'',status:e.status,title:e.title,flyerImage:getSafeHttpUrl(e.flyer_image_url||''),subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:stream?'Live-stream access: '+streamPrice:(canSellStream?'Live-stream access not available yet':'Sales closed'),streamEnabled:!!stream,link:savedEvents.get(String(e.id))?.link || ''};
+                    return {id:e.id,type:'event',date:e.event_date?formatLongDate(e.event_date):'Date to be announced',eventDate:e.event_date||'',status:e.status,title:e.title,flyerImage:getSafeHttpUrl(e.flyer_image_url||''),subtitle:[e.venue,e.main_event,e.description].filter(Boolean).join(' • '),ticketPrice:stream?'Live stream: '+streamPrice+' · LIVE EVENT ONLY · NO REPLAY':(canSellStream?'Live-stream access not available yet':'Sales closed'),streamEnabled:!!stream,link:savedEvents.get(String(e.id))?.link || ''};
                 });
                 const classItems = (scheduleResult.data||[]).map(s => ({id:s.id,type:'class',date:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day_of_week]+' '+String(s.start_time||'').slice(0,5),title:s.title,subtitle:[s.discipline,s.coach,s.location,s.notes].filter(Boolean).join(' • '),link:''}));
-                if (!eventsResult.error && !scheduleResult.error) siteData.schedule = [...eventItems,...classItems];
+                if (!eventsResult.error) siteData.schedule = [...eventItems, ...(scheduleResult.error ? [] : classItems)];
+                else if (!scheduleResult.error) siteData.schedule = [...siteData.schedule.filter(item => item.type === 'event'), ...classItems];
                 if (productsResult.error) console.warn('Could not load products from Supabase.', productsResult.error);
                 else siteData.store = (productsResult.data || []).map(p => ({id:p.id,title:p.name,subtitle:p.description||'Official FQ MMA media',price:new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency||'USD'}).format((p.price_cents||0)/100),link:p.product_url||'',image:p.image_url||''}));
                 if (mediaResult.error) console.warn('Could not load published media from Supabase.', mediaResult.error);

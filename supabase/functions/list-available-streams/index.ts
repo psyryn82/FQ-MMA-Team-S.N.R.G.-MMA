@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
   const ids = configs.map((x) => x.event_id);
   const { data: events, error: eventError } = await db.from("events")
-    .select("id,title,event_date,venue,status,is_published")
+    .select("id,title,event_date,venue,main_event,description,status,is_published")
     .in("id", ids)
     .in("status", ["upcoming", "live"]).eq("is_published", true);
   if (eventError) {
@@ -48,6 +48,8 @@ Deno.serve(async (req) => {
         title: event.title,
         event_date: event.event_date,
         venue: event.venue,
+        main_event: event.main_event,
+        description: event.description,
         price_cents: config.stream_price_cents,
         currency: config.currency,
       };

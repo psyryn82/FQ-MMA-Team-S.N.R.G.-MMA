@@ -108,8 +108,8 @@
 </section>
 <section id="tab-promotions" class="panel p-5 hidden">
 <h2 class="head text-2xl uppercase mb-1">Promotions & promo codes</h2>
-<p class="muted text-sm mb-4">Create discount codes and complimentary-access offers. Ticket and stream checkout functions now include promotion-redemption handling, but the payment and entitlement flows have not been end-to-end tested. Ticket checkout remains test-mode-only, and stream checkout remains unavailable until its stream configuration is enabled and tested.</p>
-<div class="border border-yellow-900 rounded-lg p-4 text-sm text-yellow-200 mb-5">Status: checkout code now supports promotion redemption, but it is not yet verified end-to-end. Do not advertise promotion codes or complimentary-access offers until ticket checkout, stream checkout, webhook finalization, and free-access fulfillment have been tested.</div>
+<p class="muted text-sm mb-4">Live-stream checkout is configured for Fight Quest XVI at $35.00 in Stripe live mode, and paid-only Livepeer playback verification is enabled. Checkout mode is controlled by the server-side Stripe secret. Ticket sales and promo/complimentary-access offers should be verified separately before they are advertised as ready.</p>
+<div class="border border-yellow-900 rounded-lg p-4 text-sm text-yellow-200 mb-5">Promo-redemption database functions and checkout handling are configured. There are currently no active, unexpired promo codes, so customers cannot redeem a code until one is created and activated below. Never complete a live payment just to test a code.</div>
 <form id="promotionForm" class="grid md:grid-cols-2 gap-4">
 <input id="promotionId" type="hidden">
 <label class="block text-sm">Promotion name<input id="promotionName" class="field" maxlength="120" required placeholder="Sponsor guest access"></label>

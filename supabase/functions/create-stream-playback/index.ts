@@ -34,17 +34,20 @@ Deno.serve(async (req: Request) => {
   const encodedPrivate = Deno.env.get("LIVEPEER_SIGNING_PRIVATE_KEY");
   const encodedPublic = Deno.env.get("LIVEPEER_SIGNING_PUBLIC_KEY");
   if (!supabaseUrl || !serviceKey || !stripeKey || !encodedPrivate || !encodedPublic) return respond({ error: "Livepeer playback is not configured." }, 503, origin);
-  if (!stripeKey.startsWith("sk_test_")) return respond({ error: "Stream playback remains locked to Stripe test mode until the end-to-end flow is verified." }, 503, origin);
+  const stripeIsLive = stripeKey.startsWith("sk_live_");
+  if (!stripeIsLive && !stripeKey.startsWith("sk_test_")) return respond({ error: "Stripe is not configured with a valid secret key." }, 503, origin);
 
   let input: { session_id?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "A paid checkout session is required." }, 400, origin); }
   const sessionId = String(input.session_id || "");
-  if (!/^cs_test_[A-Za-z0-9_]+$/.test(sessionId)) return respond({ error: "Invalid checkout session." }, 400, origin);
+  if (!/^cs_(test|live)_[A-Za-z0-9_]+$/.test(sessionId)) return respond({ error: "Invalid checkout session." }, 400, origin);
+  if ((stripeIsLive && !sessionId.startsWith("cs_live_")) || (!stripeIsLive && !sessionId.startsWith("cs_test_"))) return respond({ error: "Checkout session does not match the configured Stripe mode." }, 400, origin);
 
   const stripe = new Stripe(stripeKey, { httpClient: Stripe.createFetchHttpClient() });
   let session: Stripe.Checkout.Session;
   try { session = await stripe.checkout.sessions.retrieve(sessionId); }
   catch { return respond({ error: "Could not verify that checkout session." }, 404, origin); }
+  if (session.livemode !== stripeIsLive) return respond({ error: "Checkout session does not match the configured Stripe mode." }, 403, origin);
   if (session.mode !== "payment" || session.payment_status !== "paid" || session.metadata?.purchase_type !== "stream" || !session.metadata.stream_purchase_id) return respond({ error: "A completed, paid stream purchase is required." }, 403, origin);
 
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
