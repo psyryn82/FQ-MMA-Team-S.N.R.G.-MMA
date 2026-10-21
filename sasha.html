@@ -102,7 +102,7 @@ footer{background:#fff!important;border-color:var(--line)!important}
       : (imageUrl?'<img class="w-full aspect-[4/3] object-cover bg-black" loading="lazy" src="'+safeText(imageUrl)+'" alt="'+safeText(m.title||'Portfolio photo')+'">':'<div class="w-full aspect-[4/3] flex items-center justify-center bg-black text-zinc-300 font-bold uppercase tracking-widest">Photo</div>');
     const price=Number(m.price||0),isPaid=price>0&&m.price_confirmed===true;
     const priceText=isPaid?'One-time price: '+money(price):'Contact us for pricing';
-    const action=isPaid?'<button type="button" class="btn mt-3 w-full" data-buy-media="'+Number(m.id)+'" data-media-title="'+safeText(m.title||'digital media')+'" data-media-price="'+price.toFixed(2)+'">Purchase digital media</button>':'<a class="btn mt-3 inline-flex w-full justify-center" href="mailto:fqsnrgmma.info@gmail.com?subject='+encodeURIComponent('Media pricing inquiry: '+(m.title||'digital media'))+'">Contact us for pricing</a>';
+    const action=isPaid?'<button type="button" class="btn mt-3 w-full" data-buy-media="'+Number(m.id)+'" data-media-title="'+safeText(m.title||'digital media')+'" data-media-price="'+price.toFixed(2)+'">Purchase digital media</button>':'<a class="btn mt-3 inline-flex w-full justify-center" href="mailto:sashaluw98@yahoo.com?subject='+encodeURIComponent('Media pricing inquiry: '+(m.title||'digital media'))+'">Contact us for pricing</a>';
     return '<article class="panel overflow-hidden">'+mediaVisual+'<div class="p-4"><h3 class="font-bold">'+safeText(m.title||'Portfolio item')+'</h3>'+(m.description?'<p class="muted text-sm mt-2">'+safeText(m.description)+'</p>':'')+'<p class="accent text-sm font-bold mt-3">'+priceText+'</p>'+action+'</div></article>';
   }
   function openMediaCheckout(id,title,price){
@@ -160,7 +160,7 @@ footer{background:#fff!important;border-color:var(--line)!important}
         notificationSent=true;
       }catch(err){console.warn('Booking saved; notification could not be confirmed.',err)}
       $('booking-form').reset();
-      msg.textContent=notificationSent?'Request received. The team will review it and contact you if approved. No payment has been taken.':'Your request was saved, but email notification could not be confirmed. The team can still review it in the booking dashboard. If urgent, email fqsnrgmma.info@gmail.com.';
+      msg.textContent=notificationSent?'Request received. The team will review it and contact you if approved. No payment has been taken.':'Your request was saved, but email notification could not be confirmed. The team can still review it in the booking dashboard. If urgent, email sashaluw98@yahoo.com.';
     }catch(err){msg.textContent='We could not submit your request. Please try again later.';console.error('Sasha booking submission failed.',err)}
     finally{btn.disabled=false;btn.textContent='Send booking request'}
   });
