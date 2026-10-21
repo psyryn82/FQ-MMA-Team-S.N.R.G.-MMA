@@ -1275,7 +1275,7 @@
                     window.sb.from('training_schedule').select('id,title,discipline,day_of_week,start_time,end_time,coach,location,notes,is_published').eq('is_published', true).order('day_of_week').order('start_time'),
                     window.sb.from('products').select('id,name,description,image_url,price_cents,currency,product_url,is_published').eq('is_published', true).order('created_at', {ascending:false}),
                     window.sb.functions.invoke('list-available-streams'),
-                    window.sb.from('public_media_catalog').select('id,title,category,description,file_url,price,price_confirmed,is_published,collection,media_destination,event_id,created_at').eq('is_published', true).order('created_at', {ascending:false})
+                    window.sb.from('public_media_catalog').select('id,title,category,description,file_url,price,price_confirmed,is_published,collection,media_destination,event_id,created_at,preview_path').eq('is_published', true).order('created_at', {ascending:false})
                 ]);
                 // A stream-function/network failure must not prevent unrelated content, especially videos, from rendering.
                 const settledValue = (result, label) => {
@@ -1311,8 +1311,8 @@
                     const databaseMedia = (mediaResult.data || []).map(m => ({
                         id: 'media-' + m.id, mediaId: m.id, title: m.title, category: m.category || 'Photo',
                         collection: m.collection || 'mma_event', mediaDestination: m.media_destination || 'site', eventId: m.event_id || null, eventTitle: m.event_id ? (eventTitleMap.get(m.event_id) || '') : '',
-                        priceAmount: Number(m.price || 0), priceConfirmed: m.price_confirmed === true, price: Number(m.price || 0) > 0 && m.price_confirmed === true ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Contact us for pricing',
-                        image: (m.file_url && /\.(?:avif|gif|jpe?g|png|webp)(?:[?#].*)?$/i.test(String(m.file_url))) ? m.file_url : '', previewPath: m.preview_path || '', livepeerPlaybackId: '', livepeerStatus: 'not_used', previewUrl: '', link: m.file_url || '',
+                        priceAmount: Number(m.price || 0), priceConfirmed: m.price_confirmed === true, price: Number(m.price || 0) > 0 && m.price_confirmed === true ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(m.price)) : 'Price available on request',
+                        image: (m.file_url && /\.(?:avif|gif|jpe?g|png|webp)(?:[?#].*)?$/i.test(String(m.file_url))) ? m.file_url : (m.preview_path ? (window.sb.storage.from('fqmma-media').getPublicUrl(m.preview_path).data?.publicUrl || '') : ''), previewPath: m.preview_path || '', livepeerPlaybackId: '', livepeerStatus: 'not_used', previewUrl: '', link: m.file_url || '',
                         protectedMedia: true, description: m.description || ''
                     }));
                     siteData.portfolio = [...databaseMedia, ...siteData.portfolio.filter(p => !p.mediaId)];
