@@ -489,7 +489,7 @@
 
                 const imageUrl = getSafeHttpUrl(d.imageUrl || d.image || '');
                 const disciplineName = escapeHtml(d.name || 'Training discipline');
-                const trainingUrl = getSafeHttpUrl(d.link || '');
+                const trainingUrl = getSafeHttpUrl(d.link || 'https://www.fitnessquest.com/class-schedule/auburn-mma');
                 return `
                     <article class="bg-gray-900/95 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 overflow-hidden flex flex-col justify-between gap-0 ${glowStyle}">
                         ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${disciplineName} training" loading="lazy" referrerpolicy="no-referrer" class="w-full h-48 object-cover bg-black">` : ''}
@@ -500,8 +500,8 @@
                             <p class="text-sm text-gray-300 leading-relaxed">${escapeHtml(d.desc || '')}</p>
                           </div>
                           <div class="pt-3 border-t border-gray-800 flex items-center justify-between gap-3">
-                            <span class="text-[11px] text-gray-400 font-mono">${trainingUrl ? 'Official link' : (imageUrl ? 'Training discipline' : 'Training details coming soon')}</span>
-                            ${trainingUrl ? `<a href="${escapeHtml(trainingUrl)}" target="_blank" rel="noopener noreferrer" class="${btnStyle} font-heading text-xs font-black uppercase px-4 py-2 rounded-lg shadow whitespace-nowrap">Visit link <i class="fa-solid fa-arrow-right ml-1"></i></a>` : ''}
+                            <span class="text-[11px] text-gray-400 font-mono">${trainingUrl ? 'Official Fitness Quest schedule' : (imageUrl ? 'Training discipline' : 'View current class schedule')}</span>
+                            ${trainingUrl ? `<a href="${escapeHtml(trainingUrl)}" target="_blank" rel="noopener noreferrer" class="${btnStyle} font-heading text-xs font-black uppercase px-4 py-2 rounded-lg shadow whitespace-nowrap">View Classes & Schedule <i class="fa-solid fa-arrow-right ml-1"></i></a>` : ''}
                           </div>
                         </div>
                     </article>
@@ -535,7 +535,7 @@
                 `;
             }).join('');
 
-            if (!siteData.schedule.length) schContainer.innerHTML = '<p class="text-center text-sm text-gray-400">No events or classes have been published yet. Please check back soon.</p>';
+            if (!siteData.schedule.length) schContainer.innerHTML = `<div class="bg-gray-900/95 p-6 rounded-xl border-l-4 border-brand-red border-y border-r border-gray-800 shadow-lg"><span class="text-xs font-heading font-black uppercase tracking-wider text-brand-red">Official live schedule</span><h3 class="font-heading text-2xl font-black text-white uppercase tracking-wide mt-2">Fitness Quest Auburn MMA Classes</h3><p class="text-sm text-gray-300 mt-2 mb-4">Class times and instructors can change. Check Fitness Quest’s live Auburn MMA schedule for the latest boxing, kickboxing, jiu-jitsu, youth BJJ, and MMA class listings.</p><a href="https://www.fitnessquest.com/class-schedule/auburn-mma" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center bg-brand-red hover:bg-red-700 text-white font-heading text-sm font-black uppercase px-6 py-3 rounded-xl shadow-lg">View Current Class Schedule <i class="fa-solid fa-arrow-right ml-2" aria-hidden="true"></i></a><p class="text-xs text-gray-400 mt-3">Fitness Quest Auburn · 1101 Outlet Collection Way, Suite 1275, Auburn, WA 98001 · (253) 268-0625</p></div>`;
 
             // 2. Fighters
             const rosterContainer = document.getElementById('roster-container');
