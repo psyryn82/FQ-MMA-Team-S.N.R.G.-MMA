@@ -44,9 +44,11 @@ Deno.serve(async (req) => {
   const siteUrl = (Deno.env.get("SITE_URL") || "https://fq-snrg-mma.com").replace(/\/$/, "");
   if (!supabaseUrl || !serviceKey || !stripeKey) return respond({ error: "Media checkout is not configured." }, 503, origin);
   if (!req.headers.get("apikey")) return respond({ error: "A public API key is required." }, 401, origin);
-  let input: { media_id?: unknown; buyer_email?: unknown };
+  let input: { media_id?: unknown; buyer_email?: unknown; accepted_terms?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "Media details are required." }, 400, origin); }
   const mediaId = Number(input.media_id), email = String(input.buyer_email || "").trim().toLowerCase();
+  if (input.accepted_terms !== true) return respond({ error: "Please agree to the Terms of Service and Refund Policy before checkout." }, 400, origin);
+  const acceptedAt = new Date().toISOString();
   if (!Number.isSafeInteger(mediaId) || mediaId < 1) return respond({ error: "Choose valid media." }, 400, origin);
   if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return respond({ error: "Enter a valid email address." }, 400, origin);
   const rateLimit = await checkoutRateLimit(req, email, supabaseUrl, serviceKey);
@@ -65,8 +67,8 @@ Deno.serve(async (req) => {
         : siteUrl + "/?media_purchase=success&media_id=" + media.id + "&session_id={CHECKOUT_SESSION_ID}",
       cancel_url: siteUrl + "/?media_purchase=cancelled",
       line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: Math.round(Number(media.price) * 100), product_data: { name: String(media.title).slice(0, 200), description: String(media.description || "FQ MMA digital media").slice(0, 500) } } }],
-      metadata: { purchase_type: "media", media_id: String(media.id), expected_amount_cents: String(expectedAmountCents) },
-      payment_intent_data: { receipt_email: email, metadata: { purchase_type: "media", media_id: String(media.id), expected_amount_cents: String(expectedAmountCents) } }
+      metadata: { purchase_type: "media", media_id: String(media.id), expected_amount_cents: String(expectedAmountCents), terms_accepted: "true", terms_version: "2026-10-21", terms_accepted_at: acceptedAt, terms_url: "https://fq-snrg-mma.com/terms.html", refund_policy_url: "https://fq-snrg-mma.com/refunds-outages.html" },
+      payment_intent_data: { receipt_email: email, metadata: { purchase_type: "media", media_id: String(media.id), expected_amount_cents: String(expectedAmountCents), terms_accepted: "true", terms_version: "2026-10-21", terms_accepted_at: acceptedAt, terms_url: "https://fq-snrg-mma.com/terms.html", refund_policy_url: "https://fq-snrg-mma.com/refunds-outages.html" } }
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     return respond({ url: session.url }, 200, origin);
