@@ -111,8 +111,7 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "The inquiry form is temporarily unavailable. Please try again later." }, 503, origin);
       }
       const forwardedFor = req.headers.get("x-forwarded-for");
-      const ipAddress = req.headers.get("cf-connecting-ip")?.trim()
-        || req.headers.get("x-real-ip")?.trim()
+      const ipAddress = req.headers.get("x-real-ip")?.trim()
         || forwardedFor?.split(",").map((part) => part.trim()).filter(Boolean).at(-1)
         || "";
       if (ipAddress) {
