@@ -402,8 +402,6 @@
       }
     </style>
 
-    <script src="./turnstile-init.js"></script>
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoaded&render=explicit" async defer></script>
     <style>
       @media (min-width: 1024px) {
         header nav[aria-label="Main navigation"] { display: flex !important; flex-wrap: wrap; }
@@ -757,11 +755,10 @@
                         <textarea id="contact-message" required rows="5" class="w-full rounded-lg border border-gray-700 bg-black p-3 text-sm text-white" placeholder="How can we help?"></textarea>
                     </div>
                     <div class="sr-only" aria-hidden="true"><input id="contact-company" type="text" tabindex="-1" aria-hidden="true" autocomplete="off" name="company"></div>
-                     <div class="cf-turnstile" data-sitekey="REPLACE_WITH_CLOUDFLARE_TURNSTILE_SITE_KEY" data-action="contact"></div><p class="mt-2 text-xs text-gray-400">If the security check does not appear, email <a class="underline text-red-300" href="mailto:support@fq-snrg-mma.com">support@fq-snrg-mma.com</a> directly.</p>
                      <button id="contact-submit" type="submit" class="w-full rounded-xl bg-brand-red px-5 py-3 font-heading text-sm font-black uppercase text-white hover:bg-red-700">
                         Send Message
                     </button>
-                    <p id="contact-status" class="text-sm text-gray-400" role="status" aria-live="polite">Complete the security check before sending. You can also email the team directly using the link above.</p>
+                    <p id="contact-status" class="text-sm text-gray-400" role="status" aria-live="polite">Your message will be sent securely to our team. You can also email support@fq-snrg-mma.com directly.</p>
                     <p class="text-xs text-gray-400">To help our reply reach you, add <strong class="text-gray-200">support@fq-snrg-mma.com</strong> to your contacts or safe-senders list, and check your spam or junk folder if you don't see our response.</p>
                 </form>
             </div>
