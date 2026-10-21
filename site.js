@@ -938,7 +938,10 @@
 
         const publicTabHashes = { live: 'live-stream', schedule: 'events', fighters: 'roster', disciplines: 'disciplines', store: 'media', portfolio: 'portfolio', contact: 'contact' };
         function getPublicTabAvailability() {
-            return { live: true, schedule: Array.isArray(siteData.schedule) && siteData.schedule.length > 0, fighters: Array.isArray(siteData.fighters) && siteData.fighters.length > 0, disciplines: Array.isArray(siteData.disciplines) && siteData.disciplines.length > 0, store: Array.isArray(siteData.store) && siteData.store.length > 0, portfolio: Array.isArray(siteData.portfolio) && siteData.portfolio.length > 0, contact: true };
+            // Keep the public navigation stable even when a section has no published records yet.
+            // Empty sections already have explanatory copy or an empty-state container, and hiding
+            // their navigation items makes the menu shift unexpectedly between visits.
+            return { live: true, schedule: true, fighters: true, disciplines: true, store: true, portfolio: true, contact: true };
         }
         function syncPublicTabs() {
             const available = getPublicTabAvailability();
