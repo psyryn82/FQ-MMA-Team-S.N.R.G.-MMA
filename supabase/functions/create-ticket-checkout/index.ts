@@ -1,4 +1,4 @@
-// FQ MMA one-time ticket checkout. This endpoint intentionally rejects live Stripe keys until testing is complete.
+// FQ MMA one-time ticket checkout. Stripe mode is controlled by the server-side STRIPE_SECRET_KEY.
 import Stripe from "https://esm.sh/stripe@17.7.0?target=denonext";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -51,7 +51,6 @@ Deno.serve(async (req) => {
   const siteUrl = (Deno.env.get("SITE_URL") || "https://fq-snrg-mma.com").replace(/\/$/, "");
   if (!supabaseUrl || !anonKey || !serviceKey || !stripeKey) return respond({ error: "Ticket checkout is not configured." }, 503, origin);
   if (!req.headers.get("apikey")) return respond({ error: "A public API key is required." }, 401, origin);
-  if (!stripeKey.startsWith("sk_test_")) return respond({ error: "Ticket checkout is locked to Stripe test mode until end-to-end testing is complete." }, 503, origin);
 
   let input: { ticket_option_id?: unknown; quantity?: unknown; buyer_email?: unknown; promotion_code?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "Ticket details are required." }, 400, origin); }
