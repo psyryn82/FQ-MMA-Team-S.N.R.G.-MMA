@@ -1,71 +1,60 @@
-# Stripe Integration TODO
+# Stripe integration status and launch checklist
 
-This file is the single source of truth for the remaining Stripe setup and verification work for FQ S.N.R.G. MMA.
+This document describes the current FQ S.N.R.G. MMA payment architecture. The site does **not** sell memberships or recurring plans. Current payment paths are one-time event tickets, livestream access, and eligible paid media.
 
-## Values to Replace
+## Current checkout functions
 
-The following value is a placeholder and must be updated before testing checkout.
+- `supabase/functions/create-ticket-checkout/index.ts`: one-time event ticket checkout.
+- `supabase/functions/create-stream-checkout/index.ts`: one-time livestream checkout.
+- `supabase/functions/create-media-checkout/index.ts`: one-time paid photo/video checkout for eligible private media.
+- `supabase/functions/stripe-webhook/index.ts`: verifies Stripe signatures and records eligible completed payments and related status changes.
+- `supabase/functions/create-checkout-session/index.ts`: retired legacy membership endpoint. It returns HTTP 410 and is not used for public ticket sales.
 
-**Files containing placeholders:**
-- [membership.html](membership.html)
+The three active checkout functions use the server-side `STRIPE_SECRET_KEY` to determine Stripe mode. The code no longer hard-codes a test-only key requirement. A live deployment will create live sessions only if the secret configured in Supabase is a live secret key. Never put a Stripe secret key in GitHub, HTML, JavaScript, screenshots, or chat.
 
-| Field | Current Value | What to Set |
-|-------|--------------|-------------|
-| STRIPE_PUBLISHABLE_KEY | `pk_test_REPLACE_WITH_PUBLISHABLE_KEY` | Replace with the Stripe **test publishable key** (`pk_test_...`) from [Stripe test API keys](https://dashboard.stripe.com/test/apikeys). This is intended to be public; never put a secret key in this file. Before going live, switch to the live publishable key only after completing live-mode setup. |
+## Required Supabase Edge Function secrets
 
-The Checkout Session `line_items` are generated from the published `membership_plans` rows in Supabase using their current price, currency, name, description, and billing interval. They are not hard-coded placeholder Price IDs. The `mode` is selected from the plan's billing interval: one-time plans use `payment`; monthly/yearly plans use `subscription`.
+Configure these in the Supabase project's Edge Function secrets, not in repository files:
 
-## Configured Parameters
+- `STRIPE_SECRET_KEY`: use the matching Stripe mode for the intended environment. Live payments require a key beginning with `sk_live_`.
+- `STRIPE_WEBHOOK_SECRET`: signing secret for the webhook endpoint registered in that same Stripe mode.
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- Any other environment values explicitly read by the active function, such as `SITE_URL`, where applicable.
 
-**Files containing these parameters:**
-- [supabase/functions/create-checkout-session/index.ts](supabase/functions/create-checkout-session/index.ts)
-- [membership.html](membership.html)
+The public browser Supabase key is not a Stripe secret and must never be confused with the Stripe secret key. Do not share secret values. The key prefix can be checked privately without copying the key into a message.
 
-| Parameter | Value |
-|-----------|-------|
-| ui_mode | `custom` (Stripe SDK is pinned to version 17.7.0, below 21.0.0) |
-| billing_address_collection | `auto` |
-| phone_number_collection | `{ enabled: false }` |
-| automatic_tax | `{ enabled: false }` |
-| payment_method_collection | `always`, only for subscription plans |
-| submit_type | `pay` |
-| name_collection | `{ individual: { enabled: true, optional: true } }` |
-| saved_payment_method_options | `{ payment_method_save: "enabled" }` |
-| integration_identifier | `custom_embedded_web_0001` |
-| Stripe API version | `2026-03-25.dahlia; custom_checkout_payment_form_preview=v1` |
-| Stripe.js | Loaded directly from `https://js.stripe.com/dahlia/stripe.js` |
-| Checkout Form beta | `custom_checkout_payment_form_1` |
-| Appearance | Night theme, floating labels, condensed inputs, red primary color, Roboto, 4px border radius |
+## Stripe webhook
 
-## Setup and Next Steps
+Endpoint:
+`https://dmcbbavsxyxrxuuzraiu.supabase.co/functions/v1/stripe-webhook`
 
-1. Replace the placeholder `STRIPE_PUBLISHABLE_KEY` in [membership.html](membership.html) with the test publishable key from Stripe.
-2. In Supabase Edge Function secrets, verify the function has the required values set privately: `STRIPE_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. The webhook also needs `STRIPE_WEBHOOK_SECRET`. Never put secret values in GitHub or browser code.
-3. Deploy the updated `create-checkout-session` Edge Function from [supabase/functions/create-checkout-session/index.ts](supabase/functions/create-checkout-session/index.ts) to the existing Supabase project. GitHub commits do not automatically deploy this function unless you have deployment automation configured.
-4. Keep Stripe in test mode while testing. Use Stripe's test card `4242 4242 4242 4242`, any future expiry date, any three-digit CVC, and a test postal code. Use only test-mode keys and products.
-5. Confirm the embedded form loads from the ticket options page, test a successful payment and a declined test payment, and inspect Supabase function logs and Stripe webhook delivery logs.
-6. Confirm that a successful payment updates the correct membership/ticket record. The current webhook implementation expects membership metadata (`user_id` and `plan_id`) on the Checkout Session. The Checkout Studio parameter list did not include those metadata fields, so **fulfillment must be reconciled before relying on paid-ticket access**. Do not launch paid content until the webhook can reliably match the verified Stripe session to the correct pending membership and activate it.
-7. Test refunds and subscription status changes if you plan to sell recurring memberships. Review the webhook's refund behavior separately before offering refunds or relying on automatic access revocation.
-8. Only after all tests pass, configure live-mode Stripe keys and a live-mode webhook destination, update the public publishable key, and test with a small real transaction.
+The endpoint must be registered in Stripe for the same mode as `STRIPE_SECRET_KEY`. A live Stripe key must be paired with the live-mode webhook signing secret, not a test-mode signing secret. The handler verifies `stripe-signature` and uses the `stripe_webhook_events` ledger for event idempotency. The handler supports ticket, stream, and media purchase metadata, as well as relevant checkout expiry/failure and refund events.
 
-## Project Structure
+A configured secret alone does not prove delivery is working. Confirm successful delivery in Stripe's webhook event log and confirm the corresponding purchase status in Supabase after a controlled test.
 
-- `membership.html`: ticket selection, sign-in, and embedded Stripe Checkout Form.
-- `supabase/functions/create-checkout-session/index.ts`: server-side Checkout Session creation and pending membership recording.
-- `supabase/functions/stripe-webhook/index.ts`: existing webhook handler; its metadata-based fulfillment expectations need to be reconciled with the Checkout Session fields before launch.
+## Safe launch and verification checklist
 
-## How the Integration Works
+1. Confirm the deployed versions of `create-ticket-checkout`, `create-stream-checkout`, `create-media-checkout`, and `stripe-webhook` are active in the intended Supabase project.
+2. Confirm privately that `STRIPE_SECRET_KEY` is the intended mode. Do not paste it into chat or commit it.
+3. Confirm the webhook URL above is configured in the same Stripe mode and its signing secret is stored as `STRIPE_WEBHOOK_SECRET`.
+4. First create a checkout session and verify the Stripe-hosted checkout page is in the intended mode. Opening checkout does not itself charge a customer, but completing it does.
+5. Use Stripe test mode and test cards for test transactions. Do not use a real card or complete a live payment as a test without explicit authorization.
+6. After a completed test payment, verify the signed webhook delivery and that only the matching purchase is marked paid. Also verify cancellation/expiry and refund behavior before relying on fulfillment.
+7. For media, confirm the item is published, has a confirmed positive price, and uses the configured private storage path. Free/contact-only media follows a separate flow.
+8. Confirm the public event/ticket option is linked to the intended event, sales are enabled, the displayed price is correct, and quantity limits are appropriate.
+9. Do not claim end-to-end live payment readiness until the live key mode, live webhook delivery, purchase fulfillment, and refund behavior have been verified.
 
-1. A customer signs in on the ticket page.
-2. The browser requests a Checkout Session from the Supabase Edge Function using the selected published plan.
-3. The server validates the user's Supabase session and retrieves price details from Supabase, then creates a Stripe Checkout Session.
-4. The server returns the session's `client_secret`; Stripe.js renders the embedded payment form.
-5. Stripe confirms the payment and sends events to the configured webhook.
-6. The webhook must verify the Stripe signature and match the paid session to the pending membership before granting ticket or video access. This final fulfillment link still requires verification.
+## Important limits
 
-## Testing and Resources
+- A successful redirect to the site is not proof of payment. Purchase status must come from the verified Stripe webhook.
+- A pending checkout is not a paid ticket or media entitlement.
+- The website does not automatically issue QR codes or printable event-entry credentials unless a separate feature is implemented and tested.
+- GitHub changes do not automatically deploy Supabase Edge Functions unless deployment automation is configured. Verify the active function version after each function deployment.
+- The legacy membership endpoint is intentionally retired; do not restore membership-based checkout as part of the one-time ticket flow.
 
-- Stripe test cards: [Stripe testing documentation](https://docs.stripe.com/testing)
-- Stripe API keys: [Stripe test API keys](https://dashboard.stripe.com/test/apikeys)
-- Stripe support: [https://support.stripe.com](https://support.stripe.com)
-- Stripe docs: [https://docs.stripe.com/mcp](https://docs.stripe.com/mcp)
+## Official references
+
+- [Stripe testing](https://docs.stripe.com/testing)
+- [Stripe API keys](https://dashboard.stripe.com/apikeys)
+- [Stripe webhooks](https://docs.stripe.com/webhooks)
