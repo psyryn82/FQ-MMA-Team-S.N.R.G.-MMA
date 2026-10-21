@@ -712,25 +712,10 @@
           <section id="sasha-booking" class="max-w-5xl mx-auto w-full sasha-booking-shell space-y-5">
             <div class="border-b border-white/10 pb-4">
               <p class="sasha-kicker">Tell us what you have in mind</p>
-              <h3 id="portfolio-booking-title" class="font-heading text-2xl sm:text-3xl font-black mt-3">Request a Sasha Portfolio Booking</h3>
-              <p id="portfolio-booking-intro" class="text-sm text-gray-300 mt-2">Send a booking request first. The team will review your request and, if approved, email you a payment or deposit link. Submitting a request does not reserve a date or require payment.</p>
+              <h3 class="font-heading text-2xl sm:text-3xl font-black mt-3">Request a Sasha Portfolio Booking</h3>
+              <p class="text-sm text-gray-300 mt-2">Use Sasha’s dedicated portfolio booking form to send a session request. The team will review it and, if approved, send a payment or deposit link. No payment is collected when you request a booking.</p>
             </div>
-            <form id="booking-request-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label class="block text-sm">Your name<input id="booking-name" required maxlength="120" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="name"></label>
-              <label class="block text-sm">Email address<input id="booking-email" required type="email" maxlength="254" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="email"></label>
-              <label class="block text-sm">Phone (optional)<input id="booking-phone" type="tel" maxlength="40" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" autocomplete="tel"></label>
-              <label class="block text-sm">What are you booking?<select id="booking-service" required class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"><option value="">Choose a service</option><option>Photography session</option><option>Event photography</option><option>Portrait session</option><option>Video service</option><option>Other / discuss options</option></select></label>
-              <label class="block text-sm">Preferred date (optional)<input id="booking-date" type="date" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"></label>
-              <label class="block text-sm">Preferred time (optional)<input id="booking-time" maxlength="80" placeholder="Morning, afternoon, or a time range" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white"></label>
-              <label class="block text-sm md:col-span-2">Location or venue (optional)<input id="booking-location" maxlength="250" class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" placeholder="Where would you like the session?"></label>
-              <label class="block text-sm md:col-span-2">Tell us what you need<textarea id="booking-details" rows="4" maxlength="3000" required class="mt-1 w-full rounded-lg border border-gray-700 bg-black p-3 text-white" placeholder="Describe the session, event, timing, or questions."></textarea></label>
-              <div class="sr-only" aria-hidden="true"><input id="booking-company" type="text" tabindex="-1" aria-hidden="true" autocomplete="off" name="company"></div>
-              <div class="md:col-span-2"><div class="cf-turnstile" data-sitekey="REPLACE_WITH_CLOUDFLARE_TURNSTILE_SITE_KEY" data-action="booking"></div><p class="mt-2 text-xs text-gray-400">If the security check does not appear, email <a class="underline text-red-300" href="mailto:support@fq-snrg-mma.com">support@fq-snrg-mma.com</a> to request a booking.</p></div>
-              <div class="md:col-span-2 flex flex-wrap items-center gap-3">
-                <button id="booking-submit" type="submit" class="rounded-xl px-5 py-3 font-heading text-sm font-black uppercase text-white">Send booking request</button>
-                <p id="booking-status" class="text-sm text-gray-400" role="status" aria-live="polite">No payment is collected when you submit this form.</p>
-              </div>
-            </form>
+            <a href="/sasha.html#booking" class="sasha-action sasha-action-primary">Open portfolio booking form ↗</a>
           </section>
         </div>
 
