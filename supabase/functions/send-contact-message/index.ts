@@ -190,7 +190,15 @@ Deno.serve(async (req: Request) => {
     }, origin);
   }
 
-  const subject = `[${category}] FQ MMA Website Inquiry`;
+  const subjectPrefixes: Record<string, string> = {
+    "General Inquiry": "GENERAL SUPPORT",
+    "Media Purchase Inquiry": "MEDIA SUPPORT",
+    "Portfolio / Photography Inquiry": "PHOTOGRAPHY & VIDEO",
+    "Fighter / Athlete Inquiry": "FIGHTERS & TEAM",
+    "Ticket / Stream Access Inquiry": "EVENTS & TICKETS",
+    "Website Support": "WEBSITE SUPPORT",
+  };
+  const subject = `[${subjectPrefixes[category]}] FQ MMA Website Inquiry`;
   const textBody = [
     "New message from the FQ MMA / Team S.N.R.G. MMA website",
     "",
