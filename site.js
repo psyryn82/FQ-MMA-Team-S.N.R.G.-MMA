@@ -1110,31 +1110,19 @@
             const time = document.getElementById('booking-time').value.trim();
             const location = document.getElementById('booking-location').value.trim();
             const details = document.getElementById('booking-details').value.trim();
-            const turnstileToken = form.querySelector('[name="cf-turnstile-response"]')?.value || '';
             if (!name || !email || !service || !details) { status.textContent = 'Please complete every required field.'; status.className = 'text-sm text-red-400'; return; }
-            if (!turnstileToken) {
-                const widget = form.querySelector('.cf-turnstile[data-sitekey]');
-                const key = widget?.dataset.sitekey || '';
-                status.textContent = /REPLACE_WITH|YOUR_SITE_KEY|PLACEHOLDER/i.test(key)
-                    ? 'Online security verification is not configured yet. Please email support@fq-snrg-mma.com to request a booking.'
-                    : 'Please complete the security check before submitting.';
-                status.className = 'text-sm text-red-400';
-                return;
-            }
             if (!window.sb || !window.supabaseReady) { status.textContent = 'The booking service is temporarily unavailable. Please try again later.'; status.className = 'text-sm text-red-400'; return; }
             button.disabled = true; button.textContent = 'Submitting…'; status.textContent = 'Submitting your request securely…'; status.className = 'text-sm text-gray-400';
             try {
-                const { data, error } = await window.sb.functions.invoke('create-booking-request', { body: { name, email, phone, service, date, time, location, details, company: honeypot, turnstileToken } });
+                const { data, error } = await window.sb.functions.invoke('create-booking-request', { body: { name, email, phone, service, date, time, location, details, company: honeypot } });
                 if (error) throw error;
                 if (!data?.success) throw new Error(data?.error || 'The request could not be submitted.');
                 status.textContent = data.notified ? 'Request received! The team has been notified. Your date is not confirmed until the request is approved.' : 'Your request was received. The team will review it; your date is not confirmed until approved.';
                 status.className = 'text-sm text-emerald-400';
                 form.reset();
-                const widget = form.querySelector('.cf-turnstile');
-                if (widget?.dataset.widgetId) window.turnstile?.reset(widget.dataset.widgetId);
             } catch (error) {
                 console.error('Booking request submission failed.', error);
-                status.textContent = 'We could not submit your request. Please refresh the security check and try again.';
+                status.textContent = 'We could not submit your request. Please try again in a few minutes.';
                 status.className = 'text-sm text-red-400';
             } finally { button.disabled = false; button.textContent = 'Send booking request'; }
         }
