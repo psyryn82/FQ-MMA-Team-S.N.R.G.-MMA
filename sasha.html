@@ -160,7 +160,7 @@ footer{background:#fff!important;border-color:var(--line)!important}
         notificationSent=true;
       }catch(err){console.warn('Booking saved; notification could not be confirmed.',err)}
       $('booking-form').reset();
-      msg.textContent=notificationSent?'Request received. The team will review it and contact you if approved. No payment has been taken.':'Your request was saved, but email notification could not be confirmed. The team can still review it in the booking dashboard. If urgent, email sashaluw98@yahoo.com.';
+      msg.textContent=notificationSent?'Thank you for your inquiry. Your booking request has been submitted successfully and is pending review. If approved, our team will contact you with the next steps. No payment has been processed, and your date is not confirmed at this stage.':'Your request was saved, but email notification could not be confirmed. The team can still review it in the booking dashboard. If urgent, email sashaluw98@yahoo.com.';
     }catch(err){msg.textContent='We could not submit your request. Please try again later.';console.error('Sasha booking submission failed.',err)}
     finally{btn.disabled=false;btn.textContent='Send booking request'}
   });
