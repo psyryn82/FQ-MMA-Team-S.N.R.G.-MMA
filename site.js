@@ -596,7 +596,7 @@
                 if (button && button.dataset.productUrl) openCustomLink(button.dataset.productUrl);
             };
 
-            if (!siteData.store.length) storeContainer.innerHTML = '<p class="text-center text-sm text-gray-400">No products have been published yet. Please check back soon.</p>';
+            if (!siteData.store.length) storeContainer.innerHTML = '<div class="md:col-span-2 rounded-xl border border-gray-800 bg-gray-900/90 p-6 text-center"><i class="fa-solid fa-store text-2xl text-brand-red" aria-hidden="true"></i><h3 class="mt-3 font-heading text-xl font-black uppercase tracking-wide text-white">Merchandise listings are being prepared</h3><p class="mt-2 text-sm text-gray-300">There are no merchandise products published in the store right now. Event ticket and live-stream options are listed separately under Schedule &amp; Tickets.</p><button type="button" data-tab="schedule" class="mt-4 inline-flex rounded-lg bg-brand-red px-5 py-3 text-xs font-black uppercase text-white hover:bg-red-700">View Schedule &amp; Tickets</button></div>';
 
             // 4. Separate public catalogs: FQ MMA event media and Sasha's portfolio.
             const renderMediaCards = (items, container, emptyMessage) => {
