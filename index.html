@@ -495,36 +495,24 @@
             </div>
 
             <nav class="hidden lg:flex items-center justify-center space-x-1 pb-3" aria-label="Main navigation">
-                <button aria-controls="tab-live" onclick="setActiveTab('live')" id="nav-live" aria-current="page" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all flex items-center gap-2 text-brand-red bg-brand-red/10 border border-brand-red/30">
-                    <i class="fa-solid fa-circle text-xs text-gray-500"></i> Live Stream
-                </button>
-                <button aria-controls="tab-schedule" onclick="setActiveTab('schedule')" id="nav-schedule" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                    Events
-                </button>
-                <button aria-controls="tab-fighters" onclick="setActiveTab('fighters')" id="nav-fighters" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                    Roster
-                </button>
-                <button aria-controls="tab-disciplines" onclick="setActiveTab('disciplines')" id="nav-disciplines" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all text-gray-300 hover:text-white hover:bg-white/5">
-                    Disciplines
-                </button>
-                <button aria-controls="tab-store" onclick="setActiveTab('store')" id="nav-store" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                    Media
-                </button>
-                <button aria-controls="tab-portfolio" onclick="setActiveTab('portfolio')" id="nav-portfolio" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">Sasha Portfolio</button>
-                <button aria-controls="tab-contact" onclick="setActiveTab('contact')" id="nav-contact" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300 hover:text-white hover:bg-white/5 transition-all">
-                    Contact
-                </button>
+                <a href="#main-content" aria-controls="tab-live" data-tab="live" aria-current="page" onclick="setActiveTab('live'); return false;" id="nav-live" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all flex items-center gap-2 text-brand-red bg-brand-red/10 border border-brand-red/30"><i class="fa-solid fa-circle text-xs text-gray-500" aria-hidden="true"></i> Live Stream</a>
+                <a href="#schedule" aria-controls="tab-schedule" data-tab="schedule" onclick="setActiveTab('schedule'); return false;" id="nav-schedule" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all text-gray-300 hover:text-white hover:bg-white/5">Events</a>
+                <a href="#roster" aria-controls="tab-fighters" data-tab="fighters" onclick="setActiveTab('fighters'); return false;" id="nav-fighters" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all text-gray-300 hover:text-white hover:bg-white/5">Roster</a>
+                <a href="#disciplines" aria-controls="tab-disciplines" data-tab="disciplines" onclick="setActiveTab('disciplines'); return false;" id="nav-disciplines" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all text-gray-300 hover:text-white hover:bg-white/5">Disciplines</a>
+                <a href="#media" aria-controls="tab-store" data-tab="store" onclick="setActiveTab('store'); return false;" id="nav-store" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all text-gray-300 hover:text-white hover:bg-white/5">Media</a>
+                <a href="#sasha-work" aria-controls="tab-portfolio" data-tab="portfolio" onclick="goToSashaWork(); return false;" id="nav-portfolio" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all text-gray-300 hover:text-white hover:bg-white/5">Sasha Portfolio</a>
+                <a href="#contact" aria-controls="tab-contact" data-tab="contact" onclick="setActiveTab('contact'); return false;" id="nav-contact" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all text-gray-300 hover:text-white hover:bg-white/5">Contact</a>
                 <a href="/sasha.html" data-sasha-full-portfolio="true" aria-label="Open Sasha’s full photography and videography portfolio" class="nav-external-link inline-flex items-center px-3 py-2 rounded-md font-heading text-xs tracking-wider uppercase font-extrabold text-brand-neon hover:text-white hover:bg-white/5 transition-all border border-gray-700">Full Sasha Portfolio ↗</a>
             </nav>
 
             <nav class="lg:hidden flex items-center gap-2 overflow-x-auto pb-3" aria-label="Mobile navigation">
-                <button aria-controls="tab-live" onclick="setActiveTab('live')" data-tab="live" aria-current="page" class="nav-btn shrink-0 rounded-md border border-brand-red/30 bg-brand-red/10 px-3 py-2 text-xs font-bold uppercase text-brand-red">Live Stream</button>
-                <button aria-controls="tab-schedule" onclick="setActiveTab('schedule')" data-tab="schedule" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Events</button>
-                <button aria-controls="tab-fighters" onclick="setActiveTab('fighters')" data-tab="fighters" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Roster</button>
-                <button aria-controls="tab-disciplines" onclick="setActiveTab('disciplines')" data-tab="disciplines" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Disciplines</button>
-                <button aria-controls="tab-store" onclick="setActiveTab('store')" data-tab="store" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Media</button>
-                <button aria-controls="tab-portfolio" onclick="setActiveTab('portfolio')" data-tab="portfolio" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Sasha Portfolio</button>
-                <button aria-controls="tab-contact" onclick="setActiveTab('contact')" data-tab="contact" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Contact</button>
+                <a href="#main-content" aria-controls="tab-live" data-tab="live" aria-current="page" onclick="setActiveTab('live'); return false;" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase border border-brand-red/30 bg-brand-red/10 text-brand-red">Live Stream</a>
+                <a href="#schedule" aria-controls="tab-schedule" data-tab="schedule" onclick="setActiveTab('schedule'); return false;" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Events</a>
+                <a href="#roster" aria-controls="tab-fighters" data-tab="fighters" onclick="setActiveTab('fighters'); return false;" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Roster</a>
+                <a href="#disciplines" aria-controls="tab-disciplines" data-tab="disciplines" onclick="setActiveTab('disciplines'); return false;" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Disciplines</a>
+                <a href="#media" aria-controls="tab-store" data-tab="store" onclick="setActiveTab('store'); return false;" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Media</a>
+                <a href="#sasha-work" aria-controls="tab-portfolio" data-tab="portfolio" onclick="goToSashaWork(); return false;" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Sasha Portfolio</a>
+                <a href="#contact" aria-controls="tab-contact" data-tab="contact" onclick="setActiveTab('contact'); return false;" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Contact</a>
                 <a href="/sasha.html" data-sasha-full-portfolio="true" aria-label="Open Sasha’s full photography and videography portfolio" class="nav-external-link shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-brand-neon underline">Full Sasha Portfolio ↗</a>
             </nav>
         </div>
@@ -826,7 +814,7 @@
 </div>
 
 
-<script src="./site.js?v=20261021-countdown-nav-empty-state" defer></script>
+<script src="./site.js?v=20261021-countdown-nav-empty-state-v2" defer></script>
 
 <div id="mediaPurchaseModal" class="hidden fixed inset-0 z-[130] bg-black/85 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="mediaPurchaseTitle">
   <div class="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-950 p-6">

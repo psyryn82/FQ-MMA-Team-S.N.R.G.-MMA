@@ -982,7 +982,7 @@
             window.location.reload();
         }
 
-        const publicTabHashes = { live: 'live-stream', schedule: 'events', fighters: 'roster', disciplines: 'disciplines', store: 'media', portfolio: 'portfolio', contact: 'contact' };
+        const publicTabHashes = { live: 'main-content', schedule: 'schedule', fighters: 'roster', disciplines: 'disciplines', store: 'media', portfolio: 'sasha-work', contact: 'contact' };
         function getPublicTabAvailability() {
             // Keep the public navigation stable even when a section has no published records yet.
             // Empty sections already have explanatory copy or an empty-state container, and hiding
@@ -1010,21 +1010,28 @@
         }
         function ensurePublicNavigation() {
             const tabs = [
-                { id: 'live', label: 'Live Stream' },
-                { id: 'disciplines', label: 'Disciplines' },
-                { id: 'schedule', label: 'Events' },
-                { id: 'fighters', label: 'Roster' },
-                { id: 'store', label: 'Media' },
-                { id: 'portfolio', label: 'Sasha Portfolio' },
-                { id: 'contact', label: 'Contact' }
+                { id: 'live', hash: 'main-content', label: 'Live Stream' },
+                { id: 'disciplines', hash: 'disciplines', label: 'Disciplines' },
+                { id: 'schedule', hash: 'schedule', label: 'Events' },
+                { id: 'fighters', hash: 'roster', label: 'Roster' },
+                { id: 'store', hash: 'media', label: 'Media' },
+                { id: 'portfolio', hash: 'sasha-work', label: 'Sasha Portfolio' },
+                { id: 'contact', hash: 'contact', label: 'Contact' }
             ];
             document.querySelectorAll('header nav[aria-label="Main navigation"], header nav[aria-label="Mobile navigation"]').forEach(nav => {
+                const mobile = nav.getAttribute('aria-label') === 'Mobile navigation';
                 if (!nav.querySelector('.nav-btn')) {
-                    const mobile = nav.getAttribute('aria-label') === 'Mobile navigation';
-                    nav.innerHTML = tabs.map(tab => mobile
-                        ? '<button type="button" aria-controls="tab-' + tab.id + '" data-tab="' + tab.id + '" onclick="setActiveTab(\'' + tab.id + '\')" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">' + tab.label + '</button>'
-                        : '<button type="button" aria-controls="tab-' + tab.id + '" id="nav-' + tab.id + '" onclick="setActiveTab(\'' + tab.id + '\')" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300">' + tab.label + '</button>'
-                    ).join('');
+                    nav.innerHTML = tabs.map(tab => {
+                        const click = tab.id === 'portfolio'
+                            ? "goToSashaWork(); return false;"
+                            : "setActiveTab('" + tab.id + "'); return false;";
+                        const className = mobile
+                            ? 'nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300'
+                            : 'nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold text-gray-300';
+                        return '<a href="#' + tab.hash + '" aria-controls="tab-' + tab.id + '" data-tab="' + tab.id + '"' +
+                            (mobile ? '' : ' id="nav-' + tab.id + '"') +
+                            ' onclick="' + click + '" class="' + className + '">' + tab.label + '</a>';
+                    }).join('');
                 }
                 if (!nav.querySelector('[data-sasha-full-portfolio]')) {
                     const link = document.createElement('a');
@@ -1032,7 +1039,7 @@
                     link.textContent = 'Full Sasha Portfolio ↗';
                     link.setAttribute('data-sasha-full-portfolio', 'true');
                     link.setAttribute('aria-label', 'Open Sasha’s full photography and videography portfolio');
-                    link.className = nav.getAttribute('aria-label') === 'Mobile navigation'
+                    link.className = mobile
                         ? 'nav-external-link shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-brand-neon underline'
                         : 'nav-external-link inline-flex items-center px-3 py-2 rounded-md font-heading text-xs tracking-wider uppercase font-extrabold text-brand-neon hover:text-white hover:bg-white/5 transition-all border border-gray-700';
                     nav.appendChild(link);
@@ -1047,8 +1054,10 @@
                 'live-stream': 'live',
                 'tab-schedule': 'schedule',
                 'schedule': 'schedule',
+                'events': 'schedule',
                 'roster': 'fighters',
                 'media': 'store',
+                'portfolio': 'portfolio',
                 'sasha-work': 'portfolio'
             };
             if (aliases[slug]) return aliases[slug];
