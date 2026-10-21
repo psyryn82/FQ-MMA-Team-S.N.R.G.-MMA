@@ -23,7 +23,7 @@ async function checkoutRateLimit(req: Request, email: string, supabaseUrl: strin
     } catch { return null; }
   };
   const forwarded = req.headers.get("x-forwarded-for");
-  const ip = req.headers.get("cf-connecting-ip")?.trim() || req.headers.get("x-real-ip")?.trim() || forwarded?.split(",").map(v => v.trim()).filter(Boolean).at(-1) || "";
+  const ip = req.headers.get("x-real-ip")?.trim() || forwarded?.split(",").map(v => v.trim()).filter(Boolean).at(-1) || "";
   if (ip) {
     const ipAllowed = await consume(`checkout-ip:${ip}`, 10, 900);
     if (ipAllowed === null) return { allowed: false, status: 503, message: "Checkout is temporarily unavailable. Please try again later." };
