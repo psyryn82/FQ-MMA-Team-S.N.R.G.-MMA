@@ -50,7 +50,22 @@ async function startPlayback() {
     const { data, error } = freeMode
       ? await client.functions.invoke("create-free-stream-playback", { body: { event_id: freeEventId } })
       : await client.functions.invoke("create-livepeer-stream-playback", { body: { session_id: sessionId } });
-    if (error) throw error;
+    if (error) {
+      let responseBody = null;
+      try {
+        if (error.context && typeof error.context.clone === "function") {
+          responseBody = await error.context.clone().json();
+        }
+      } catch {
+        // The response may not contain JSON; use a safe fallback below.
+      }
+      const detail = typeof responseBody?.error === "string" ? responseBody.error : "";
+      if (!freeMode && error.context?.status === 403 && /completed, paid stream purchase|paid stream entitlement|payment details do not match/i.test(detail)) {
+        throw new Error("Payment not completed or not verified. Stream access is locked until a valid paid checkout is confirmed.");
+      }
+      if (detail) throw new Error(detail);
+      throw new Error(error.message || "Secure playback could not be verified. Stream access remains locked.");
+    }
     if (!data?.playback_url) throw new Error(data?.error || "Secure playback is not available yet.");
     document.getElementById("eventTitle").textContent = data.event_title || "FQ MMA Live Stream";
     playerWrap.hidden = false;
