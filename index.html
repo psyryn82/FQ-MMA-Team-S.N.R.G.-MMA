@@ -201,8 +201,24 @@
         opacity: 1;
       }
       #streamCheckoutModal label,
-      #ticketCheckoutModal label {
+      #ticketCheckoutModal label,
+      #mediaPurchaseModal label {
         color: #f3f4f6;
+      }
+      #streamCheckoutModal input.checkout-terms-checkbox,
+      #ticketCheckoutModal input.checkout-terms-checkbox,
+      #mediaPurchaseModal input.checkout-terms-checkbox {
+        display: inline-block !important;
+        flex: 0 0 1.1rem;
+        width: 1.1rem !important;
+        min-width: 1.1rem;
+        min-height: 1.1rem !important;
+        height: 1.1rem;
+        margin: .3rem 0 0;
+        padding: 0;
+        accent-color: #ef4444;
+        background: #111319 !important;
+        -webkit-text-fill-color: initial;
       }
       #streamCheckoutModal .field:focus,
       #ticketCheckoutModal .field:focus {
@@ -790,6 +806,7 @@
       <label class="block text-sm">Email for your payment confirmation<input id="ticketCheckoutEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label>
       <label class="block text-sm">Number of tickets<input id="ticketCheckoutQuantity" class="field" type="number" min="1" max="10" step="1" value="1" required></label>
       <label class="block text-sm">Promotion code (optional)<input id="ticketCheckoutPromotionCode" class="field" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" autocomplete="off" placeholder="Enter promo code"></label>
+      <label class="flex items-start gap-3 text-sm leading-6"><input id="ticketCheckoutTermsAccepted" class="checkout-terms-checkbox" type="checkbox" required><span>I agree to the <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Terms of Service</a> and have read the <a href="/refunds-outages.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Refund Policy</a>.</span></label>
       <p class="text-xs text-gray-400">Your ticket is confirmed only after payment is verified.</p>
       <button id="ticketCheckoutSubmit" class="btn w-full" type="submit">Continue to secure payment</button>
       <p id="ticketCheckoutMessage" class="text-sm" role="status"></p>
@@ -807,6 +824,7 @@
       <label class="block text-sm">Choose event<select id="streamCheckoutEvent" class="field" required><option value="">Choose an event</option></select></label>
       <label class="block text-sm">Email for your payment confirmation<input id="streamCheckoutEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label>
       <label class="block text-sm">Promotion code (optional)<input id="streamCheckoutPromotionCode" class="field" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" autocomplete="off" placeholder="Enter promo code"></label>
+      <label class="flex items-start gap-3 text-sm leading-6"><input id="streamCheckoutTermsAccepted" class="checkout-terms-checkbox" type="checkbox" required><span>I agree to the <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Terms of Service</a> and have read the <a href="/refunds-outages.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Refund Policy</a>.</span></label>
       <p class="text-xs text-gray-400">One-time payment. Access is confirmed after payment is verified.</p>
       <button id="streamCheckoutSubmit" type="submit" class="btn w-full" disabled>Continue to secure payment</button>
       <p id="streamCheckoutMessage" class="text-sm" role="status"></p>
@@ -820,7 +838,7 @@
 <div id="mediaPurchaseModal" class="hidden fixed inset-0 z-[130] bg-black/85 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="mediaPurchaseTitle">
   <div class="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-950 p-6">
     <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-widest text-brand-red">Secure media checkout</p><h2 id="mediaPurchaseTitle" class="mt-1 font-heading text-2xl font-black uppercase">Purchase media</h2></div><button id="mediaPurchaseClose" type="button" class="btn2" aria-label="Close media checkout">✕</button></div>
-    <form id="mediaPurchaseForm" class="mt-5 space-y-4"><input id="mediaPurchaseId" type="hidden"><label class="block text-sm">Email for receipt and download access<input id="mediaPurchaseEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label><button id="mediaPurchaseSubmit" class="btn w-full" type="submit">Continue to secure payment</button><p id="mediaPurchaseMessage" class="text-sm" role="status"></p></form>
+    <form id="mediaPurchaseForm" class="mt-5 space-y-4"><input id="mediaPurchaseId" type="hidden"><label class="block text-sm">Email for receipt and download access<input id="mediaPurchaseEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label><label class="flex items-start gap-3 text-sm leading-6"><input id="mediaPurchaseTermsAccepted" class="checkout-terms-checkbox" type="checkbox" required><span>I agree to the <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Terms of Service</a> and have read the <a href="/refunds-outages.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Refund Policy</a>.</span></label><button id="mediaPurchaseSubmit" class="btn w-full" type="submit">Continue to secure payment</button><p id="mediaPurchaseMessage" class="text-sm" role="status"></p></form>
     <form id="mediaDeliveryForm" class="hidden mt-5 space-y-4"><p class="text-sm text-gray-300">Payment return detected. Enter the same email used at checkout to retrieve your private download.</p><input id="mediaDeliveryId" type="hidden"><input id="mediaDeliverySessionId" type="hidden"><label class="block text-sm">Checkout email<input id="mediaDeliveryEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label><button id="mediaDeliverySubmit" class="btn w-full" type="submit">Get my download</button><p id="mediaDeliveryMessage" class="text-sm" role="status"></p></form>
   </div>
 </div>
