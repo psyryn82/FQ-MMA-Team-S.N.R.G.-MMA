@@ -191,16 +191,31 @@ Deno.serve(async (req: Request) => {
   }
 
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("CONTACT_FROM_EMAIL");
-  if (!apiKey || !from) {
-    console.error("Contact email service is not configured: RESEND_API_KEY or CONTACT_FROM_EMAIL is missing.");
+  const supportCategories = new Set([
+    "Media Purchase Inquiry",
+    "Ticket / Stream Access Inquiry",
+    "Website Support",
+  ]);
+  const sender = supportCategories.has(category)
+    ? "FQ MMA Support <support@fq-snrg-mma.com>"
+    : "FQ MMA / Team S.N.R.G. <info@fq-snrg-mma.com>";
+  if (!apiKey) {
+    console.error("Contact email service is not configured: RESEND_API_KEY is missing.");
     return jsonResponse(503, {
       success: false,
-      error: "The contact form is temporarily unavailable. Please try again later.",
+      error: "Contact email service is temporarily unavailable. Please try again later.",
     }, origin);
   }
 
-  const subject = `FQ MMA Website Inquiry: ${category}`;
+  const subjectPrefixes: Record<string, string> = {
+    "General Inquiry": "GENERAL SUPPORT",
+    "Media Purchase Inquiry": "MEDIA SUPPORT",
+    "Portfolio / Photography Inquiry": "PHOTOGRAPHY & VIDEO",
+    "Fighter / Athlete Inquiry": "FIGHTERS & TEAM",
+    "Ticket / Stream Access Inquiry": "EVENTS & TICKETS",
+    "Website Support": "WEBSITE SUPPORT",
+  };
+  const subject = `[${subjectPrefixes[category]}] FQ MMA Website Inquiry`;
   const textBody = [
     "New message from the FQ MMA / Team S.N.R.G. MMA website",
     "",
@@ -221,7 +236,7 @@ Deno.serve(async (req: Request) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from,
+        from: sender,
         to: ["fqsnrgmma.info@gmail.com"],
         reply_to: email,
         subject,
