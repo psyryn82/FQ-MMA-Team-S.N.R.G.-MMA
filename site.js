@@ -257,7 +257,7 @@
             const email = document.getElementById('admin-email-input').value.trim();
             const subject = encodeURIComponent('Request for administrator access');
             const body = encodeURIComponent(`Please review my request for administrator access.${email ? `\n\nAccount email: ${email}` : ''}`);
-            window.location.href = `mailto:fqsnrgmma.info@gmail.com?subject=${subject}&body=${body}`;
+            window.location.href = `mailto:support@fq-snrg-mma.com?subject=${subject}&body=${body}`;
             return false;
         }
 
