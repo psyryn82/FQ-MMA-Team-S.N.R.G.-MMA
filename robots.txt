@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /admin.html
+Disallow: /membership.html
 
 Sitemap: https://fq-snrg-mma.com/sitemap.xml
