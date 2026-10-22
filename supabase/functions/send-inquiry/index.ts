@@ -54,14 +54,14 @@ async function consumeRateLimit(bucketHash: string, limit: number, windowSeconds
 
 
 const departmentConfig: Record<string, { email: string; prefix: string; label: string }> = {
-  GEN: { email: "fqsnrgmma.info@gmail.com", prefix: "[GENERAL SUPPORT]", label: "General Support" },
-  EVT: { email: "fqsnrgmma.info@gmail.com", prefix: "[EVENTS & TICKETS]", label: "Events & Tickets" },
-  MED: { email: "fqsnrgmma.info@gmail.com", prefix: "[MEDIA SUPPORT]", label: "Media Support" },
-  FTR: { email: "fqsnrgmma.info@gmail.com", prefix: "[FIGHTERS & TEAM]", label: "Fighters & Team" },
-  PAY: { email: "fqsnrgmma.info@gmail.com", prefix: "[PAYMENTS & ORDERS]", label: "Payments & Orders" },
-  PHO: { email: "fqsnrgmma.info@gmail.com", prefix: "[PHOTOGRAPHY & VIDEO]", label: "Photography & Video" },
-  TEC: { email: "fqsnrgmma.info@gmail.com", prefix: "[WEBSITE SUPPORT]", label: "Website Support" },
-  OTH: { email: "fqsnrgmma.info@gmail.com", prefix: "[OTHER INQUIRY]", label: "Other Inquiry" },
+  GEN: { email: "info@fq-snrg-mma.com", prefix: "[GENERAL SUPPORT]", label: "General Support" },
+  EVT: { email: "support@fq-snrg-mma.com", prefix: "[EVENTS & TICKETS]", label: "Events & Tickets" },
+  MED: { email: "support@fq-snrg-mma.com", prefix: "[MEDIA SUPPORT]", label: "Media Support" },
+  FTR: { email: "info@fq-snrg-mma.com", prefix: "[FIGHTERS & TEAM]", label: "Fighters & Team" },
+  PAY: { email: "support@fq-snrg-mma.com", prefix: "[PAYMENTS & ORDERS]", label: "Payments & Orders" },
+  PHO: { email: "info@fq-snrg-mma.com", prefix: "[PHOTOGRAPHY & VIDEO]", label: "Photography & Video" },
+  TEC: { email: "support@fq-snrg-mma.com", prefix: "[WEBSITE SUPPORT]", label: "Website Support" },
+  OTH: { email: "info@fq-snrg-mma.com", prefix: "[OTHER INQUIRY]", label: "Other Inquiry" },
 };
 
 Deno.serve(async (req) => {
