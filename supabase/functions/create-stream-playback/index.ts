@@ -34,8 +34,9 @@ Deno.serve(async (req: Request) => {
   const encodedPrivate = Deno.env.get("LIVEPEER_SIGNING_PRIVATE_KEY");
   const encodedPublic = Deno.env.get("LIVEPEER_SIGNING_PUBLIC_KEY");
   if (!supabaseUrl || !serviceKey || !stripeKey || !encodedPrivate || !encodedPublic) return respond({ error: "Livepeer playback is not configured." }, 503, origin);
-  const stripeIsLive = stripeKey.startsWith("sk_live_");
-  if (!stripeIsLive && !stripeKey.startsWith("sk_test_")) return respond({ error: "Stripe is not configured with a valid secret key." }, 503, origin);
+  const stripeIsLive = /^(?:sk|rk)_live_/.test(stripeKey);
+  const stripeIsTest = /^(?:sk|rk)_test_/.test(stripeKey);
+  if (!stripeIsLive && !stripeIsTest) return respond({ error: "Stripe is not configured with a valid secret key." }, 503, origin);
 
   let input: { session_id?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "A paid checkout session is required." }, 400, origin); }
