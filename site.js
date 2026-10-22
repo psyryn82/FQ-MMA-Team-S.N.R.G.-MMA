@@ -1339,10 +1339,24 @@
                 const flyerImage=document.getElementById('fightQuestFlyerImage'),flyerDocument=document.getElementById('fightQuestFlyerDocument');
                 if(flyerImage&&flyerDocument){
                     const flyerUrl=getSafeHttpUrl(fightQuestEvent?.flyer_image_url||'');
+                    flyerImage.onerror=null;
+                    flyerImage.onload=null;
+                    flyerDocument.textContent='Open or download the official event flyer';
                     if(flyerUrl){
                         const path=flyerUrl.split('?')[0].toLowerCase();
                         if(/\.(?:pdf|doc|docx)$/i.test(path)){flyerImage.classList.add('hidden');flyerDocument.href=flyerUrl;flyerDocument.classList.remove('hidden');}
-                        else{flyerImage.src=flyerUrl;flyerImage.classList.remove('hidden');flyerDocument.classList.add('hidden');flyerDocument.href=flyerUrl;}
+                        else{
+                            flyerDocument.href=flyerUrl;
+                            flyerImage.onerror=()=>{
+                                flyerImage.classList.add('hidden');
+                                flyerDocument.textContent='Flyer image could not be displayed. Open or download the official event flyer';
+                                flyerDocument.classList.remove('hidden');
+                            };
+                            flyerImage.onload=()=>{flyerDocument.textContent='Open or download the official event flyer';flyerDocument.classList.add('hidden');};
+                            flyerImage.src=flyerUrl;
+                            flyerImage.classList.remove('hidden');
+                            flyerDocument.classList.add('hidden');
+                        }
                     }else{flyerImage.classList.add('hidden');flyerDocument.classList.add('hidden');}
                 }
                 const eventItems = (eventsResult.data || []).map(e => {
@@ -1415,7 +1429,7 @@
                 const row=contacts[key]&&typeof contacts[key]==='object'?contacts[key]:{};
                 const email=String(row.email||'').trim(),phone=String(row.phone||'').trim();
                 if(!email&&!phone)return '';
-                return '<div class="rounded-lg border border-gray-800 bg-black/20 p-3"><h3 class="font-bold text-sm">'+escapeHtml(label)+'</h3>'+(email?'<p class="text-sm mt-1 break-all">Email: '+escapeHtml(email)+'</p>':'')+(phone?'<p class="text-sm mt-1">Phone: '+escapeHtml(phone)+'</p>':'')+'</div>';
+                return '<div class="rounded-lg border border-gray-800 bg-black/20 p-3"><h3 class="font-bold text-sm">'+escapeHtml(label)+'</h3>'+(email?'<p class="text-sm mt-1 break-all">Email: <a class="underline text-red-300" href="mailto:'+escapeHtml(email)+'">'+escapeHtml(email)+'</a></p>':'')+(phone?'<p class="text-sm mt-1">Phone: <a class="underline text-red-300" href="tel:'+escapeHtml(phone)+'">'+escapeHtml(phone)+'</a></p>':'')+'</div>';
             }).join('');
         }
 
