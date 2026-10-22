@@ -1417,6 +1417,24 @@
             }).join('');
         }
 
+        function applyTicketAppearance(content) {
+            const settings=content?.general?.ticketAppearance||{};
+            const valid=value=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);
+            const card=document.querySelector('#schedule-container article');
+            if(card){
+                if(valid(settings.cardBackground))card.style.backgroundColor=settings.cardBackground;
+                if(valid(settings.cardBorder))card.style.borderColor=settings.cardBorder;
+                const accent=card.querySelector('.font-bold.text-brand-neon');
+                if(accent&&valid(settings.accent))accent.style.color=settings.accent;
+                const button=card.querySelector('#inPersonTicketLink');
+                if(button){
+                    if(valid(settings.buttonBackground))button.style.backgroundColor=settings.buttonBackground;
+                    if(valid(settings.buttonText))button.style.color=settings.buttonText;
+                    if(typeof settings.buttonLabel==='string'&&settings.buttonLabel.trim())button.textContent=settings.buttonLabel.trim().slice(0,120);
+                }
+            }
+        }
+
         function applySiteContent(value) {
             let content;
             try { content = JSON.parse(value); }
@@ -1431,6 +1449,7 @@
             Object.keys(window.siteData).forEach(key => delete window.siteData[key]);
             Object.assign(window.siteData, content);
             renderSectionContactDirectory(window.siteData);
+            applyTicketAppearance(window.siteData);
             if (typeof window.siteData.general.paysiteUrl === 'string') PAYSITE_URL = window.siteData.general.paysiteUrl;
             return true;
         }
@@ -1440,6 +1459,7 @@
             const originalRender = window.renderAllContent || renderAllContent;
             window.renderAllContent = function(){
                 const result = originalRender.apply(this, arguments);
+                applyTicketAppearance(window.siteData);
                 if (!applyingRemote && window.__snrgAdminUser && window.supabaseReady) {
                     window.sb.from('site_content').upsert({ content_key: 'public', content_value: JSON.stringify(window.siteData), updated_by: window.__snrgAdminUser.id, updated_at: new Date().toISOString() })
                       .then(({error}) => { if (error) showNotification('Could not save website changes: ' + error.message, 'error'); });
