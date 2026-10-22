@@ -62,7 +62,12 @@
                 for (const stream of availableStreamOptions) {
                     const option = document.createElement('option');
                     option.value = stream.event_id;
-                    const dateText = stream.event_date ? ' · ' + formatLongDateTime(stream.event_date) : ' · Date to be announced';
+                    const isFightQuestXVI = /fight quest xvi/i.test(String(stream.title || ''));
+                    const dateText = stream.event_date
+                        ? ' · ' + (isFightQuestXVI
+                            ? new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' }).format(new Date(stream.event_date)) + ' · Doors 6 PM · Fights 7 PM'
+                            : formatLongDateTime(stream.event_date))
+                        : ' · Date to be announced';
                     const amount = Number(stream.price_cents || 0) <= 0 ? 'FREE' : new Intl.NumberFormat('en-US', { style: 'currency', currency: stream.currency || 'USD' }).format(stream.price_cents / 100);
                     const detailText = [stream.venue, stream.main_event].filter(Boolean).join(' · ');
                     option.textContent = (stream.title || 'FQ MMA event') + dateText + ' · ' + amount + ' · Live only, no replay' + (detailText ? ' · ' + detailText : '');
