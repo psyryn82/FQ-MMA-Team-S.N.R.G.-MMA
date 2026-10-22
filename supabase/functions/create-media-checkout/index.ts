@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL"), serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
   const siteUrl = (Deno.env.get("SITE_URL") || "https://fq-snrg-mma.com").replace(/\/$/, "");
   if (!supabaseUrl || !serviceKey || !stripeKey) return respond({ error: "Media checkout is not configured." }, 503, origin);
+  if (!stripeKey.startsWith("sk_live_") && !stripeKey.startsWith("sk_test_")) return respond({ error: "Stripe server credentials are invalid. Checkout is temporarily unavailable; no payment was taken." }, 503, origin);
   if (!req.headers.get("apikey")) return respond({ error: "A public API key is required." }, 401, origin);
   let input: { media_id?: unknown; buyer_email?: unknown; accepted_terms?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "Media details are required." }, 400, origin); }
