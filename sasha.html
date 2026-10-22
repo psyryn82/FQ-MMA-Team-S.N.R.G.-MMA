@@ -97,13 +97,13 @@ footer{background:#fff!important;border-color:var(--line)!important}
   }
   function mediaCard(m,client){
     const isVideo=String(m.category||'').toLowerCase()==='video';
-    const imageUrl=!isVideo&&m.file_url&&/^https:\/\//i.test(m.file_url)?m.file_url:'';
-    const mediaVisual=isVideo
-      ? '<div class="w-full aspect-[4/3] flex flex-col items-center justify-center bg-black text-zinc-300 font-bold uppercase tracking-widest text-center p-4"><span class="text-3xl mb-3" aria-hidden="true">🎥</span><span>Video listing</span><span class="normal-case tracking-normal font-normal text-xs mt-2">Contact us for details. Private originals are not publicly playable.</span></div>'
-      : (imageUrl?'<img class="w-full aspect-[4/3] object-cover bg-black" loading="lazy" src="'+safeText(imageUrl)+'" alt="'+safeText(m.title||'Portfolio photo')+'">':'<div class="w-full aspect-[4/3] flex items-center justify-center bg-black text-zinc-300 font-bold uppercase tracking-widest">Photo</div>');
+    const previewPath=String(m.preview_path||'').trim();const previewUrl=/^https:\/\//i.test(previewPath)?previewPath:(previewPath?client.storage.from('fqmma-media').getPublicUrl(previewPath).data.publicUrl:'');const imageUrl=previewUrl&&/^https:\/\//i.test(previewUrl)?previewUrl:(!isVideo&&m.file_url&&/^https:\/\//i.test(m.file_url)?m.file_url:'');
+    const mediaVisual=imageUrl
+      ? '<img class="w-full aspect-[4/3] object-cover bg-black" loading="lazy" src="'+safeText(imageUrl)+'" alt="'+safeText(m.title||(isVideo?'Video preview':'Portfolio photo'))+'">'
+      : (isVideo?'<div class="w-full aspect-[4/3] flex flex-col items-center justify-center bg-black text-zinc-300 font-bold uppercase tracking-widest text-center p-4"><span class="text-3xl mb-3" aria-hidden="true">🎥</span><span>Video listing</span><span class="normal-case tracking-normal font-normal text-xs mt-2">Preview not available yet. Private originals are not publicly playable.</span></div>':'<div class="w-full aspect-[4/3] flex items-center justify-center bg-black text-zinc-300 font-bold uppercase tracking-widest">Photo</div>');
     const price=Number(m.price||0),isPaid=price>0&&m.price_confirmed===true;
     const priceText=isPaid?'One-time price: '+money(price):'Contact us for pricing';
-    const action=isPaid?'<button type="button" class="btn mt-3 w-full" data-buy-media="'+Number(m.id)+'" data-media-title="'+safeText(m.title||'digital media')+'" data-media-price="'+price.toFixed(2)+'">Purchase digital media</button>':'<a class="btn mt-3 inline-flex w-full justify-center" href="mailto:sashaluw98@yahoo.com?subject='+encodeURIComponent('Media pricing inquiry: '+(m.title||'digital media'))+'">Contact us for pricing</a>';
+    const action=isPaid?'<button type="button" class="btn mt-3 w-full" data-buy-media="'+Number(m.id)+'" data-media-title="'+safeText(m.title||'digital media')+'" data-media-price="'+price.toFixed(2)+'">Purchase digital media</button>':'<a class="btn mt-3 inline-flex w-full justify-center" href="mailto:support@fq-snrg-mma.com?subject='+encodeURIComponent('Media pricing inquiry: '+(m.title||'digital media'))+'">Contact us for pricing</a>';
     return '<article class="panel overflow-hidden">'+mediaVisual+'<div class="p-4"><h3 class="font-bold">'+safeText(m.title||'Portfolio item')+'</h3>'+(m.description?'<p class="muted text-sm mt-2">'+safeText(m.description)+'</p>':'')+'<p class="accent text-sm font-bold mt-3">'+priceText+'</p>'+action+'</div></article>';
   }
   function openMediaCheckout(id,title,price){
@@ -119,7 +119,7 @@ footer{background:#fff!important;border-color:var(--line)!important}
     status.textContent='Loading published portfolio items…';
     const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     const results=await Promise.all([
-      client.from('public_media_catalog').select('id,title,category,description,file_url,price,price_confirmed,is_published,collection,media_destination,created_at').eq('is_published',true).order('created_at',{ascending:false}).limit(100),
+      client.from('public_media_catalog').select('id,title,category,description,file_url,price,price_confirmed,is_published,collection,media_destination,created_at,preview_path').eq('is_published',true).order('created_at',{ascending:false}).limit(100),
       client.from('site_content').select('content_value').eq('content_key','public').maybeSingle()
     ]);
     const mediaResult=results[0],contentResult=results[1];
