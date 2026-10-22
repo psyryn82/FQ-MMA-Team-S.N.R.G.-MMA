@@ -1403,6 +1403,20 @@
             return content;
         }
 
+        function renderSectionContactDirectory(content) {
+            const host=document.getElementById('section-contact-directory');
+            if(!host)return;
+            const contacts=content?.general?.sectionContacts;
+            if(!contacts||typeof contacts!=='object'){host.innerHTML='';return;}
+            const labels={general:'General & Support',events:'Events',training:'Training',portfolio:'Photography & Portfolio',bookings:'Bookings',livestream:'Livestream & Tickets'};
+            host.innerHTML=Object.entries(labels).map(([key,label])=>{
+                const row=contacts[key]&&typeof contacts[key]==='object'?contacts[key]:{};
+                const email=String(row.email||'').trim(),phone=String(row.phone||'').trim();
+                if(!email&&!phone)return '';
+                return '<div class="rounded-lg border border-gray-800 bg-black/20 p-3"><h3 class="font-bold text-sm">'+escapeHtml(label)+'</h3>'+(email?'<p class="text-sm mt-1 break-all">Email: '+escapeHtml(email)+'</p>':'')+(phone?'<p class="text-sm mt-1">Phone: '+escapeHtml(phone)+'</p>':'')+'</div>';
+            }).join('');
+        }
+
         function applySiteContent(value) {
             let content;
             try { content = JSON.parse(value); }
@@ -1416,6 +1430,7 @@
             mergeDefaultDisciplines(content);
             Object.keys(window.siteData).forEach(key => delete window.siteData[key]);
             Object.assign(window.siteData, content);
+            renderSectionContactDirectory(window.siteData);
             if (typeof window.siteData.general.paysiteUrl === 'string') PAYSITE_URL = window.siteData.general.paysiteUrl;
             return true;
         }
