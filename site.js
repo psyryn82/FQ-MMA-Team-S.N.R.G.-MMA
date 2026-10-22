@@ -1339,10 +1339,24 @@
                 const flyerImage=document.getElementById('fightQuestFlyerImage'),flyerDocument=document.getElementById('fightQuestFlyerDocument');
                 if(flyerImage&&flyerDocument){
                     const flyerUrl=getSafeHttpUrl(fightQuestEvent?.flyer_image_url||'');
+                    flyerImage.onerror=null;
+                    flyerImage.onload=null;
+                    flyerDocument.textContent='Open or download the official event flyer';
                     if(flyerUrl){
                         const path=flyerUrl.split('?')[0].toLowerCase();
                         if(/\.(?:pdf|doc|docx)$/i.test(path)){flyerImage.classList.add('hidden');flyerDocument.href=flyerUrl;flyerDocument.classList.remove('hidden');}
-                        else{flyerImage.src=flyerUrl;flyerImage.classList.remove('hidden');flyerDocument.classList.add('hidden');flyerDocument.href=flyerUrl;}
+                        else{
+                            flyerDocument.href=flyerUrl;
+                            flyerImage.onerror=()=>{
+                                flyerImage.classList.add('hidden');
+                                flyerDocument.textContent='Flyer image could not be displayed. Open or download the official event flyer';
+                                flyerDocument.classList.remove('hidden');
+                            };
+                            flyerImage.onload=()=>{flyerDocument.textContent='Open or download the official event flyer';flyerDocument.classList.add('hidden');};
+                            flyerImage.src=flyerUrl;
+                            flyerImage.classList.remove('hidden');
+                            flyerDocument.classList.add('hidden');
+                        }
                     }else{flyerImage.classList.add('hidden');flyerDocument.classList.add('hidden');}
                 }
                 const eventItems = (eventsResult.data || []).map(e => {
