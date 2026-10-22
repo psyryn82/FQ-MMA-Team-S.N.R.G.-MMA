@@ -605,7 +605,9 @@
 
             // 4. Separate public catalogs: FQ MMA event media and Sasha's portfolio.
             const renderMediaCards = (items, container, emptyMessage) => {
-                container.innerHTML = items.map((item, index) => {
+                // Keep published records and prices intact, but do not show public cards without a safe preview.
+                const visibleItems = (Array.isArray(items) ? items : []).filter(item => !!getSafeHttpUrl(item.image, true));
+                container.innerHTML = visibleItems.map((item, index) => {
                     const isRed = index % 2 === 0;
                     const borderColor = isRed ? 'border-brand-red' : 'border-white';
                     const glowStyle = isRed ? 'shadow-neon-red' : 'shadow-neon-white';
@@ -640,7 +642,7 @@
                         </article>
                     `;
                 }).join('');
-                if (!Array.isArray(items) || items.length === 0) container.innerHTML = `<p class="text-center text-sm text-gray-400 md:col-span-2">No items have been published yet. ${emptyMessage || 'Please check back soon.'}</p>`;
+                if (visibleItems.length === 0) container.innerHTML = `<p class="text-center text-sm text-gray-400 md:col-span-2">${emptyMessage || 'New photos and videos will appear here when preview images are available.'}</p>`;
             };
             // Legacy free-form links stay hidden until they are re-uploaded through the protected media workflow.
             const uniqueMediaCards = (items) => {

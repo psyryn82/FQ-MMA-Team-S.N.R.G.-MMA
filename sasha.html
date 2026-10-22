@@ -160,7 +160,8 @@ footer{background:#fff!important;border-color:var(--line)!important}
     serviceSelect.innerHTML='<option value="">Choose a service</option>'+serviceNames.map(name=>'<option>'+safeText(name)+'</option>').join('')+'<option>Other / custom project</option>';
     if(serviceNames.includes(selectedService))serviceSelect.value=selectedService;
     if(mediaResult.error){status.textContent='We could not load the portfolio right now. Please try again later.';console.error('Sasha portfolio load failed:',mediaResult.error);return}
-    const rows=(mediaResult.data||[]).filter(m=>m.collection==='sasha_portfolio'||m.media_destination==='portfolio');
+    // Preserve all records and prices, but publish cards only when a safe preview is available.
+    const rows=(mediaResult.data||[]).filter(m=>m.collection==='sasha_portfolio'||m.media_destination==='portfolio').filter(m=>{const isVideo=String(m.category||'').toLowerCase()==='video';const hasPreview=!!String(m.preview_path||'').trim();const hasPhotoUrl=!isVideo&&/^https:\/\//i.test(String(m.file_url||''));return hasPreview||hasPhotoUrl;});
     $('portfolio-grid').innerHTML=rows.map(m=>mediaCard(m,client)).join('');
     $('portfolio-vault').hidden=rows.length>0;
     const feature=$('portfolio-feature-visual');
