@@ -145,23 +145,20 @@ footer{background:#fff!important;border-color:var(--line)!important}
     e.preventDefault();
     const btn=$('b-submit'),msg=$('booking-status');
     if($('b-company').value.trim())return;
-    const name=$('b-name').value.trim(),email=$('b-email').value.trim(),phone=$('b-phone').value.trim(),service=$('b-service').value,date=$('b-date').value||null,time=$('b-time').value.trim(),location=$('b-location').value.trim(),details=$('b-details').value.trim();
+    const name=$('b-name').value.trim(),email=$('b-email').value.trim(),phone=$('b-phone').value.trim(),service=$('b-service').value,date=$('b-date').value||'',time=$('b-time').value.trim(),location=$('b-location').value.trim(),details=$('b-details').value.trim();
     if(!name||!email||!service||!details){msg.textContent='Please complete your name, email, service, and project details.';return}
     if(!window.supabase){msg.textContent='Booking service is temporarily unavailable. Please try again later.';return}
     btn.disabled=true;btn.textContent='Submitting…';msg.textContent='Submitting your request…';
     try{
-      const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY),id=crypto.randomUUID();
-      const result=await client.from('booking_requests').insert({id,customer_name:name,customer_email:email,customer_phone:phone,service_type:service,preferred_date:date,preferred_time:time,location,details,status:'pending'});
-      if(result.error)throw result.error;
-      let notificationSent=false;
-      try{
-        const notify=await client.functions.invoke('send-contact-message',{body:{name,email,category:'Portfolio / Photography Inquiry',company:'',message:'NEW SASHA PORTFOLIO BOOKING REQUEST\nBooking ID: '+id+'\nService: '+service+'\nPreferred date: '+(date||'Flexible')+'\nPreferred time: '+(time||'Flexible')+'\nLocation: '+(location||'Not specified')+'\nPhone: '+(phone||'Not provided')+'\nDetails: '+details}});
-        if(notify.error||notify.data?.success!==true)throw notify.error||new Error('Email notification was not confirmed.');
-        notificationSent=true;
-      }catch(err){console.warn('Booking saved; notification could not be confirmed.',err)}
+      const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+      const {data,error}=await client.functions.invoke('create-booking-request',{body:{name,email,phone,service,date,time,location,details,company:$('b-company').value.trim()}});
+      if(error)throw error;
+      if(!data?.success)throw new Error(data?.error||'We could not submit your booking request.');
       $('booking-form').reset();
-      msg.textContent=notificationSent?'Thank you for your inquiry. Your booking request has been submitted successfully and is pending review. If approved, our team will contact you with the next steps. No payment has been processed, and your date is not confirmed at this stage.':'Your request was saved, but email notification could not be confirmed. The team can still review it in the booking dashboard. If urgent, email sashaluw98@yahoo.com.';
-    }catch(err){msg.textContent='We could not submit your request. Please try again later.';console.error('Sasha booking submission failed.',err)}
+      msg.textContent=data.notified
+        ?'Thank you for your inquiry. Your booking request has been submitted successfully and is pending review. If approved, our team will contact you with the next steps. No payment has been processed, and your date is not confirmed at this stage.'
+        :'Your request was saved, but email notification could not be confirmed. The team can still review it in the booking dashboard. If urgent, email sashaluw98@yahoo.com.';
+    }catch(err){msg.textContent=err?.message||'We could not submit your request. Please try again later.';console.error('Sasha booking submission failed.',err)}
     finally{btn.disabled=false;btn.textContent='Send booking request'}
   });
   $('media-checkout-close').addEventListener('click',()=>$('media-checkout-modal').classList.add('hidden'));
