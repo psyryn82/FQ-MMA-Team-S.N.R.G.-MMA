@@ -504,7 +504,7 @@ async function loadMedia(){
 async function loadSiteAssets(){
  const list=$('siteAssetList'),message=$('siteAssetMessage');
  list.innerHTML='<p class="muted text-sm">Loading private site assets…</p>';
- const {data,error}=await client.from('site_assets').select('id,title,description,file_name,content_type,private_path,public_path,public_url,is_public,created_at').order('created_at',{ascending:false}).limit(250);
+ const {data,error}=await client.from('site_assets').select('id,title,description,file_name,content_type,private_path,external_url,public_path,public_url,is_public,created_at').order('created_at',{ascending:false}).limit(250);
  if(error){list.innerHTML='<p class="text-red-400 text-sm">Could not load Site Media library: '+esc(error.message)+'</p>';return}
  records.site_assets=data||[];
  list.innerHTML=records.site_assets.map(a=>'<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-3"><div class="min-w-0"><b>'+esc(a.title)+'</b><p class="muted text-xs mt-1">'+esc(a.description||'No description')+'</p><p class="muted text-xs mt-1">'+esc(a.file_name)+' · '+(a.is_public?'<span class="text-green-400">Public copy explicitly enabled</span>':'<span class="text-yellow-300">Private only</span>')+'</p><p class="muted text-xs mt-1">Asset ID: '+esc(a.id)+'</p>'+(a.public_url?'<p class="text-xs mt-2 break-all"><a class="text-red-300 underline" href="'+esc(a.public_url)+'" target="_blank" rel="noopener">Open public copy</a> <button class="btn2" type="button" data-copy-asset-url="'+esc(a.id)+'">Copy URL</button></p>':'')+'</div><div class="flex flex-wrap items-start gap-2">'+(a.is_public?'<button class="btn2" data-site-asset-publish="'+esc(a.id)+'" data-public="true">Make private</button>':'<button class="btn2" data-site-asset-publish="'+esc(a.id)+'" data-public="false">Publish copy</button>')+'<button class="btn2" data-site-asset-delete="'+esc(a.id)+'">Delete</button></div></div></article>').join('')||'<p class="muted text-sm">No site assets yet. Upload logos, graphics, or photos above.</p>';
@@ -513,31 +513,32 @@ async function loadSiteAssets(){
 $('siteAssetRefresh').onclick=loadSiteAssets;
 $('siteAssetForm').addEventListener('submit',async e=>{
  e.preventDefault();
- const file=$('siteAssetFile').files[0],title=$('siteAssetTitle').value.trim(),description=$('siteAssetDescription').value.trim(),makePublic=$('siteAssetPublic').checked,message=$('siteAssetMessage'),button=$('siteAssetSave');
+ const file=$('siteAssetFile').files[0],externalRaw=$('siteAssetUrl').value.trim(),title=$('siteAssetTitle').value.trim(),description=$('siteAssetDescription').value.trim(),makePublic=$('siteAssetPublic').checked,message=$('siteAssetMessage'),button=$('siteAssetSave');
  message.textContent='';
- if(!file){message.textContent='Choose an image file.';return}
- if(file.size>1024*1024*1024){message.textContent='Image exceeds the 1 GB upload limit.';return}
- if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, or GIF image.';return}
- button.disabled=true;button.textContent='Uploading privately…';updateAssetProgress('Preparing private upload…',0,'Your original is being stored privately.');
- const stamp=Date.now(),safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),privatePath='site-assets/'+stamp+'-'+safeName,publicPath=makePublic?'site-assets/'+stamp+'-'+safeName:null;
+ if(Boolean(file)===Boolean(externalRaw)){message.textContent='Choose exactly one: upload a file OR enter an HTTPS URL.';return}
+ let externalUrl='';
+ if(externalRaw){try{const parsed=new URL(externalRaw);if(parsed.protocol!=='https:')throw new Error();externalUrl=parsed.href;}catch{message.textContent='Enter a valid HTTPS URL. External links are hosted elsewhere and are not private storage.';return}}
+ const allowedTypes=['image/jpeg','image/png','image/webp','image/gif','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','video/mp4','video/webm'];
+ if(file&&file.size>1024*1024*1024){message.textContent='File exceeds the 1 GB upload limit.';return}
+ if(file&&!allowedTypes.includes(file.type)){message.textContent='Choose JPG, PNG, WebP, GIF, PDF, DOC/DOCX, MP4, or WebM.';return}
+ button.disabled=true;button.textContent=file?'Uploading privately…':'Saving URL…';updateAssetProgress(file?'Preparing private upload…':'Saving external URL…',0,file?'Your original is being stored privately.':'No file is copied; this is a link to externally hosted content.');
+ const stamp=Date.now(),safeName=file?file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'):((externalUrl.split('/').pop()||'external-resource').split('?')[0].slice(0,180)||'external-resource'),privatePath=file?'site-assets/'+stamp+'-'+safeName:null,publicPath=file&&makePublic?'site-assets/'+stamp+'-'+safeName:null;
  let privateUploaded=false,publicUploaded=false;
  try{
-  await uploadStorageFileWithProgress('fqmma-private',privatePath,file,'Uploading private original…','asset');privateUploaded=true;
   let publicUrl=null;
-  if(makePublic){
-   button.textContent='Creating approved public copy…';
-   await uploadStorageFileWithProgress('fqmma-media',publicPath,file,'Uploading approved public copy…','asset');publicUploaded=true;
-   publicUrl=client.storage.from('fqmma-media').getPublicUrl(publicPath).data.publicUrl;
-  }
-  const {error}=await client.from('site_assets').insert({title,description,file_name:file.name,content_type:file.type,private_path:privatePath,public_path:publicPath,public_url:publicUrl,is_public:makePublic,created_by:currentUser?.id||null});
+  if(file){
+   await uploadStorageFileWithProgress('fqmma-private',privatePath,file,'Uploading private original…','asset');privateUploaded=true;
+   if(makePublic){button.textContent='Creating approved public copy…';await uploadStorageFileWithProgress('fqmma-media',publicPath,file,'Uploading approved public copy…','asset');publicUploaded=true;publicUrl=client.storage.from('fqmma-media').getPublicUrl(publicPath).data.publicUrl;}
+  }else if(makePublic){publicUrl=externalUrl;}
+  const {error}=await client.from('site_assets').insert({title,description,file_name:safeName,content_type:file?.type||'application/octet-stream',private_path:privatePath,external_url:externalUrl||null,public_path:publicPath,public_url:publicUrl,is_public:makePublic,created_by:currentUser?.id||null});
   if(error)throw error;
-  $('siteAssetForm').reset();message.textContent=makePublic?'Asset uploaded privately and a separate public copy was created by explicit selection.':'Asset uploaded to private storage only.';
+  $('siteAssetForm').reset();message.textContent=file?(makePublic?'File stored privately and a separate public copy was created by explicit selection.':'File uploaded to private storage only.'):(makePublic?'External URL saved and marked public. Access is controlled by the external host.':'External URL saved for staff reference; it is not a private copy.');
   await loadSiteAssets();
  }catch(err){
   if(publicUploaded)await client.storage.from('fqmma-media').remove([publicPath]);
   if(privateUploaded)await client.storage.from('fqmma-private').remove([privatePath]);
-  message.textContent='Upload failed: '+(err?.message||String(err));
- }finally{stopAssetProgress();button.disabled=false;button.textContent='Upload asset'}
+  message.textContent='Save failed: '+(err?.message||String(err));
+ }finally{stopAssetProgress();button.disabled=false;button.textContent='Save asset'}
 });
 document.addEventListener('click',async e=>{
  const copy=e.target.closest('[data-copy-asset-url]');
@@ -548,6 +549,8 @@ document.addEventListener('click',async e=>{
   const next=toggle.dataset.public!=='true';toggle.disabled=true;
   try{
    if(next){
+    if(a.external_url){const {error:updateError}=await client.from('site_assets').update({is_public:true,public_path:null,public_url:a.external_url,updated_at:new Date().toISOString()}).eq('id',a.id);if(updateError)throw updateError;$('siteAssetMessage').textContent='External URL marked public. Its hosting provider controls access.';await loadSiteAssets();return;}
+    if(!a.private_path)throw new Error('No private file exists for this asset.');
     const blob=await downloadStorageFileWithProgress('fqmma-private',a.private_path,'Downloading private original…','asset');
     const publicPath='site-assets/'+Date.now()+'-'+a.file_name.replace(/[^a-zA-Z0-9._-]+/g,'-');
     await uploadStorageFileWithProgress('fqmma-media',publicPath,blob,a.file_name+' public copy','asset');
@@ -571,7 +574,7 @@ document.addEventListener('click',async e=>{
   del.disabled=true;
   try{
    const {error}=await client.from('site_assets').delete().eq('id',a.id);if(error)throw error;
-   const cleanup=await Promise.all([client.storage.from('fqmma-private').remove([a.private_path]),...(a.public_path?[client.storage.from('fqmma-media').remove([a.public_path])]:[])]);
+   const cleanup=await Promise.all([...(a.private_path?[client.storage.from('fqmma-private').remove([a.private_path])]:[]),...(a.public_path?[client.storage.from('fqmma-media').remove([a.public_path])]:[])]);
    if(cleanup.some(x=>x.error))$('siteAssetMessage').textContent='Record deleted, but a storage object could not be removed. Ask an administrator to clean up unused files.';
    await loadSiteAssets();
   }catch(err){$('siteAssetMessage').textContent='Could not delete asset: '+(err?.message||String(err));del.disabled=false}
