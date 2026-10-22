@@ -1617,6 +1617,8 @@
             subscribeLiveChat();
         }
 
+        setInterval(async()=>{if(!window.supabaseReady)return;try{const {data}=await window.sb.auth.getSession();await updateLiveChatAuth(data?.session||null);}catch(_error){}},30000);
+
         function setupAccessibleDialogs() {
             const dialogs = Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"]'));
             if (!dialogs.length) return;
