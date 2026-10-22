@@ -203,9 +203,9 @@ Deno.serve(async (req) => {
         emailResponse = await fetch("https://api.resend.com/emails", {
         method: "POST", headers: { "Authorization": "Bearer " + resendKey, "Content-Type": "application/json" },
         body: JSON.stringify({
-          from, to: [email], reply_to: "fqsnrgmma.info@gmail.com", subject: "Your FQ MMA media download link",
-          text: "Your download of " + String(media.title || "the approved media") + " has been approved. Open this link within 30 minutes, then select Download file. The link can be used once. If you did not expect this email, contact fqsnrgmma.info@gmail.com.\n\n" + link,
-          html: "<div style=\"font-family:Arial,sans-serif;line-height:1.5;color:#171717\"><h2>Your FQ MMA media download is approved</h2><p>Your download of <strong>" + safeTitle + "</strong> has been approved.</p><p>This link expires in 30 minutes and can be used once. Open the page, then press <strong>Download file</strong> to use the link.</p><p><a href=\"" + link + "\" style=\"display:inline-block;background:#e50914;color:#fff;text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:bold\">Open secure download</a></p><p>If you did not expect this email, contact <a href=\"mailto:fqsnrgmma.info@gmail.com\">fqsnrgmma.info@gmail.com</a>.</p></div>"
+          from, to: [email], reply_to: "support@fq-snrg-mma.com", subject: "Your FQ MMA media download link",
+          text: "Your download of " + String(media.title || "the approved media") + " has been approved. Open this link within 30 minutes, then select Download file. The link can be used once. If you did not expect this email, contact support@fq-snrg-mma.com.\n\n" + link,
+          html: "<div style=\"font-family:Arial,sans-serif;line-height:1.5;color:#171717\"><h2>Your FQ MMA media download is approved</h2><p>Your download of <strong>" + safeTitle + "</strong> has been approved.</p><p>This link expires in 30 minutes and can be used once. Open the page, then press <strong>Download file</strong> to use the link.</p><p><a href=\"" + link + "\" style=\"display:inline-block;background:#e50914;color:#fff;text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:bold\">Open secure download</a></p><p>If you did not expect this email, contact <a href=\"mailto:support@fq-snrg-mma.com\">support@fq-snrg-mma.com</a>.</p></div>"
         })
       });
     } catch {
