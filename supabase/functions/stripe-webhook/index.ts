@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
             .select("id,download_email_status,download_email_sent_at").eq("checkout_session_id", session.id).single();
           if (savedPurchaseError || !savedPurchase) throw savedPurchaseError || new Error("Paid media purchase record could not be reloaded");
 
-          if (!buyerEmail || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(buyerEmail)) {
+          if (!buyerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail)) {
             const { error: noEmailError } = await db.from("media_purchases").update({
               download_email_status: "needs_email",
               download_email_error: "Stripe did not provide a valid customer email.",
