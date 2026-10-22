@@ -504,40 +504,41 @@ async function loadMedia(){
 async function loadSiteAssets(){
  const list=$('siteAssetList'),message=$('siteAssetMessage');
  list.innerHTML='<p class="muted text-sm">Loading private site assets…</p>';
- const {data,error}=await client.from('site_assets').select('id,title,description,file_name,content_type,private_path,public_path,public_url,is_public,created_at').order('created_at',{ascending:false}).limit(250);
+ const {data,error}=await client.from('site_assets').select('id,title,description,file_name,content_type,private_path,external_url,public_path,public_url,is_public,created_at').order('created_at',{ascending:false}).limit(250);
  if(error){list.innerHTML='<p class="text-red-400 text-sm">Could not load Site Media library: '+esc(error.message)+'</p>';return}
  records.site_assets=data||[];
- list.innerHTML=records.site_assets.map(a=>'<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-3"><div class="min-w-0"><b>'+esc(a.title)+'</b><p class="muted text-xs mt-1">'+esc(a.description||'No description')+'</p><p class="muted text-xs mt-1">'+esc(a.file_name)+' · '+(a.is_public?'<span class="text-green-400">Public copy explicitly enabled</span>':'<span class="text-yellow-300">Private only</span>')+'</p><p class="muted text-xs mt-1">Asset ID: '+esc(a.id)+'</p>'+(a.public_url?'<p class="text-xs mt-2 break-all"><a class="text-red-300 underline" href="'+esc(a.public_url)+'" target="_blank" rel="noopener">Open public copy</a> <button class="btn2" type="button" data-copy-asset-url="'+esc(a.id)+'">Copy URL</button></p>':'')+'</div><div class="flex flex-wrap items-start gap-2">'+(a.is_public?'<button class="btn2" data-site-asset-publish="'+esc(a.id)+'" data-public="true">Make private</button>':'<button class="btn2" data-site-asset-publish="'+esc(a.id)+'" data-public="false">Publish copy</button>')+'<button class="btn2" data-site-asset-delete="'+esc(a.id)+'">Delete</button></div></div></article>').join('')||'<p class="muted text-sm">No site assets yet. Upload logos, graphics, or photos above.</p>';
+ list.innerHTML=records.site_assets.map(a=>'<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-3"><div class="min-w-0"><b>'+esc(a.title)+'</b><p class="muted text-xs mt-1">'+esc(a.description||'No description')+'</p><p class="muted text-xs mt-1">'+esc(a.file_name)+' · '+(a.is_public?'<span class="text-green-400">Public copy explicitly enabled</span>':'<span class="text-yellow-300">Private only</span>')+'</p><p class="muted text-xs mt-1">Asset ID: '+esc(a.id)+'</p>'+(a.external_url?'<p class="text-xs mt-2 break-all">External URL: <a class="text-red-300 underline" href="'+esc(a.external_url)+'" target="_blank" rel="noopener noreferrer">Open link</a></p>':'')+(a.public_url?'<p class="text-xs mt-2 break-all"><a class="text-red-300 underline" href="'+esc(a.public_url)+'" target="_blank" rel="noopener noreferrer">Open public copy</a> <button class="btn2" type="button" data-copy-asset-url="'+esc(a.id)+'">Copy URL</button></p>':'')+'</div><div class="flex flex-wrap items-start gap-2">'+(a.is_public?'<button class="btn2" data-site-asset-publish="'+esc(a.id)+'" data-public="true">Make private</button>':'<button class="btn2" data-site-asset-publish="'+esc(a.id)+'" data-public="false">Publish copy</button>')+'<button class="btn2" data-site-asset-delete="'+esc(a.id)+'">Delete</button></div></div></article>').join('')||'<p class="muted text-sm">No site assets yet. Upload logos, graphics, or photos above.</p>';
  message.textContent='Loaded '+records.site_assets.length+' asset(s).';
 }
 $('siteAssetRefresh').onclick=loadSiteAssets;
 $('siteAssetForm').addEventListener('submit',async e=>{
  e.preventDefault();
- const file=$('siteAssetFile').files[0],title=$('siteAssetTitle').value.trim(),description=$('siteAssetDescription').value.trim(),makePublic=$('siteAssetPublic').checked,message=$('siteAssetMessage'),button=$('siteAssetSave');
+ const file=$('siteAssetFile').files[0],externalRaw=$('siteAssetUrl').value.trim(),title=$('siteAssetTitle').value.trim(),description=$('siteAssetDescription').value.trim(),makePublic=$('siteAssetPublic').checked,message=$('siteAssetMessage'),button=$('siteAssetSave');
  message.textContent='';
- if(!file){message.textContent='Choose an image file.';return}
- if(file.size>1024*1024*1024){message.textContent='Image exceeds the 1 GB upload limit.';return}
- if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, or GIF image.';return}
- button.disabled=true;button.textContent='Uploading privately…';updateAssetProgress('Preparing private upload…',0,'Your original is being stored privately.');
- const stamp=Date.now(),safeName=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'),privatePath='site-assets/'+stamp+'-'+safeName,publicPath=makePublic?'site-assets/'+stamp+'-'+safeName:null;
+ if(Boolean(file)===Boolean(externalRaw)){message.textContent='Choose exactly one: upload a file OR enter an HTTPS URL.';return}
+ let externalUrl='';
+ if(externalRaw){try{const parsed=new URL(externalRaw);if(parsed.protocol!=='https:')throw new Error();externalUrl=parsed.href;}catch{message.textContent='Enter a valid HTTPS URL. External links are hosted elsewhere and are not private storage.';return}}
+ const allowedTypes=['image/jpeg','image/png','image/webp','image/gif','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','video/mp4','video/webm'];
+ if(file&&file.size>1024*1024*1024){message.textContent='File exceeds the 1 GB upload limit.';return}
+ if(file&&!allowedTypes.includes(file.type)){message.textContent='Choose JPG, PNG, WebP, GIF, PDF, DOC/DOCX, MP4, or WebM.';return}
+ button.disabled=true;button.textContent=file?'Uploading privately…':'Saving URL…';updateAssetProgress(file?'Preparing private upload…':'Saving external URL…',0,file?'Your original is being stored privately.':'No file is copied; this is a link to externally hosted content.');
+ const stamp=Date.now(),safeName=file?file.name.replace(/[^a-zA-Z0-9._-]+/g,'-'):((externalUrl.split('/').pop()||'external-resource').split('?')[0].slice(0,180)||'external-resource'),privatePath=file?'site-assets/'+stamp+'-'+safeName:null,publicPath=file&&makePublic?'site-assets/'+stamp+'-'+safeName:null;
  let privateUploaded=false,publicUploaded=false;
  try{
-  await uploadStorageFileWithProgress('fqmma-private',privatePath,file,'Uploading private original…','asset');privateUploaded=true;
   let publicUrl=null;
-  if(makePublic){
-   button.textContent='Creating approved public copy…';
-   await uploadStorageFileWithProgress('fqmma-media',publicPath,file,'Uploading approved public copy…','asset');publicUploaded=true;
-   publicUrl=client.storage.from('fqmma-media').getPublicUrl(publicPath).data.publicUrl;
-  }
-  const {error}=await client.from('site_assets').insert({title,description,file_name:file.name,content_type:file.type,private_path:privatePath,public_path:publicPath,public_url:publicUrl,is_public:makePublic,created_by:currentUser?.id||null});
+  if(file){
+   await uploadStorageFileWithProgress('fqmma-private',privatePath,file,'Uploading private original…','asset');privateUploaded=true;
+   if(makePublic){button.textContent='Creating approved public copy…';await uploadStorageFileWithProgress('fqmma-media',publicPath,file,'Uploading approved public copy…','asset');publicUploaded=true;publicUrl=client.storage.from('fqmma-media').getPublicUrl(publicPath).data.publicUrl;}
+  }else if(makePublic){publicUrl=externalUrl;}
+  const {error}=await client.from('site_assets').insert({title,description,file_name:safeName,content_type:file?.type||'application/octet-stream',private_path:privatePath,external_url:externalUrl||null,public_path:publicPath,public_url:publicUrl,is_public:makePublic,created_by:currentUser?.id||null});
   if(error)throw error;
-  $('siteAssetForm').reset();message.textContent=makePublic?'Asset uploaded privately and a separate public copy was created by explicit selection.':'Asset uploaded to private storage only.';
+  $('siteAssetForm').reset();message.textContent=file?(makePublic?'File stored privately and a separate public copy was created by explicit selection.':'File uploaded to private storage only.'):(makePublic?'External URL saved and marked public. Access is controlled by the external host.':'External URL saved for staff reference; it is not a private copy.');
   await loadSiteAssets();
  }catch(err){
   if(publicUploaded)await client.storage.from('fqmma-media').remove([publicPath]);
   if(privateUploaded)await client.storage.from('fqmma-private').remove([privatePath]);
-  message.textContent='Upload failed: '+(err?.message||String(err));
- }finally{stopAssetProgress();button.disabled=false;button.textContent='Upload asset'}
+  message.textContent='Save failed: '+(err?.message||String(err));
+ }finally{stopAssetProgress();button.disabled=false;button.textContent='Save asset'}
 });
 document.addEventListener('click',async e=>{
  const copy=e.target.closest('[data-copy-asset-url]');
@@ -548,6 +549,8 @@ document.addEventListener('click',async e=>{
   const next=toggle.dataset.public!=='true';toggle.disabled=true;
   try{
    if(next){
+    if(a.external_url){const {error:updateError}=await client.from('site_assets').update({is_public:true,public_path:null,public_url:a.external_url,updated_at:new Date().toISOString()}).eq('id',a.id);if(updateError)throw updateError;$('siteAssetMessage').textContent='External URL marked public. Its hosting provider controls access.';await loadSiteAssets();return;}
+    if(!a.private_path)throw new Error('No private file exists for this asset.');
     const blob=await downloadStorageFileWithProgress('fqmma-private',a.private_path,'Downloading private original…','asset');
     const publicPath='site-assets/'+Date.now()+'-'+a.file_name.replace(/[^a-zA-Z0-9._-]+/g,'-');
     await uploadStorageFileWithProgress('fqmma-media',publicPath,blob,a.file_name+' public copy','asset');
@@ -571,7 +574,7 @@ document.addEventListener('click',async e=>{
   del.disabled=true;
   try{
    const {error}=await client.from('site_assets').delete().eq('id',a.id);if(error)throw error;
-   const cleanup=await Promise.all([client.storage.from('fqmma-private').remove([a.private_path]),...(a.public_path?[client.storage.from('fqmma-media').remove([a.public_path])]:[])]);
+   const cleanup=await Promise.all([...(a.private_path?[client.storage.from('fqmma-private').remove([a.private_path])]:[]),...(a.public_path?[client.storage.from('fqmma-media').remove([a.public_path])]:[])]);
    if(cleanup.some(x=>x.error))$('siteAssetMessage').textContent='Record deleted, but a storage object could not be removed. Ask an administrator to clean up unused files.';
    await loadSiteAssets();
   }catch(err){$('siteAssetMessage').textContent='Could not delete asset: '+(err?.message||String(err));del.disabled=false}
@@ -594,25 +597,25 @@ async function createImagePreview(file){
 }
 $('mediaForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const file=$('mediaFile').files[0], id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
-  const description=$('mediaDescription').value.trim(), collection=activeMediaCollection, eventId=collection==='sasha_portfolio'?null:($('mediaEvent').value||null), alsoListInOther=$('mediaAlsoListInOther').checked;
+  const file=$('mediaFile').files[0],externalRaw=$('mediaExternalUrl').value.trim(), id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
+  const description=$('mediaDescription').value.trim(), collection=activeMediaCollection, eventId=collection==='sasha_portfolio'?null:($('mediaEvent').value||null), alsoListInOther=$('mediaAlsoListInOther').checked; let externalUrl=''; if(externalRaw){try{const parsed=new URL(externalRaw);if(parsed.protocol!=='https:')throw new Error();externalUrl=parsed.href;}catch{say('Enter a valid HTTPS URL.',true);return}}
   const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, message=$('mediaMessage');message.textContent='';
   if(!title){message.textContent='Enter a title.';return}
   if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid intended price from $0 to $9,999. Leave at $0 if customers should contact us for a quote.';return}if(price>0&&!$('mediaPriceConfirmed').checked){message.textContent='Confirm the exact positive price before publishing it. Leave the price at $0 to display “Contact us for pricing.”';return}
   if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
-  if(!id&&!file){message.textContent='Choose an original photo or video to upload for a new listing.';return}
+  if((file&&externalUrl)||(!id&&!file&&!externalUrl)){message.textContent='Choose a file or HTTPS URL for a new listing, and do not choose both.';return} if(externalUrl&&price>0){message.textContent='External URLs cannot be used for paid listings because the external host could bypass payment protection. Upload the original to private storage for paid access.';return}
   if(file&&file.size>5*1024*1024*1024){message.textContent='Media exceeds the 5 GB upload limit.';return}
-  if(file&&!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose a JPG, PNG, WebP, GIF, MP4, or WebM original.';return}
+  if(file&&!['image/jpeg','image/png','image/webp','image/gif','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose JPG, PNG, WebP, GIF, PDF, DOC/DOCX, MP4, or WebM.';return}
   const button=$('mediaSaveButton'),buttonLabel=id?'Saving changes…':'Uploading media…';button.disabled=true;button.textContent=buttonLabel;const uploaded=[];let livepeerMediaId=null,livepeerSiblingId=null;startMediaProgress();
   try{
-    const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,price_confirmed:price>0?$('mediaPriceConfirmed').checked:true,is_published:published};let existing=null,sibling=null;
+    const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,price_confirmed:price>0?$('mediaPriceConfirmed').checked:true,is_published:published};if(externalUrl){const path=externalUrl.split('?')[0].toLowerCase();const category=/\.(?:jpe?g|png|gif|webp|avif)$/.test(path)?'Photo':/\.(?:mp4|webm|mov|m4v)$/.test(path)?'Video':'Document';Object.assign(patch,{external_url:externalUrl,file_url:externalUrl,file_path:null,preview_path:null,storage_bucket:'fqmma-private',category,livepeer_asset_id:null,livepeer_playback_id:null,livepeer_status:'not_used',livepeer_playback_policy:'none'});}let existing=null,sibling=null;
     if(id){
       existing=records.media?.find(m=>String(m.id)===String(id));if(!existing)throw new Error('Media listing was not found. Refresh the catalog and try again.');
       sibling=existing.file_path?records.media?.find(m=>String(m.id)!==String(existing.id)&&m.file_path===existing.file_path&&m.storage_bucket===existing.storage_bucket&&m.collection!==existing.collection):null;
       const purchases=await client.from('media_purchases').select('id',{count:'exact',head:true}).eq('media_id',id);
       if(purchases.error)throw purchases.error;
-      if(!file){const currentBucket=existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media');if(currentBucket!=='fqmma-private')throw new Error('This original is in public storage. Re-upload the original before editing this listing so the original can be stored privately. No changes were saved.');}
-      if(file&&(purchases.count||0)>0)throw new Error('This item has purchase history. Its original cannot be replaced because that could change what existing buyers receive. Edit details only, or create a new listing for a different original.');
+      if(!file&&!externalUrl){const currentBucket=existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media');if(currentBucket!=='fqmma-private')throw new Error('This original is in public storage. Re-upload the original before editing this listing so the original can be stored privately. No changes were saved.');}
+      if((file||externalUrl)&&(purchases.count||0)>0)throw new Error('This item has purchase history. Its original or external destination cannot be replaced because that could change what existing buyers receive. Edit details only, or create a new listing for different media.');
       if(file&&sibling){const siblingPurchases=await client.from('media_purchases').select('id',{count:'exact',head:true}).eq('media_id',sibling.id);if(siblingPurchases.error)throw siblingPurchases.error;if((siblingPurchases.count||0)>0)throw new Error('This original is also listed in the other catalog and that listing has purchase history. Its shared file cannot be replaced. Edit details only or create a new listing.');}
     }
     let originalPath=null,originalBucket='fqmma-private';
@@ -633,10 +636,16 @@ $('mediaForm').addEventListener('submit',async e=>{
         await uploadStorageFileWithProgress('fqmma-media',listingImagePath,listingImageFile,'Uploading photo listing image…');
         uploaded.push({bucket:'fqmma-media',path:listingImagePath});
         const listingImageUrl=client.storage.from('fqmma-media').getPublicUrl(listingImagePath).data.publicUrl;
-        Object.assign(patch,{category:'Photo',file_path:originalPath,file_url:listingImageUrl,preview_path:listingImagePath,storage_bucket:originalBucket});
-      }else{
+        Object.assign(patch,{category:'Photo',file_path:originalPath,file_url:listingImageUrl,preview_path:listingImagePath,storage_bucket:originalBucket,external_url:null});
+      }else if(file.type.startsWith('video/')){
         // Keep the video original private. No public playback copy is created.
-        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:originalUrl,preview_path:null,storage_bucket:originalBucket});
+        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:originalUrl,preview_path:null,storage_bucket:originalBucket,external_url:null});
+      }else{
+        // Documents remain private and are delivered only through the protected media flow after purchase.
+        updateMediaProgress('Uploading private document…',8,'Saving the PDF or Word original to private storage.');
+        await uploadStorageFileWithProgress(originalBucket,originalPath,file,'Uploading private document…');
+        uploaded.push({bucket:originalBucket,path:originalPath});
+        Object.assign(patch,{category:'Document',file_path:originalPath,file_url:null,preview_path:null,storage_bucket:originalBucket,external_url:null});
       }
     }
     if(file&&file.type.startsWith('video/')) {
@@ -662,8 +671,8 @@ $('mediaForm').addEventListener('submit',async e=>{
         else{const {error}=await client.from('media').delete().eq('id',sibling.id);if(error)throw error;}
       }
       const oldObjects=[];
-      if(file&&existing?.file_path)oldObjects.push({bucket:existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media'),path:existing.file_path,kind:'original'});
-      if(file&&existing?.preview_path&&existing.preview_path!==patch.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path,kind:'preview'});
+      if((file||externalUrl)&&existing?.file_path)oldObjects.push({bucket:existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media'),path:existing.file_path,kind:'original'});
+      if((file||externalUrl)&&existing?.preview_path&&existing.preview_path!==patch.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path,kind:'preview'});
       for(const object of oldObjects){
         const refs=object.kind==='original'
           ? await client.from('media').select('id',{count:'exact',head:true}).eq('file_path',object.path).eq('storage_bucket',object.bucket)
@@ -672,7 +681,7 @@ $('mediaForm').addEventListener('submit',async e=>{
         if((refs.count||0)===0){const removed=await client.storage.from(object.bucket).remove([object.path]);if(removed.error)throw removed.error;}
       }
       if(file&&file.type.startsWith('video/')){livepeerMediaId=Number(id);livepeerSiblingId=alsoListInOther?sibling?.id||null:null;}
-      message.textContent=file?'Original updated privately.':(alsoListInOther?'Listing details updated in both catalogs.':'Listing details updated.');
+      message.textContent=file?'Original updated privately.':externalUrl?'External URL saved. The linked content is public at its host and is not eligible for paid delivery.':(alsoListInOther?'Listing details updated in both catalogs.':'Listing details updated.');
     }else{
       const insertRows=[{...patch}];
       if(alsoListInOther){
@@ -684,7 +693,7 @@ $('mediaForm').addEventListener('submit',async e=>{
       if(!Array.isArray(insertedRows)||insertedRows.length!==insertRows.length)throw new Error('The media listings were not all saved. Refresh the catalog and verify both destinations before retrying.');
       uploaded.length=0;
       if(file&&file.type.startsWith('video/')){livepeerMediaId=Number(insertedRows[0].id);livepeerSiblingId=alsoListInOther?Number(insertedRows[1].id):null;}
-      message.textContent=alsoListInOther?'Listing created in Fight Media and Portfolio Media. Both listings share one private original; each catalog has separate sales history.':'Listing created. The original is private. A $0 price displays “Contact us for pricing,” not free access.';
+      message.textContent=alsoListInOther?'Listing created in Fight Media and Portfolio Media. Both listings share one private original; each catalog has separate sales history.':externalUrl?'External URL listing created. It is not private at its host and cannot be used for paid delivery.':'Listing created. The original is private. A $0 price displays “Contact us for pricing,” not free access.';
     }
     if(file&&file.type.startsWith('video/')&&livepeerMediaId){
       try{

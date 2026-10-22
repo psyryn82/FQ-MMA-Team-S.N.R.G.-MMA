@@ -1299,6 +1299,16 @@
                 const availableStreams = streamsResult.data?.streams || [];
                 if (scheduleResult.error) console.warn('Could not load training schedule from Supabase.', scheduleResult.error);
                 const savedEvents = new Map(siteData.schedule.map(item => [String(item.id), item]));
+                const fightQuestEvent=(eventsResult.data||[]).find(e=>String(e.title||'').toLowerCase().includes('fight quest xvi'));
+                const flyerImage=document.getElementById('fightQuestFlyerImage'),flyerDocument=document.getElementById('fightQuestFlyerDocument');
+                if(flyerImage&&flyerDocument){
+                    const flyerUrl=getSafeHttpUrl(fightQuestEvent?.flyer_image_url||'');
+                    if(flyerUrl){
+                        const path=flyerUrl.split('?')[0].toLowerCase();
+                        if(/\.(?:pdf|doc|docx)$/i.test(path)){flyerImage.classList.add('hidden');flyerDocument.href=flyerUrl;flyerDocument.classList.remove('hidden');}
+                        else{flyerImage.src=flyerUrl;flyerImage.classList.remove('hidden');flyerDocument.classList.add('hidden');flyerDocument.href=flyerUrl;}
+                    }else{flyerImage.classList.add('hidden');flyerDocument.classList.add('hidden');}
+                }
                 const eventItems = (eventsResult.data || []).map(e => {
                     const canSellStream = ['upcoming', 'live'].includes(e.status);
                     const stream = canSellStream ? availableStreams.find(item => item.event_id === e.id) : null;
