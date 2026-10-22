@@ -598,12 +598,12 @@ async function createImagePreview(file){
 $('mediaForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const file=$('mediaFile').files[0],externalRaw=$('mediaExternalUrl').value.trim(), id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
-  const description=$('mediaDescription').value.trim(), collection=activeMediaCollection, eventId=collection==='sasha_portfolio'?null:($('mediaEvent').value||null), alsoListInOther=$('mediaAlsoListInOther').checked; let externalUrl=''; if(externalRaw){try{const parsed=new URL(externalRaw);if(parsed.protocol!=='https:')throw new Error();externalUrl=parsed.href;}catch{message.textContent='Enter a valid HTTPS URL.';return}}
+  const description=$('mediaDescription').value.trim(), collection=activeMediaCollection, eventId=collection==='sasha_portfolio'?null:($('mediaEvent').value||null), alsoListInOther=$('mediaAlsoListInOther').checked; let externalUrl=''; if(externalRaw){try{const parsed=new URL(externalRaw);if(parsed.protocol!=='https:')throw new Error();externalUrl=parsed.href;}catch{say('Enter a valid HTTPS URL.',true);return}}
   const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, message=$('mediaMessage');message.textContent='';
   if(!title){message.textContent='Enter a title.';return}
   if(!Number.isFinite(price)||price<0||price>9999){message.textContent='Enter a valid intended price from $0 to $9,999. Leave at $0 if customers should contact us for a quote.';return}if(price>0&&!$('mediaPriceConfirmed').checked){message.textContent='Confirm the exact positive price before publishing it. Leave the price at $0 to display “Contact us for pricing.”';return}
   if(collection==='sasha_portfolio'&&eventId){message.textContent='Sasha’s portfolio items cannot be linked to an MMA event. Clear the event selection.';return}
-  if(Boolean(file)===Boolean(externalUrl)){message.textContent='Choose exactly one: upload a file OR enter an HTTPS URL.';return} if(externalUrl&&price>0){message.textContent='External URLs cannot be used for paid listings because the external host could bypass payment protection. Upload the original to private storage for paid access.';return}
+  if((file&&externalUrl)||(!id&&!file&&!externalUrl)){message.textContent='Choose a file or HTTPS URL for a new listing, and do not choose both.';return} if(externalUrl&&price>0){message.textContent='External URLs cannot be used for paid listings because the external host could bypass payment protection. Upload the original to private storage for paid access.';return}
   if(file&&file.size>5*1024*1024*1024){message.textContent='Media exceeds the 5 GB upload limit.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose JPG, PNG, WebP, GIF, PDF, DOC/DOCX, MP4, or WebM.';return}
   const button=$('mediaSaveButton'),buttonLabel=id?'Saving changes…':'Uploading media…';button.disabled=true;button.textContent=buttonLabel;const uploaded=[];let livepeerMediaId=null,livepeerSiblingId=null;startMediaProgress();
@@ -636,10 +636,10 @@ $('mediaForm').addEventListener('submit',async e=>{
         await uploadStorageFileWithProgress('fqmma-media',listingImagePath,listingImageFile,'Uploading photo listing image…');
         uploaded.push({bucket:'fqmma-media',path:listingImagePath});
         const listingImageUrl=client.storage.from('fqmma-media').getPublicUrl(listingImagePath).data.publicUrl;
-        Object.assign(patch,{category:'Photo',file_path:originalPath,file_url:listingImageUrl,preview_path:listingImagePath,storage_bucket:originalBucket});
+        Object.assign(patch,{category:'Photo',file_path:originalPath,file_url:listingImageUrl,preview_path:listingImagePath,storage_bucket:originalBucket,external_url:null});
       }else if(file.type.startsWith('video/')){
         // Keep the video original private. No public playback copy is created.
-        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:originalUrl,preview_path:null,storage_bucket:originalBucket});
+        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:originalUrl,preview_path:null,storage_bucket:originalBucket,external_url:null});
       }else{
         // Documents remain private and are delivered only through the protected media flow after purchase.
         updateMediaProgress('Uploading private document…',8,'Saving the PDF or Word original to private storage.');
