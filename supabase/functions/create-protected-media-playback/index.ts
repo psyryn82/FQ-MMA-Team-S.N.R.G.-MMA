@@ -52,7 +52,7 @@ Deno.serve(async (req: Request) => {
   const mediaId = Number(input.media_id);
   const sessionId = String(input.session_id || "").trim();
   if (!Number.isSafeInteger(mediaId) || mediaId < 1 || !/^cs_(test|live)_[A-Za-z0-9_]+$/.test(sessionId)) return respond({ error: "A valid media item and checkout session are required." }, 400, origin);
-  if ((stripeIsLive && !sessionId.startsWith("cs_live_")) || (!stripeIsLive && !sessionId.startsWith("cs_test_"))) return respond({ error: "Checkout session does not match the configured Stripe mode." }, 400, origin);
+  if ((stripeIsLive && !sessionId.startsWith("cs_live_")) || (stripeIsTest && !sessionId.startsWith("cs_test_"))) return respond({ error: "Checkout session does not match the configured Stripe mode." }, 400, origin);
 
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: media, error: mediaError } = await db.from("media")
