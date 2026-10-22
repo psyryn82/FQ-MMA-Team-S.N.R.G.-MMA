@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
   try { input = await req.json(); } catch { return respond({ error: "A paid checkout session is required." }, 400, origin); }
   const sessionId = String(input.session_id || "");
   if (!/^cs_(test|live)_[A-Za-z0-9_]+$/.test(sessionId)) return respond({ error: "Invalid checkout session." }, 400, origin);
-  if ((stripeIsLive && !sessionId.startsWith("cs_live_")) || (!stripeIsLive && !sessionId.startsWith("cs_test_"))) return respond({ error: "Checkout session does not match the configured Stripe mode." }, 400, origin);
+  if ((stripeIsLive && !sessionId.startsWith("cs_live_")) || (stripeIsTest && !sessionId.startsWith("cs_test_"))) return respond({ error: "Checkout session does not match the configured Stripe mode." }, 400, origin);
 
   const stripe = new Stripe(stripeKey, { httpClient: Stripe.createFetchHttpClient() });
   let session: Stripe.Checkout.Session;
