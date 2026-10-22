@@ -280,6 +280,25 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         }).eq("payment_intent_id", paymentIntentId).eq("payment_status", "paid");
         if (mediaRefundError) throw mediaRefundError;
+
+        const { data: refundedMediaPurchases, error: refundedMediaFindError } = await db.from("media_purchases")
+          .select("checkout_session_id").eq("payment_intent_id", paymentIntentId).eq("payment_status", "refunded");
+        if (refundedMediaFindError) throw refundedMediaFindError;
+        for (const refundedPurchase of refundedMediaPurchases || []) {
+          const { data: permissions, error: permissionsError } = await db.from("media_download_permissions")
+            .select("id").eq("purchase_checkout_session_id", refundedPurchase.checkout_session_id);
+          if (permissionsError) throw permissionsError;
+          for (const permission of permissions || []) {
+            const revokedAt = new Date().toISOString();
+            const { error: expirePermissionError } = await db.from("media_download_permissions")
+              .update({ expires_at: revokedAt }).eq("id", permission.id);
+            if (expirePermissionError) throw expirePermissionError;
+            const { error: consumeTokensError } = await db.from("media_download_tokens")
+              .update({ consumed_at: revokedAt }).eq("permission_id", permission.id).is("consumed_at", null);
+            if (consumeTokensError) throw consumeTokensError;
+          }
+        }
+
         const { error: streamRefundError } = await db.from("stream_purchases").update({
           status: "refunded",
           updated_at: new Date().toISOString(),
