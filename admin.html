@@ -362,7 +362,7 @@ async function showDashboard(user){
    currentUser=user;
    $('loginPanel').classList.add('hidden');
    $('dashboard').classList.remove('hidden');
-   $('setupNotice').classList.remove('hidden');
+   if($('setupNotice'))$('setupNotice').classList.remove('hidden');
    $('signedInAs').textContent=(user.email||'Signed in')+' · '+String(staff.role||'staff').replaceAll('_',' ');
    activateTab('home');
    try{
@@ -1148,7 +1148,7 @@ $('loginForm').addEventListener('submit',async e=>{e.preventDefault();loginSay('
 document.getElementById('showAdminLoginPassword').addEventListener('change',e=>{document.getElementById('password').type=e.target.checked?'text':'password'});
 $('forgotPasswordBtn').addEventListener('click',async()=>{const email=$('email').value.trim();if(!email){loginSay('Enter your administrator email above first, then choose Forgot password?',true);$('email').focus();return}const redirectTo=new URL('./reset-password.html',window.location.href).href;loginSay('Sending password-reset email…');const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo});if(error){loginSay('Could not send reset email: '+error.message,true);return}loginSay('If this email belongs to an account, a password-reset link has been sent. Check your inbox and spam folder.')});
 $('googleBtn').onclick=async()=>{const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href.split('#')[0]}});if(error)loginSay(error.message,true)};
-$('logoutBtn').onclick=async()=>{await client.auth.signOut();currentUser=null;$('dashboard').classList.add('hidden');$('setupNotice').classList.add('hidden');$('loginPanel').classList.remove('hidden');loginSay('Signed out.')};
+$('logoutBtn').onclick=async()=>{await client.auth.signOut();currentUser=null;$('dashboard').classList.add('hidden');if($('setupNotice'))$('setupNotice').classList.add('hidden');$('loginPanel').classList.remove('hidden');loginSay('Signed out.')};
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-group]');if(!b)return;activeGroup=b.dataset.group;const group=tabGroups.find(g=>g.key===activeGroup);if(group)activateTab(group.tabs[0][0])});$('subTabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)activateTab(b.dataset.tab)});
 renderShells();
 client.auth.getSession().then(({data})=>{if(data.session)showDashboard(data.session.user)});
