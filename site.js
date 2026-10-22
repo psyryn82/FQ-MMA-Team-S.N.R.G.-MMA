@@ -1204,8 +1204,42 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        function getFanChatSettings() {
+            const settings=window.siteData?.general?.liveChat;
+            return settings&&typeof settings==='object'?settings:{enabled:true,mode:'manual',offlineMessages:[]};
+        }
+        function getFanChatAvailability() {
+            const settings=getFanChatSettings();
+            if(settings.enabled===false) return {open:false,reason:'disabled'};
+            if(settings.mode==='event_window') {
+                const start=Date.parse(settings.start||''), end=Date.parse(settings.end||''), now=Date.now();
+                if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end||now<start||now>end) return {open:false,reason:'outside-window'};
+            }
+            return {open:true,reason:'open'};
+        }
+        function getFanChatOfflineMessage() {
+            const settings=getFanChatSettings();
+            const messages=Array.isArray(settings.offlineMessages)?settings.offlineMessages.map(s=>String(s||'').trim()).filter(Boolean):[];
+            const defaults=['The fan chat is resting between events. Check back when the action begins.','The chat is taking a short break. Keep an eye on the event schedule.','The arena is quiet for now. Come back when the next event window opens.'];
+            const options=messages.length?messages:defaults;
+            return options[Math.floor(Math.random()*options.length)];
+        }
+        function applyFanChatAvailability() {
+            const availability=getFanChatAvailability();
+            const input=document.getElementById('chat-input-text'),sendButton=document.getElementById('chat-send-button'),status=document.getElementById('online-count'),feed=document.getElementById('chat-feed'),prompt=document.getElementById('chat-auth-prompt');
+            if(!availability.open) {
+                if(input){input.disabled=true;input.placeholder='Fan chat is currently offline';}
+                if(sendButton)sendButton.disabled=true;
+                document.querySelectorAll('.chat-reaction').forEach(button=>{button.disabled=true;button.classList.remove('text-white','hover:bg-gray-700');button.classList.add('text-gray-500');});
+                if(status)status.innerText='● Chat offline';
+                if(prompt){prompt.classList.remove('hidden');prompt.textContent=getFanChatOfflineMessage();}
+                if(feed)feed.innerHTML='<div class="text-center text-gray-500 text-[10px] uppercase tracking-widest">'+escapeHtml(getFanChatOfflineMessage())+'</div>';
+            }
+            return availability.open;
+        }
+
         async function handleSendChatMessage(e) {
-            e.preventDefault(); const input=document.getElementById('chat-input-text'); const val=input.value.trim();
+            e.preventDefault(); if(!applyFanChatAvailability()) return; const input=document.getElementById('chat-input-text'); const val=input.value.trim();
             if(!val) return;
             try {
                 if(!window.supabaseReady) throw new Error('Live chat is temporarily unavailable. Please try again later.');
@@ -1530,6 +1564,7 @@
         async function deleteChatMessage(id) { const {error}=await window.sb.from('chat_messages').delete().eq('id',id); if(error) showNotification(error.message,'error'); else await loadAdminChat(); }
 
         async function loadLiveChat() {
+            if (!applyFanChatAvailability()) return;
             if (!window.supabaseReady) return;
             const {data,error}=await window.sb.from('chat_messages').select('sender_name,message,created_at').eq('channel','fan_chat').order('created_at',{ascending:true}).limit(60);
             const feed=document.getElementById('chat-feed'); if(!feed) return;
@@ -1543,7 +1578,7 @@
         let liveChatSubscription=null;
         let liveChatUserId=null;
         function subscribeLiveChat() {
-            if(!window.supabaseReady || liveChatSubscription) return;
+            if(!getFanChatAvailability().open || !window.supabaseReady || liveChatSubscription) return;
             liveChatSubscription=window.sb.channel('signed-in-fan-chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'channel=eq.fan_chat'},payload=>{
                 const m=payload.new; appendChatMessage(m.sender_name||'Fan',m.message,'text-brand-neon font-black font-heading');
             }).subscribe((status)=>{
@@ -1552,6 +1587,7 @@
             });
         }
         async function updateLiveChatAuth(session) {
+            if(!applyFanChatAvailability()) { if(liveChatSubscription){await window.sb.removeChannel(liveChatSubscription);liveChatSubscription=null;} liveChatUserId=null; return; }
             const input=document.getElementById('chat-input-text');
             const sendButton=document.getElementById('chat-send-button');
             const authPrompt=document.getElementById('chat-auth-prompt');
