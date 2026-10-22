@@ -6,6 +6,19 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
+function escapeHtml(value: string) {
+  const entities: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  return value.replace(/[&<>"']/g, (char) => entities[char] || char);
+}
+async function sha256Hex(value: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+function randomToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -93,9 +106,9 @@ Deno.serve(async (req) => {
         }
         if (session.payment_status === "paid") {
           const { data: media, error: mediaError } = await db.from("media")
-            .select("id,is_published,price,price_confirmed,file_path,storage_bucket").eq("id", mediaId).maybeSingle();
+            .select("id,title,is_published,price,price_confirmed,file_path,storage_bucket").eq("id", mediaId).maybeSingle();
           if (mediaError) throw mediaError;
-          if (!media || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") {
+          if (!media || media.is_published !== true || media.price_confirmed !== true || !media.file_path || media.storage_bucket !== "fqmma-private") {
             throw new Error("Paid media is unavailable or not configured for private delivery");
           }
           const expectedAmountText = String(session.metadata?.expected_amount_cents || "");
@@ -104,17 +117,131 @@ Deno.serve(async (req) => {
             throw new Error("Media checkout amount or currency does not match the amount recorded when checkout was created");
           }
           const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
+          const buyerEmail = String(session.customer_details?.email ?? session.customer_email ?? "").trim().toLowerCase();
           const { error: purchaseError } = await db.from("media_purchases").upsert({
             media_id: mediaId,
             checkout_session_id: session.id,
             payment_intent_id: paymentIntentId,
-            customer_email: session.customer_details?.email ?? session.customer_email ?? null,
+            customer_email: buyerEmail || null,
             payment_status: "paid",
             amount_cents: session.amount_total,
             currency: String(session.currency || "usd").toUpperCase(),
             updated_at: new Date().toISOString(),
           }, { onConflict: "checkout_session_id" });
           if (purchaseError) throw purchaseError;
+
+          const { data: savedPurchase, error: savedPurchaseError } = await db.from("media_purchases")
+            .select("id,download_email_status,download_email_sent_at").eq("checkout_session_id", session.id).single();
+          if (savedPurchaseError || !savedPurchase) throw savedPurchaseError || new Error("Paid media purchase record could not be reloaded");
+
+          if (!buyerEmail || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(buyerEmail)) {
+            const { error: noEmailError } = await db.from("media_purchases").update({
+              download_email_status: "needs_email",
+              download_email_error: "Stripe did not provide a valid customer email.",
+              updated_at: new Date().toISOString(),
+            }).eq("id", savedPurchase.id);
+            if (noEmailError) throw noEmailError;
+          } else if (savedPurchase.download_email_status !== "sent" && !savedPurchase.download_email_sent_at) {
+            const resendKey = Deno.env.get("RESEND_API_KEY");
+            if (!resendKey) {
+              await db.from("media_purchases").update({
+                download_email_status: "failed",
+                download_email_error: "RESEND_API_KEY is not configured.",
+                updated_at: new Date().toISOString(),
+              }).eq("id", savedPurchase.id);
+              throw new Error("Automatic media delivery email cannot run because RESEND_API_KEY is not configured");
+            }
+
+            const { error: pendingError } = await db.from("media_purchases").update({
+              download_email_status: "pending",
+              download_email_error: null,
+              updated_at: new Date().toISOString(),
+            }).eq("id", savedPurchase.id);
+            if (pendingError) throw pendingError;
+
+            let { data: permission, error: permissionError } = await db.from("media_download_permissions")
+              .select("id,authorized_email,revoked_at").eq("purchase_checkout_session_id", session.id).maybeSingle();
+            if (permissionError) throw permissionError;
+            if (!permission) {
+              const { data: insertedPermission, error: insertPermissionError } = await db.from("media_download_permissions")
+                .insert({
+                  media_id: mediaId,
+                  authorized_email: buyerEmail,
+                  granted_by: null,
+                  reason: "Automatic paid-media delivery for checkout " + session.id,
+                  purchase_checkout_session_id: session.id,
+                }).select("id,authorized_email,revoked_at").single();
+              if (insertPermissionError || !insertedPermission) throw insertPermissionError || new Error("Could not create paid-media download permission");
+              permission = insertedPermission;
+            }
+            if (permission.authorized_email !== buyerEmail || permission.revoked_at) {
+              throw new Error("Paid-media download permission is revoked or does not match the buyer email");
+            }
+
+            const now = new Date().toISOString();
+            const { error: invalidateError } = await db.from("media_download_tokens")
+              .update({ consumed_at: now }).eq("permission_id", permission.id).is("consumed_at", null);
+            if (invalidateError) throw invalidateError;
+
+            const token = randomToken();
+            const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+            const { data: tokenRow, error: tokenError } = await db.from("media_download_tokens")
+              .insert({
+                permission_id: permission.id,
+                token_hash: await sha256Hex(token),
+                expires_at: expiresAt,
+                sent_by: null,
+              }).select("id").single();
+            if (tokenError || !tokenRow) throw tokenError || new Error("Could not create paid-media download token");
+
+            const link = "https://fq-snrg-mma.com/media-download.html#token=" + token;
+            const title = String(media.title || "your purchased media");
+            const safeTitle = escapeHtml(title);
+            const from = Deno.env.get("CONTACT_FROM_EMAIL") || "FQ MMA <downloads@fq-snrg-mma.com>";
+            let emailResponse: Response;
+            try {
+              emailResponse = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  "Authorization": "Bearer " + resendKey,
+                  "Content-Type": "application/json",
+                  "Idempotency-Key": "media-download-" + tokenRow.id,
+                },
+                body: JSON.stringify({
+                  from,
+                  to: [buyerEmail],
+                  reply_to: "fqsnrgmma.info@gmail.com",
+                  subject: "Your FQ MMA media purchase is ready",
+                  text: "Thanks for your purchase of " + title + ". Your secure download link expires in 30 minutes and can be used once: " + link + "\\n\\nAfter opening the link, select Download file. The generated file link is valid for 15 minutes. If you need help, contact fqsnrgmma.info@gmail.com.",
+                  html: "<div style=\\"font-family:Arial,sans-serif;line-height:1.6;color:#222\\"><h2>Your FQ MMA media is ready</h2><p>Thanks for purchasing <strong>" + safeTitle + "</strong>.</p><p>This secure download link expires in 30 minutes and can be used once.</p><p><a href=\\"" + link + "\\" style=\\"display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:bold\\">Download your purchase</a></p><p>After opening the link, select Download file. The generated file link is valid for 15 minutes.</p><p>If you need help, contact <a href=\\"mailto:fqsnrgmma.info@gmail.com\\">fqsnrgmma.info@gmail.com</a>.</p></div>",
+                }),
+              });
+            } catch {
+              await db.from("media_download_tokens").delete().eq("id", tokenRow.id);
+              await db.from("media_purchases").update({
+                download_email_status: "failed",
+                download_email_error: "Email provider could not be reached.",
+                updated_at: new Date().toISOString(),
+              }).eq("id", savedPurchase.id);
+              throw new Error("Resend could not be reached for paid-media delivery email");
+            }
+            if (!emailResponse.ok) {
+              await db.from("media_download_tokens").delete().eq("id", tokenRow.id);
+              await db.from("media_purchases").update({
+                download_email_status: "failed",
+                download_email_error: "Email provider rejected the delivery email.",
+                updated_at: new Date().toISOString(),
+              }).eq("id", savedPurchase.id);
+              throw new Error("Resend rejected the paid-media delivery email: " + emailResponse.status);
+            }
+            const { error: sentUpdateError } = await db.from("media_purchases").update({
+              download_email_status: "sent",
+              download_email_sent_at: new Date().toISOString(),
+              download_email_error: null,
+              updated_at: new Date().toISOString(),
+            }).eq("id", savedPurchase.id);
+            if (sentUpdateError) throw sentUpdateError;
+          }
         }
       }
       if (session.payment_status === "paid" && session.metadata?.promotion_redemption_id) {
