@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
   const siteUrl = (Deno.env.get("SITE_URL") || "https://fq-snrg-mma.com").replace(/\/$/, "");
   if (!supabaseUrl || !serviceKey || !stripeKey) return respond({ error: "Stream checkout is not configured." }, 503, origin);
-  if (!stripeKey.startsWith("sk_live_") && !stripeKey.startsWith("sk_test_")) return respond({ error: "Stripe server credentials are invalid. Checkout is temporarily unavailable; no payment was taken." }, 503, origin);
+  if (!/^(?:sk|rk)_(?:live|test)_/.test(stripeKey)) return respond({ error: "Stripe server credentials are invalid. Checkout is temporarily unavailable; no payment was taken." }, 503, origin);
 
   let input: { event_id?: unknown; buyer_email?: unknown; promotion_code?: unknown; accepted_terms?: unknown };
   try { input = await req.json(); } catch { return respond({ error: "Choose a stream event and enter your email." }, 400, origin); }
