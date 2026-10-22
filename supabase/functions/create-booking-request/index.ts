@@ -172,7 +172,7 @@ Deno.serve(async (req: Request) => {
       const emailResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from, to: ["support@fq-snrg-mma.com"], reply_to: email, subject, text: message, html })
+        body: JSON.stringify({ from, to: ["info@fq-snrg-mma.com"], reply_to: email, subject, text: message, html })
       });
       notified = emailResponse.ok;
       if (!emailResponse.ok) console.error("Booking email notification failed:", emailResponse.status, await emailResponse.text().catch(() => ""));
