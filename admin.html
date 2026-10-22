@@ -224,7 +224,7 @@ const tabGroups=[
  {key:'media',label:'Media',tabs:[['media','Fight Media'],['site_assets','Website Assets'],['media_cleanup','Storage Cleanup']]},
  {key:'tickets',label:'Tickets',tabs:[['event_overview','Event Overview'],['ticket_options','Event Tickets'],['event_streams','Livestream Access']]},
  {key:'portfolio',label:'Portfolio',tabs:[['portfolio_settings','Portfolio Branding'],['session_pricing','Session Prices'],['sasha_portfolio','Portfolio Media'],['bookings','Booking Requests']]},
- {key:'website',label:'Website',tabs:[['home','Homepage & Branding'],['disciplines','Discipline Cards'],['events','Events'],['fighters','Fighters'],['schedule','Training Schedule'],['chat','Support Inbox']] },
+ {key:'website',label:'Website',tabs:[['home','Homepage & Branding'],['disciplines','Disciplines & Training'],['events','Events'],['fighters','Fighters'],['chat','Support Inbox']] },
  {key:'purchases',label:'Purchases',tabs:[['ticket_purchases','Event Ticket Sales'],['sales','Digital Media Sales'],['stream_sales','Livestream Sales'],['access_management','Download Access'],['promotions','Promo Codes'],['products','Merch & Shop Links']]},
  {key:'admin',label:'Admin',tabs:[['admin_permissions','Staff & Permissions']]}
 ];
@@ -234,7 +234,7 @@ function organizePanels(){
  host.innerHTML=['media','tickets','portfolio','website','purchases','admin'].map(key=>'<div id="workspace-'+key+'" class="space-y-4 min-w-0"></div>').join('');
  const eventOverviewPanel=document.createElement('section');eventOverviewPanel.id='tab-event_overview';eventOverviewPanel.className='panel p-5 hidden';eventOverviewPanel.innerHTML='<div class="flex flex-wrap items-start justify-between gap-3 mb-4"><div><h2 class="head text-2xl uppercase mb-1">Event Overview</h2><p class="muted text-sm">One view of each event, in-person ticket options, livestream access, payment status, and purchasers. Use the edit buttons to jump to the matching editor.</p></div><button id="refreshEventOverview" type="button" class="btn2">Refresh events & sales</button></div><div id="eventOverviewMessage" class="muted text-sm mb-3" role="status"></div><div id="eventOverviewList" class="space-y-5"></div>';
  host.querySelector('#workspace-tickets').appendChild(eventOverviewPanel);
- const disciplinePanel=document.createElement('section');disciplinePanel.id='tab-disciplines';disciplinePanel.className='panel p-5 hidden';disciplinePanel.innerHTML='<h2 class="head text-2xl uppercase mb-1">Discipline Cards</h2><p class="muted text-sm mb-4">Edit the cards displayed on the public Disciplines tab. Photos are optional and can be selected from the published media library.</p><div id="disciplineEditorHost" class="space-y-4"></div><div class="flex flex-wrap gap-2 mt-5"><button id="saveDisciplines" class="btn" type="button">Save discipline cards</button><button id="reloadDisciplines" class="btn2" type="button">Reload saved cards</button></div>';
+ const disciplinePanel=document.createElement('section');disciplinePanel.id='tab-disciplines';disciplinePanel.className='panel p-5 hidden';disciplinePanel.innerHTML='<h2 class="head text-2xl uppercase mb-1">Disciplines & Training Schedule</h2><p class="muted text-sm mb-4">Manage the public discipline cards and training schedule together in one workspace. Training sessions are managed below.</p><div id="disciplineEditorHost" class="space-y-4"></div><div class="flex flex-wrap gap-2 mt-5"><button id="saveDisciplines" class="btn" type="button">Save discipline cards</button><button id="reloadDisciplines" class="btn2" type="button">Reload saved cards</button></div>';
  const disciplineEditor=$('homeDisciplines');if(disciplineEditor){const oldWrap=disciplineEditor.parentElement;disciplinePanel.querySelector('#disciplineEditorHost').appendChild(disciplineEditor);oldWrap.remove();}
  host.querySelector('#workspace-website').appendChild(disciplinePanel);
  const sessionPricingPanel=document.createElement('section');sessionPricingPanel.id='tab-session_pricing';sessionPricingPanel.className='panel p-5 hidden';sessionPricingPanel.innerHTML='<h2 class="head text-2xl uppercase mb-1">Photography & Videography Session Prices</h2><p class="muted text-sm mb-4">These are booking/session prices shown on Sasha’s public portfolio, separate from prices for downloadable files. Use “Contact for quote” when a service needs custom pricing.</p><div id="sessionPricingHost"></div><div class="flex flex-wrap gap-2 mt-5"><button id="saveSessionPricing" class="btn" type="button">Save session prices</button><button id="reloadSessionPricing" class="btn2" type="button">Reload saved prices</button></div>';
@@ -290,9 +290,9 @@ function activateTab(tab){
  const group=tabGroups.find(g=>g.tabs.some(t=>t[0]===tab));if(group)activeGroup=group.key;
  document.querySelectorAll('[data-group]').forEach(b=>b.classList.toggle('active',b.dataset.group===activeGroup));renderSubTabs();
  const moduleKey=Object.keys(modules).find(key=>modules[key].table===panelTab)||panelTab;
- Object.entries(modules).forEach(([key,m])=>{const el=$('tab-'+m.table);if(el)el.classList.toggle('hidden',key!==moduleKey)});
+ Object.entries(modules).forEach(([key,m])=>{const el=$('tab-'+m.table);if(el)el.classList.toggle('hidden',key!==moduleKey&&!(panelTab==='disciplines'&&key==='schedule'))});
  ['home','disciplines','media','site_assets','chat','ticket_purchases','sales','stream_sales','access_management','bookings','admin_permissions','promotions','portfolio_settings','session_pricing','event_overview'].forEach(key=>{const el=$('tab-'+key);if(el)el.classList.toggle('hidden',key!==panelTab)});
- if(modules[moduleKey])loadTable(modules[moduleKey].table);
+ if(modules[moduleKey])loadTable(modules[moduleKey].table);if(panelTab==='disciplines')loadTable('training_schedule');
  if(panelTab==='media'){
   $('mediaCollection').value=activeMediaCollection;
   $('mediaSectionTitle').textContent=activeMediaCollection==='sasha_portfolio'?'Portfolio Media':'Fight Media';
