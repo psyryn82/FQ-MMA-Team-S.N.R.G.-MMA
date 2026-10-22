@@ -8,7 +8,7 @@ Static public website hosted from the repository root on GitHub Pages. Browser c
 - `admin.html`: the canonical administrator dashboard. Use `https://fq-snrg-mma.com/admin.html`. It manages homepage content, fighters, events, training schedule, merchandise/media purchase links, public/private uploads, ticket options and purchase records, and the chat inbox.
 - `membership.html`: member sign-in/account creation and fan chat. It is not a membership-payment page; event tickets are purchased from the public event listings.
 - `docs/TICKET_SALES_SETUP.md`: current ticket-option setup, purchase records, and test-mode safety notes.
-- `supabase/functions/create-ticket-checkout/index.ts`: server-side Stripe Checkout for event tickets. Checkout mode follows the Supabase `STRIPE_SECRET_KEY`; the live-stream checkout is configured for live mode, while ticket fulfillment and promotions should be verified separately before launch.
+- `supabase/functions/create-ticket-checkout/index.ts`: server-side Stripe Checkout for event tickets. Checkout mode follows the Supabase `STRIPE_SECRET_KEY`. The current live-stream configuration has been reported as live-mode; do not complete live checkouts during testing. Verify Stripe mode, webhook delivery, cancellation/expiry, paid access, and refund handling in test mode before relying on fulfillment.
 - `supabase/functions/stripe-webhook/index.ts`: signed Stripe webhook processing. Ticket purchases are marked paid only after verified Stripe payment.
 - `supabase/migrations/`: database changes. Review the actual live migration history before applying any migration.
 
@@ -28,7 +28,7 @@ For a fresh environment, configure Google under **Authentication → Sign In Pro
 
 ## Event ticket sales
 
-Ticket checkout is deliberately restricted to a Stripe **test secret key** (`sk_test_...`). The checkout function rejects live Stripe keys.
+Ticket checkout mode follows the server-side `STRIPE_SECRET_KEY`. Confirm the key is in Stripe test mode before testing. Never complete a live checkout for testing.
 
 1. In `admin.html`, create or edit an event. Keep it in Draft while it is only a placeholder. Use Upcoming or Live only for a real event that is ready to be announced.
 2. Open **Ticket options**, set the ticket name, description, fixed price, and optional quantity limit.
@@ -36,7 +36,11 @@ Ticket checkout is deliberately restricted to a Stripe **test secret key** (`sk_
 4. Use **Ticket purchases** to review records. Pending checkout is not proof of payment; only the signed Stripe webhook can mark a purchase paid.
 5. Follow `docs/TICKET_SALES_SETUP.md` for the current ticket flow and testing notes.
 
-**Do not enable Stripe live mode yet.** The ticket flow still needs a complete test-mode checkout/webhook/refund verification, and the site does not yet issue QR codes, printable tickets, or automated entry credentials.
+**Launch gate:** do not advertise ticket or media checkout as fully verified until test-mode checkout, webhook fulfillment, cancellation/expiry, playback/download authorization, and refund handling have been checked. This repository change does not switch Stripe mode or deploy functions. The site does not yet promise QR codes, printable tickets, or automated entry credentials.
+
+## Event admission vs livestream access
+
+Fight Quest XVI in-person admission is separate from online livestream access: General Admission is $45, VIP Ringside is $85, and the one-time livestream ticket is $35 for live viewing only, with no replay or on-demand access. The in-person prices and venue purchase link are informational and are not processed by the livestream checkout.
 
 ## Media, uploads, and chat
 
