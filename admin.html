@@ -263,7 +263,7 @@ async function selectPublishedImage(target){try{const {data,error}=await client.
 async function loadAdminPermissions(){const message=$('adminPermissionsMessage'),list=$('adminPermissionsList');if(!message||!list)return;message.textContent='Loading approved administrators…';list.innerHTML='';try{const {data,error}=await client.from('admin_users').select('user_id,role,created_at').order('created_at',{ascending:true});if(error)throw error;const rows=data||[];message.textContent=rows.length+' approved administrator account(s). This is a read-only list.';list.innerHTML=rows.map(row=>'<article class="border border-gray-800 rounded-lg p-4 flex flex-wrap items-start justify-between gap-3"><div><div class="font-semibold">'+esc(row.role||'admin')+'</div><div class="muted text-xs mt-1 break-all">Auth user ID: '+esc(row.user_id||'')+'</div></div><div class="muted text-xs">Approved '+esc(row.created_at?new Date(row.created_at).toLocaleDateString():'date unavailable')+'</div></article>').join('')||'<p class="muted text-sm">No approved administrator rows were returned.</p>';}catch(err){message.textContent='Could not load approved administrators: '+(err?.message||String(err));list.innerHTML='<p class="text-red-400 text-sm">No changes were made.</p>';}}
 function renderShells(){
  $('tabs').innerHTML=tabGroups.map(g=>'<button type="button" class="tab '+(g.key==='website'?'active':'')+'" data-group="'+g.key+'">'+g.label+'</button>').join('');
- $('modulePanels').innerHTML=Object.values(modules).map(m=>'<section id="tab-'+m.table+'" class="panel p-5 hidden"><h2 class="head text-2xl uppercase mb-1">'+esc(m.title)+'</h2><p class="muted text-sm mb-4">'+(m.table==='products'?'Manage merchandise and external shop links here. External checkout is handled by the linked provider.':m.table==='event_ticket_options'?'Create ticket options and prices in advance. Leave sales off until you link an event and are ready to sell.':m.table==='event_streams'?'Stream settings are isolated here. Do not enable paid access until the stream system has been separately tested and approved.':'Create, edit, publish, and remove records.')+'</p><form data-form-table="'+m.table+'" class="grid md:grid-cols-2 gap-4"><input type="hidden" name="id">'+m.fields.map(f=>fieldHtml(m.table,f)).join('')+'<div class="md:col-span-2 flex gap-2"><button class="btn" type="submit">Save</button><button class="btn2" type="button" data-clear="'+m.table+'">Clear form</button></div></form><div id="list-'+m.table+'" class="mt-6 space-y-3"></div></section>').join('');
+ $('modulePanels').innerHTML=Object.values(modules).map(m=>'<section id="tab-'+m.table+'" class="panel p-5 hidden"><h2 class="head text-2xl uppercase mb-1">'+esc(m.title)+'</h2><p class="muted text-sm mb-4">'+(m.table==='products'?'Manage merchandise and external shop links here. External checkout is handled by the linked provider.':m.table==='event_ticket_options'?'Create ticket options and prices in advance. Leave sales off until you link an event and are ready to sell.':m.table==='event_streams'?'Stream settings are isolated here. Do not enable paid access until the stream system has been separately tested and approved.':'Create, edit, publish, and remove records.')+'</p><form data-form-table="'+m.table+'" class="grid md:grid-cols-2 gap-4"><input type="hidden" name="id">'+m.fields.map(f=>fieldHtml(m.table,f)).join('')+'<div class="md:col-span-2 flex flex-wrap gap-2"><button class="btn" type="submit">Save</button><button class="btn2" type="button" data-clear="'+m.table+'">Clear form</button><p class="w-full text-sm muted" data-form-status role="status" aria-live="polite"></p></div></form><div id="list-'+m.table+'" class="mt-6 space-y-3"></div></section>').join('');
  organizePanels();renderSubTabs();
 }
 function renderSubTabs(){
@@ -444,7 +444,74 @@ async function loadTable(table){
   list.innerHTML=records[table].map(r=>'<article class="border border-gray-800 rounded-lg p-3 flex flex-wrap justify-between gap-3"><div class="min-w-0"><b>'+esc(cfg.summary.map(k=>{let v=r[k];if(k==='price_cents'||k==='stream_price_cents')return '$'+((v||0)/100).toFixed(2);if(k==='event_id')return eventsCache.find(ev=>ev.id===v)?.title||'Not linked to event';if(k==='is_available')return v?'Sales ON':'Sales OFF';if(k==='is_enabled')return v?'Stream ON':'Stream OFF';if(k==='day_of_week')return dayNames[v]||v;if(k==='event_date'&&v)return formatDateTimeShort(v);if(typeof v==='boolean')return v?'Published':'Draft';return v??''}).filter(Boolean).join(' • '))+'</b><p class="muted text-xs mt-1">'+esc(r.id)+'</p></div><div class="flex gap-2"><button class="btn2" data-edit="'+table+'" data-id="'+r.id+'">Edit</button><button class="btn2" data-delete="'+table+'" data-id="'+r.id+'">Delete</button></div></article>').join('')||'<p class="muted text-sm">No records yet. Use the form above to add one.</p>';
 }
 function fieldValue(f,row){let v=row[f.k];if(f.type==='money')return v==null?'0':(Number(v)/100).toFixed(2);if(f.type==='datetime-local'&&v){const d=new Date(v);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}return v??(f.default??'')}
-document.addEventListener('submit',async e=>{const form=e.target.closest('form[data-form-table]');if(!form)return;e.preventDefault();const table=form.dataset.formTable,cfg=modules[Object.keys(modules).find(k=>modules[k].table===table)];const id=form.elements.id.value;const row={};for(const f of cfg.fields){const el=form.elements[f.k];if(!el)continue;let v=f.type==='checkbox'?el.checked:el.value;if(f.type==='money')v=Math.round(Number(v||0)*100);else if(f.type==='number')v=v===''?null:Number(v);else if(f.type==='datetime-local')v=v?new Date(v).toISOString():null;else if(f.k==='day_of_week')v=Number(v);else if(f.k==='event_id')v=v||null;else if(f.type==='time')v=v||null;row[f.k]=v}for(const fileInput of form.querySelectorAll('[data-public-image-upload]')){const file=fileInput.files?.[0];if(!file)continue;const targetKey=fileInput.dataset.publicImageUpload;if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)){say('Public image uploads must be JPG, PNG, WebP, or GIF.',true);return}if(file.size>20*1024*1024){say('Public image uploads must be 20 MB or smaller.',true);return}const targetUrl=form.elements[targetKey];if(targetUrl&&targetUrl.value.trim()&&!/^https:\/\//i.test(targetUrl.value.trim())){say('Image URLs must use HTTPS.',true);return}const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-120)||'site-image';const path='site-admin-images/'+currentUser.id+'/'+table+'/'+Date.now()+'-'+safeName;try{await uploadStorageFileWithProgress('fqmma-media',path,file,'Uploading public image…','asset');row[targetKey]=client.storage.from('fqmma-media').getPublicUrl(path).data.publicUrl;}catch(uploadError){say('Image upload failed: '+(uploadError?.message||String(uploadError)),true);return}}for(const f of cfg.fields){if(f.type==='url'&&row[f.k]&&!/^https:\/\//i.test(String(row[f.k]))){say('URL fields must use HTTPS.',true);return}}row.updated_at=new Date().toISOString();if(table==='event_ticket_options'&&row.price_cents<50){say('Ticket prices must be at least $0.50.',true);return}if(table==='event_ticket_options'&&row.is_available&&!row.event_id){say('Link this ticket option to an event before turning sales on.',true);return}if(table==='event_ticket_options'&&row.is_available&&!['upcoming','live'].includes(eventsCache.find(ev=>ev.id===row.event_id)?.status)){say('Set the linked event to Upcoming or Live before turning ticket sales on.',true);return}if(table==='event_streams'&&row.is_enabled&&(!row.event_id||!String(row.livepeer_playback_id||'').trim())){say('Choose an event and enter its Livepeer playback ID before enabling paid stream access.',true);return}if(table==='event_streams'&&row.is_enabled&&!['upcoming','live'].includes(eventsCache.find(ev=>ev.id===row.event_id)?.status)){say('Set the linked event to Upcoming or Live before enabling paid stream access.',true);return}let result;if(table==='event_streams'&&!id&&row.event_id){const existing=await client.from(table).select('id').eq('event_id',row.event_id).maybeSingle();if(existing.error){say(existing.error.message,true);return}result=existing.data?await client.from(table).update(row).eq('id',existing.data.id):await client.from(table).insert(row)}else{result=id?await client.from(table).update(row).eq('id',id):await client.from(table).insert(row)}if(result.error){say(result.error.message,true);return}say(cfg.title+' saved.');form.reset();form.querySelectorAll('[data-public-image-upload]').forEach(input=>input.value='');form.elements.id.value='';cfg.fields.forEach(f=>{if(f.default!==undefined){const el=form.elements[f.k];if(el&&f.type==='checkbox')el.checked=!!f.default;else if(el)el.value=f.default}});await loadTable(table)});
+document.addEventListener('submit',async e=>{
+ const form=e.target.closest('form[data-form-table]');
+ if(!form)return;
+ e.preventDefault();
+ const table=form.dataset.formTable,cfg=modules[Object.keys(modules).find(k=>modules[k].table===table)];
+ const status=form.querySelector('[data-form-status]');
+ const button=form.querySelector('button[type="submit"]');
+ const setStatus=(message,error=false)=>{if(status){status.textContent=message;status.className='w-full text-sm '+(error?'text-red-400':'text-green-400')}};
+ if(!cfg){setStatus('Could not identify this form. Refresh the dashboard and try again.',true);return}
+ if(!currentUser){setStatus('Your admin session may have expired. Sign in again before saving.',true);say('Please sign in again before saving.',true);return}
+ if(button){button.disabled=true;button.textContent='Saving…'}
+ setStatus('Saving changes…');
+ try{
+  const id=form.elements.id.value;
+  const row={};
+  for(const f of cfg.fields){
+   const el=form.elements[f.k];if(!el)continue;
+   let v=f.type==='checkbox'?el.checked:el.value;
+   if(f.type==='money')v=Math.round(Number(v||0)*100);
+   else if(f.type==='number')v=v===''?null:Number(v);
+   else if(f.type==='datetime-local')v=v?new Date(v).toISOString():null;
+   else if(f.k==='day_of_week')v=Number(v);
+   else if(f.k==='event_id')v=v||null;
+   else if(f.type==='time')v=v||null;
+   row[f.k]=v;
+  }
+  for(const fileInput of form.querySelectorAll('[data-public-image-upload]')){
+   const file=fileInput.files?.[0];if(!file)continue;
+   const targetKey=fileInput.dataset.publicImageUpload;
+   if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type))throw new Error('Public image uploads must be JPG, PNG, WebP, or GIF.');
+   if(file.size>20*1024*1024)throw new Error('Public image uploads must be 20 MB or smaller.');
+   const targetUrl=form.elements[targetKey];
+   if(targetUrl&&targetUrl.value.trim()&&!/^https:\/\//i.test(targetUrl.value.trim()))throw new Error('Image URLs must use HTTPS.');
+   const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-120)||'site-image';
+   const path='site-admin-images/'+currentUser.id+'/'+table+'/'+Date.now()+'-'+safeName;
+   setStatus('Uploading image… Please keep this page open.');
+   try{
+    await uploadStorageFileWithProgress('fqmma-media',path,file,'Uploading public image…','asset');
+    row[targetKey]=client.storage.from('fqmma-media').getPublicUrl(path).data.publicUrl;
+   }catch(uploadError){throw new Error('Image upload failed: '+(uploadError?.message||String(uploadError)))}
+  }
+  for(const f of cfg.fields){if(f.type==='url'&&row[f.k]&&!/^https:\/\//i.test(String(row[f.k])))throw new Error('URL fields must use HTTPS.')}
+  row.updated_at=new Date().toISOString();
+  if(table==='event_ticket_options'&&row.price_cents<50)throw new Error('Ticket prices must be at least $0.50.');
+  if(table==='event_ticket_options'&&row.is_available&&!row.event_id)throw new Error('Link this ticket option to an event before turning sales on.');
+  if(table==='event_ticket_options'&&row.is_available&&!['upcoming','live'].includes(eventsCache.find(ev=>ev.id===row.event_id)?.status))throw new Error('Set the linked event to Upcoming or Live before turning ticket sales on.');
+  if(table==='event_streams'&&row.is_enabled&&(!row.event_id||!String(row.livepeer_playback_id||'').trim()))throw new Error('Choose an event and enter its Livepeer playback ID before enabling paid stream access.');
+  if(table==='event_streams'&&row.is_enabled&&!['upcoming','live'].includes(eventsCache.find(ev=>ev.id===row.event_id)?.status))throw new Error('Set the linked event to Upcoming or Live before enabling paid stream access.');
+  let result;
+  if(table==='event_streams'&&!id&&row.event_id){
+   const existing=await client.from(table).select('id').eq('event_id',row.event_id).maybeSingle();
+   if(existing.error)throw existing.error;
+   result=existing.data?await client.from(table).update(row).eq('id',existing.data.id):await client.from(table).insert(row);
+  }else result=id?await client.from(table).update(row).eq('id',id):await client.from(table).insert(row);
+  if(result.error)throw result.error;
+  setStatus(cfg.title+' saved successfully.');
+  say(cfg.title+' saved.');
+  form.reset();form.querySelectorAll('[data-public-image-upload]').forEach(input=>input.value='');form.elements.id.value='';
+  cfg.fields.forEach(f=>{if(f.default!==undefined){const el=form.elements[f.k];if(el&&f.type==='checkbox')el.checked=!!f.default;else if(el)el.value=f.default}});
+  await loadTable(table);
+ }catch(err){
+  const message=err?.message||String(err);
+  setStatus('Could not save '+cfg.title.toLowerCase()+': '+message,true);
+  say('Could not save '+cfg.title.toLowerCase()+': '+message,true);
+ }finally{
+  if(button){button.disabled=false;button.textContent='Save'}
+ }
+});
 document.addEventListener('click',async e=>{const flyerButton=e.target.closest('[data-select-flyer]');if(flyerButton){const input=flyerButton.closest('label')?.querySelector('input[name="flyer_image_url"]');if(input)await selectPublishedImage(input);return}const disciplinePhoto=e.target.closest('[data-select-discipline-image]');if(disciplinePhoto){const input=document.querySelector('[data-discipline-image="'+disciplinePhoto.dataset.selectDisciplineImage+'"]');if(input)await selectPublishedImage(input);return}const edit=e.target.closest('[data-edit]');if(edit){const table=edit.dataset.edit,cfg=modules[Object.keys(modules).find(k=>modules[k].table===table)],row=(records[table]||[]).find(r=>r.id===edit.dataset.id),form=document.querySelector('[data-form-table="'+table+'"]');if(!row||!form)return;form.elements.id.value=row.id;cfg.fields.forEach(f=>{const el=form.elements[f.k];if(!el)return;if(f.type==='checkbox')el.checked=!!row[f.k];else el.value=fieldValue(f,row)});window.scrollTo({top:0,behavior:'smooth'});return}const del=e.target.closest('[data-delete]');if(del){
   const table=del.dataset.delete,id=del.dataset.id;
   if(!confirm(table==='events'?'Delete this event? If purchases exist, the event will be archived instead so purchase and payment records remain intact.':'Delete this record? This cannot be undone.'))return;
