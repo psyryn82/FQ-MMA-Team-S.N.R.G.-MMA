@@ -1204,8 +1204,42 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        function getFanChatSettings() {
+            const settings=window.siteData?.general?.liveChat;
+            return settings&&typeof settings==='object'?settings:{enabled:true,mode:'manual',offlineMessages:[]};
+        }
+        function getFanChatAvailability() {
+            const settings=getFanChatSettings();
+            if(settings.enabled===false) return {open:false,reason:'disabled'};
+            if(settings.mode==='event_window') {
+                const start=Date.parse(settings.start||''), end=Date.parse(settings.end||''), now=Date.now();
+                if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end||now<start||now>end) return {open:false,reason:'outside-window'};
+            }
+            return {open:true,reason:'open'};
+        }
+        function getFanChatOfflineMessage() {
+            const settings=getFanChatSettings();
+            const messages=Array.isArray(settings.offlineMessages)?settings.offlineMessages.map(s=>String(s||'').trim()).filter(Boolean):[];
+            const defaults=['The fan chat is resting between events. Check back when the action begins.','The chat is taking a short break. Keep an eye on the event schedule.','The arena is quiet for now. Come back when the next event window opens.'];
+            const options=messages.length?messages:defaults;
+            return options[Math.floor(Math.random()*options.length)];
+        }
+        function applyFanChatAvailability() {
+            const availability=getFanChatAvailability();
+            const input=document.getElementById('chat-input-text'),sendButton=document.getElementById('chat-send-button'),status=document.getElementById('online-count'),feed=document.getElementById('chat-feed'),prompt=document.getElementById('chat-auth-prompt');
+            if(!availability.open) {
+                if(input){input.disabled=true;input.placeholder='Fan chat is currently offline';}
+                if(sendButton)sendButton.disabled=true;
+                document.querySelectorAll('.chat-reaction').forEach(button=>{button.disabled=true;button.classList.remove('text-white','hover:bg-gray-700');button.classList.add('text-gray-500');});
+                if(status)status.innerText='● Chat offline';
+                if(prompt){prompt.classList.remove('hidden');prompt.textContent=getFanChatOfflineMessage();}
+                if(feed)feed.innerHTML='<div class="text-center text-gray-500 text-[10px] uppercase tracking-widest">'+escapeHtml(getFanChatOfflineMessage())+'</div>';
+            }
+            return availability.open;
+        }
+
         async function handleSendChatMessage(e) {
-            e.preventDefault(); const input=document.getElementById('chat-input-text'); const val=input.value.trim();
+            e.preventDefault(); if(!applyFanChatAvailability()) return; const input=document.getElementById('chat-input-text'); const val=input.value.trim();
             if(!val) return;
             try {
                 if(!window.supabaseReady) throw new Error('Live chat is temporarily unavailable. Please try again later.');
@@ -1369,6 +1403,38 @@
             return content;
         }
 
+        function renderSectionContactDirectory(content) {
+            const host=document.getElementById('section-contact-directory');
+            if(!host)return;
+            const contacts=content?.general?.sectionContacts;
+            if(!contacts||typeof contacts!=='object'){host.innerHTML='';return;}
+            const labels={general:'General & Support',events:'Events',training:'Training',portfolio:'Photography & Portfolio',bookings:'Bookings',livestream:'Livestream & Tickets'};
+            host.innerHTML=Object.entries(labels).map(([key,label])=>{
+                const row=contacts[key]&&typeof contacts[key]==='object'?contacts[key]:{};
+                const email=String(row.email||'').trim(),phone=String(row.phone||'').trim();
+                if(!email&&!phone)return '';
+                return '<div class="rounded-lg border border-gray-800 bg-black/20 p-3"><h3 class="font-bold text-sm">'+escapeHtml(label)+'</h3>'+(email?'<p class="text-sm mt-1 break-all">Email: '+escapeHtml(email)+'</p>':'')+(phone?'<p class="text-sm mt-1">Phone: '+escapeHtml(phone)+'</p>':'')+'</div>';
+            }).join('');
+        }
+
+        function applyTicketAppearance(content) {
+            const settings=content?.general?.ticketAppearance||{};
+            const valid=value=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);
+            const card=document.querySelector('#schedule-container article');
+            if(card){
+                if(valid(settings.cardBackground))card.style.backgroundColor=settings.cardBackground;
+                if(valid(settings.cardBorder))card.style.borderColor=settings.cardBorder;
+                const accent=card.querySelector('.font-bold.text-brand-neon');
+                if(accent&&valid(settings.accent))accent.style.color=settings.accent;
+                const button=card.querySelector('#inPersonTicketLink');
+                if(button){
+                    if(valid(settings.buttonBackground))button.style.backgroundColor=settings.buttonBackground;
+                    if(valid(settings.buttonText))button.style.color=settings.buttonText;
+                    if(typeof settings.buttonLabel==='string'&&settings.buttonLabel.trim())button.textContent=settings.buttonLabel.trim().slice(0,120);
+                }
+            }
+        }
+
         function applySiteContent(value) {
             let content;
             try { content = JSON.parse(value); }
@@ -1382,6 +1448,8 @@
             mergeDefaultDisciplines(content);
             Object.keys(window.siteData).forEach(key => delete window.siteData[key]);
             Object.assign(window.siteData, content);
+            renderSectionContactDirectory(window.siteData);
+            applyTicketAppearance(window.siteData);
             if (typeof window.siteData.general.paysiteUrl === 'string') PAYSITE_URL = window.siteData.general.paysiteUrl;
             return true;
         }
@@ -1391,6 +1459,7 @@
             const originalRender = window.renderAllContent || renderAllContent;
             window.renderAllContent = function(){
                 const result = originalRender.apply(this, arguments);
+                applyTicketAppearance(window.siteData);
                 if (!applyingRemote && window.__snrgAdminUser && window.supabaseReady) {
                     window.sb.from('site_content').upsert({ content_key: 'public', content_value: JSON.stringify(window.siteData), updated_by: window.__snrgAdminUser.id, updated_at: new Date().toISOString() })
                       .then(({error}) => { if (error) showNotification('Could not save website changes: ' + error.message, 'error'); });
@@ -1530,6 +1599,7 @@
         async function deleteChatMessage(id) { const {error}=await window.sb.from('chat_messages').delete().eq('id',id); if(error) showNotification(error.message,'error'); else await loadAdminChat(); }
 
         async function loadLiveChat() {
+            if (!applyFanChatAvailability()) return;
             if (!window.supabaseReady) return;
             const {data,error}=await window.sb.from('chat_messages').select('sender_name,message,created_at').eq('channel','fan_chat').order('created_at',{ascending:true}).limit(60);
             const feed=document.getElementById('chat-feed'); if(!feed) return;
@@ -1543,7 +1613,7 @@
         let liveChatSubscription=null;
         let liveChatUserId=null;
         function subscribeLiveChat() {
-            if(!window.supabaseReady || liveChatSubscription) return;
+            if(!getFanChatAvailability().open || !window.supabaseReady || liveChatSubscription) return;
             liveChatSubscription=window.sb.channel('signed-in-fan-chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'channel=eq.fan_chat'},payload=>{
                 const m=payload.new; appendChatMessage(m.sender_name||'Fan',m.message,'text-brand-neon font-black font-heading');
             }).subscribe((status)=>{
@@ -1552,6 +1622,7 @@
             });
         }
         async function updateLiveChatAuth(session) {
+            if(!applyFanChatAvailability()) { if(liveChatSubscription){await window.sb.removeChannel(liveChatSubscription);liveChatSubscription=null;} liveChatUserId=null; return; }
             const input=document.getElementById('chat-input-text');
             const sendButton=document.getElementById('chat-send-button');
             const authPrompt=document.getElementById('chat-auth-prompt');
@@ -1580,6 +1651,8 @@
             await loadLiveChat();
             subscribeLiveChat();
         }
+
+        setInterval(async()=>{if(!window.supabaseReady)return;try{const {data}=await window.sb.auth.getSession();await updateLiveChatAuth(data?.session||null);}catch(_error){}},30000);
 
         function setupAccessibleDialogs() {
             const dialogs = Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"]'));

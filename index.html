@@ -538,7 +538,7 @@
                 <a href="#media" aria-controls="tab-store" data-tab="store" onclick="setActiveTab('store'); return false;" id="nav-store" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all text-gray-300 hover:text-white hover:bg-white/5">Media</a>
                 <a href="#sasha-work" aria-controls="tab-portfolio" data-tab="portfolio" onclick="goToSashaWork(); return false;" id="nav-portfolio" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all text-gray-300 hover:text-white hover:bg-white/5">Sasha Portfolio</a>
                 <a href="#contact" aria-controls="tab-contact" data-tab="contact" onclick="setActiveTab('contact'); return false;" id="nav-contact" class="nav-btn px-3 py-2 rounded-md font-heading text-sm tracking-wider uppercase font-extrabold transition-all text-gray-300 hover:text-white hover:bg-white/5">Contact</a>
-                <a href="/sasha.html" data-sasha-full-portfolio="true" aria-label="Open Sasha’s photography and videography portfolio" class="nav-external-link inline-flex items-center px-3 py-2 rounded-md font-heading text-xs tracking-wider uppercase font-extrabold text-brand-neon hover:text-white hover:bg-white/5 transition-all border border-gray-700">Sasha Portfolio ↗</a>
+
             </nav>
 
             <nav class="lg:hidden flex items-center gap-2 overflow-x-auto pb-3" aria-label="Mobile navigation">
@@ -549,7 +549,7 @@
                 <a href="#media" aria-controls="tab-store" data-tab="store" onclick="setActiveTab('store'); return false;" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Media</a>
                 <a href="#sasha-work" aria-controls="tab-portfolio" data-tab="portfolio" onclick="goToSashaWork(); return false;" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Sasha Portfolio</a>
                 <a href="#contact" aria-controls="tab-contact" data-tab="contact" onclick="setActiveTab('contact'); return false;" class="nav-btn shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-gray-300">Contact</a>
-                <a href="/sasha.html" data-sasha-full-portfolio="true" aria-label="Open Sasha’s photography and videography portfolio" class="nav-external-link shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase text-brand-neon underline">Sasha Portfolio ↗</a>
+
             </nav>
         </div>
     </header>
@@ -667,7 +667,7 @@
                     <p class="mt-1 text-sm text-gray-300">Saturday, November 7, 2026 · Doors 6 PM · Fights 7 PM</p>
                     <p class="mt-1 text-sm text-gray-400">Fitness Quest, Outlet Collection Mall, Auburn, Washington</p>
                     <p class="mt-3 font-bold text-brand-neon">$35 live stream · Live event only · No replay</p>
-                    <a href="https://buytickets.at/fitnessquest/2470795" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex items-center justify-center rounded-lg bg-white px-4 py-3 text-sm font-black uppercase text-black">Buy In-Person Tickets · $45 GA / $85 VIP</a>
+                    <a id="inPersonTicketLink" href="https://buytickets.at/fitnessquest/2470795" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex items-center justify-center rounded-lg bg-white px-4 py-3 text-sm font-black uppercase text-black">Buy In-Person Tickets · $45 GA / $85 VIP</a>
                 </article>
             </div>
         </div>
@@ -709,33 +709,18 @@
 
         <!-- TAB 8: SASHA PORTFOLIO -->
         <div id="tab-portfolio" class="tab-content hidden space-y-10 sasha-portfolio-page">
-          <section class="sasha-hero">
-            <div class="relative z-10 self-center">
-              <p class="sasha-kicker">Sashsa Luv Fleskes · Photography &amp; Videography</p>
-              <h2 id="portfolio-main-title">Sasha’s <span>Dream-works</span></h2>
-              <p class="mt-3 text-xs font-extrabold uppercase tracking-[.22em] text-rose-200">Photography Services</p>
-              <p id="portfolio-main-intro" class="sasha-hero-copy">Portraits, events, and real-life moments, captured with care. Explore published work or send a booking request to start planning your session.</p>
-              <img id="portfolio-banner-image" class="hidden w-full max-h-80 object-cover rounded-xl border border-white/20 mt-6 mb-2" loading="lazy" decoding="async" alt="Sashsa Luv Fleskes photography and videography portfolio banner">
-              <div class="sasha-hero-actions">
-                <a class="sasha-action sasha-action-primary" href="#sasha-work">Explore the work</a>
-                <a class="sasha-action sasha-action-secondary" href="#sasha-booking">Request a session</a>
-                <a class="sasha-action sasha-action-secondary" href="/sasha.html">Full portfolio page ↗</a>
+          <section id="sasha-work" class="max-w-4xl mx-auto w-full">
+            <div class="rounded-2xl border border-rose-900/60 bg-gradient-to-br from-[#21191f] to-[#111014] p-6 sm:p-10 shadow-xl">
+              <p class="sasha-kicker">Photography · Videography · Portraits · Events</p>
+              <h2 id="portfolio-main-title" class="mt-4 text-4xl sm:text-5xl font-black tracking-tight text-white">Sasha’s <span>Dream-works</span></h2>
+              <p id="portfolio-main-intro" class="sasha-hero-copy mt-5">Explore Sasha’s photography and videography work, review the full session pricing list, and request a booking on her dedicated portfolio website.</p>
+              <img id="portfolio-banner-image" class="hidden w-full max-h-80 object-cover rounded-xl border border-white/20 mt-6 mb-2" loading="lazy" decoding="async" alt="Sasha’s photography and videography portfolio banner">
+              <div class="mt-7 flex flex-wrap gap-3">
+                <a class="sasha-action sasha-action-primary" href="/sasha.html">Open Sasha’s full portfolio and pricing ↗</a>
+                <a class="sasha-action sasha-action-secondary" href="/sasha.html#booking">Request a photography or video session ↗</a>
               </div>
-              <p class="mt-5 text-xs tracking-wide text-rose-100/75">Photography · Videography · Portraits · Events</p>
+              <p class="mt-6 text-sm text-gray-300">Sasha’s complete portfolio, service prices, and booking requests are managed in one place on her dedicated website. This page links there instead of showing a second, partial gallery.</p>
             </div>
-            <div class="sasha-hero-art" aria-label="Sasha's photography studio"><div class="sasha-hero-art-caption"><span>Thoughtfully captured</span><strong>Moments that feel like you.</strong></div></div>
-          </section>
-          <section id="sasha-work" class="max-w-6xl mx-auto w-full space-y-5">
-            <div class="sasha-section-heading"><div><p class="sasha-kicker">A closer look</p><h3 class="mt-3">Selected work</h3><p>Browse published portfolio photos and videos. Private media stays protected.</p></div><a href="/sasha.html" class="sasha-action sasha-action-secondary">View full portfolio ↗</a></div>
-            <div id="sasha-portfolio-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-          </section>
-          <section id="sasha-booking" class="max-w-5xl mx-auto w-full sasha-booking-shell space-y-5">
-            <div class="border-b border-white/10 pb-4">
-              <p class="sasha-kicker">Tell us what you have in mind</p>
-              <h3 class="font-heading text-2xl sm:text-3xl font-black mt-3">Request a Sasha Portfolio Booking</h3>
-              <p class="text-sm text-gray-300 mt-2">Use Sasha’s dedicated portfolio booking form to send a session request. The team will review it and, if approved, send a payment or deposit link. No payment is collected when you request a booking.</p>
-            </div>
-            <a href="/sasha.html#booking" class="sasha-action sasha-action-primary">Open portfolio booking form ↗</a>
           </section>
         </div>
 
@@ -780,8 +765,9 @@
                      <button id="contact-submit" type="submit" class="w-full rounded-xl bg-brand-red px-5 py-3 font-heading text-sm font-black uppercase text-white hover:bg-red-700">
                         Send Message
                     </button>
-                    <p id="contact-status" class="text-sm text-gray-400" role="status" aria-live="polite">Your message will be sent securely to our team. You can also email support@fq-snrg-mma.com directly.</p>
-                    <p class="text-xs text-gray-400">To help our reply reach you, add <strong class="text-gray-200">support@fq-snrg-mma.com</strong> to your contacts or safe-senders list, and check your spam or junk folder if you don't see our response.</p>
+                    <p id="contact-status" class="text-sm text-gray-400" role="status" aria-live="polite">Your message will be sent securely to our team. Email support@fq-snrg-mma.com for support or info@fq-snrg-mma.com for general, fighter, or photography inquiries.</p>
+                    <div id="section-contact-directory" class="grid sm:grid-cols-2 gap-3 mt-3" aria-label="Contact information by service area"></div>
+                    <p class="text-xs text-gray-400">To help our reply reach you, add <strong class="text-gray-200">support@fq-snrg-mma.com</strong> and <strong class="text-gray-200">info@fq-snrg-mma.com</strong> to your contacts or safe-senders list, and check your spam or junk folder if you don't see our response.</p>
                 </form>
             </div>
         </div>

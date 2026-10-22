@@ -55,10 +55,10 @@ footer{background:#fff!important;border-color:var(--line)!important}
 </style>
 </head>
 <body>
-<div class="brand-floral border-b" style="border-color:var(--line)"><div class="max-w-6xl mx-auto px-5 py-3 flex flex-wrap items-center justify-between gap-2"><span class="muted text-sm font-semibold tracking-wide">PHOTOGRAPHY · VIDEOGRAPHY · PORTRAITS · EVENTS</span><a href="#contact" class="contact-link text-sm">Contact Sasha</a></div></div><header class="brand-header sticky top-0 z-40"><div class="max-w-6xl mx-auto px-5 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"><a href="/sasha.html" class="brand-script text-3xl md:text-4xl" style="color:var(--rose-deep)">Sasha’s Dream-works</a><nav class="top-nav flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold tracking-widest" aria-label="Main navigation"><a href="#portfolio">PORTFOLIO</a><a href="#services">SESSION PRICES</a><a href="#booking">BOOK A SESSION</a><a href="#contact">CONTACT</a></nav></div></header>
+<div class="brand-floral border-b" style="border-color:var(--line)"><div class="max-w-6xl mx-auto px-5 py-3 flex flex-wrap items-center justify-between gap-2"><span class="muted text-sm font-semibold tracking-wide">PHOTOGRAPHY · VIDEOGRAPHY · PORTRAITS · EVENTS</span><div class="flex flex-wrap items-center gap-4 text-sm"><a href="/index.html" class="contact-link">Back to FQ MMA website</a><a href="#contact" class="contact-link">Contact Sasha</a></div></div></div><header class="brand-header sticky top-0 z-40"><div class="max-w-6xl mx-auto px-5 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"><a href="/sasha.html" class="brand-script text-3xl md:text-4xl" style="color:var(--rose-deep)">Sasha’s Dream-works</a><nav class="top-nav flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold tracking-widest" aria-label="Main navigation"><a href="#portfolio">PORTFOLIO</a><a href="#services">SESSION PRICES</a><a href="#booking">BOOK A SESSION</a><a href="#contact">CONTACT</a></nav></div></header>
 <main class="max-w-6xl mx-auto px-5 py-8 md:py-14 space-y-16">
 <section class="grid lg:grid-cols-[.9fr_1.1fr] gap-8 lg:gap-12 items-center">
-<div class="py-5 lg:py-10"><span class="portfolio-badge">Photography · Videography · Portraits</span><p class="section-kicker mt-7">Sasha Luv Fleskes · Photographer & filmmaker</p><h1 class="brand-script text-5xl md:text-7xl leading-tight mt-3" style="color:var(--ink)">Sasha’s<br><span style="color:var(--accent)">Dream-works</span></h1><p class="text-xl mt-4" style="color:#41464d">Photography Services</p><p class="muted mt-5 leading-relaxed max-w-xl">Honest, expressive photography and video for people, milestones, events, and the moments worth keeping. Explore the work, find a session that fits, or tell Sasha what you have in mind.</p><div class="mt-7 flex flex-wrap gap-3"><a class="btn" href="#portfolio">View the portfolio</a><a class="inline-flex items-center justify-center border border-gray-300 bg-white px-5 py-3 rounded-lg font-bold" href="#booking">Request a session</a></div><div class="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm muted"><a class="contact-link" href="tel:+12536704451">253-670-4451</a><a class="contact-link" href="mailto:info@fq-snrg-mma.com">Email Sasha</a></div></div>
+<div class="py-5 lg:py-10"><span class="portfolio-badge">Photography · Videography · Portraits</span><p class="section-kicker mt-7">Sasha Luv Fleskes · Photographer & filmmaker</p><h1 class="brand-script text-5xl md:text-7xl leading-tight mt-3" style="color:var(--ink)">Sasha’s<br><span style="color:var(--accent)">Dream-works</span></h1><p class="text-xl mt-4" style="color:#41464d">Photography Services</p><p class="muted mt-5 leading-relaxed max-w-xl">Honest, expressive photography and video for people, milestones, events, and the moments worth keeping. Explore the work, find a session that fits, or tell Sasha what you have in mind.</p><div class="mt-7 flex flex-wrap gap-3"><a class="btn" href="#portfolio">View the portfolio</a><a class="inline-flex items-center justify-center border border-gray-300 bg-white px-5 py-3 rounded-lg font-bold" href="#booking">Request a session</a></div><div class="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm muted"><a id="portfolio-contact-phone" class="contact-link" href="tel:+12536704451">253-670-4451</a><a id="portfolio-contact-email" class="contact-link" href="mailto:info@fq-snrg-mma.com">Email Sasha</a></div></div>
 <div id="portfolio-feature-visual" aria-label="Featured portfolio photograph"><div class="feature-empty"><span>Selected work</span><strong>Real moments. Thoughtfully captured.</strong><p class="mt-3 text-sm text-white/75">Published portfolio images will appear here.</p></div></div>
 </section>
 <section id="portfolio" class="space-y-5"><div><p class="section-kicker">Selected work</p><h2 class="section-title brand-script text-4xl md:text-5xl mt-2">Portfolio</h2><p class="muted mt-2">Browse published portfolio listings. Private video originals are never played from public URLs.</p></div><div id="portfolio-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"><p class="muted">Loading portfolio…</p></div><div id="portfolio-vault" class="vault-grid" hidden><article class="vault-card"><p class="section-kicker">Portfolio update</p><h3 class="font-bold text-2xl mt-2">New work is on the way</h3><p class="muted mt-3">Sasha’s latest published photos and videos will appear here. In the meantime, reach out about a portrait, event, or custom project.</p><a class="btn mt-5" href="#booking">Ask about a session</a></article></div><p id="portfolio-status" class="muted text-sm" role="status"></p></section>
@@ -91,8 +91,9 @@ footer{background:#fff!important;border-color:var(--line)!important}
   const money=v=>'$'+Number(v||0).toFixed(2);
   function renderServices(services){
     const host=$('portfolio-services-list');
-    const rows=Array.isArray(services)?services.filter(s=>s&&String(s.name||'').trim()):[];
-    host.innerHTML=rows.length?rows.map(s=>'<article class="panel p-4"><h3 class="font-bold text-lg">'+safeText(s.name)+'</h3><p class="accent font-black mt-2">'+safeText(s.price||'Contact for quote')+'</p>'+(s.details?'<p class="muted text-sm mt-2">'+safeText(s.details)+'</p>':'')+'</article>').join(''):'<p class="muted">Session rates are being updated. Send a booking request for a quote.</p>';
+    const rows=Array.isArray(services)?services.filter(s=>s&&String(s.name||'').trim()).map(s=>({...s,category:String(s.category||'Photography & Sessions').trim()})):[];
+    const categories=[...new Set(rows.map(s=>s.category))];
+    host.innerHTML=rows.length?categories.map(category=>'<section class="space-y-3"><h3 class="section-kicker">'+safeText(category)+'</h3><div class="grid md:grid-cols-2 gap-3">'+rows.filter(s=>s.category===category).map(s=>'<article class="panel p-4"><h4 class="font-bold text-lg">'+safeText(s.name)+'</h4><p class="accent font-black mt-2">'+safeText(s.price||'Contact for quote')+'</p>'+(s.details?'<p class="muted text-sm mt-2">'+safeText(s.details)+'</p>':'')+'</article>').join('')+'</div></section>').join(''):'<p class="muted">Session rates are being updated. Send a booking request for a quote.</p>';
   }
   function mediaCard(m,client){
     const isVideo=String(m.category||'').toLowerCase()==='video';
@@ -124,29 +125,32 @@ footer{background:#fff!important;border-color:var(--line)!important}
     const mediaResult=results[0],contentResult=results[1];
     if(contentResult.error)console.warn('Portfolio service pricing could not be loaded.',contentResult.error);
     let services=[];
-    try{const saved=contentResult.data&&contentResult.data.content_value?JSON.parse(contentResult.data.content_value):{};services=saved.general&&Array.isArray(saved.general.portfolioServices)?saved.general.portfolioServices:[]}catch(err){console.warn('Portfolio service pricing format is invalid.',err)}
+    try{const saved=contentResult.data&&contentResult.data.content_value?JSON.parse(contentResult.data.content_value):{};services=saved.general&&Array.isArray(saved.general.portfolioServices)?saved.general.portfolioServices:[];const contact=saved.general&&saved.general.sectionContacts&&saved.general.sectionContacts.portfolio? saved.general.sectionContacts.portfolio:{};const email=String(contact.email||'info@fq-snrg-mma.com').trim();const phone=String(contact.phone||'253-670-4451').trim();const emailLink=document.getElementById('portfolio-contact-email');if(emailLink&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){emailLink.href='mailto:'+email;emailLink.textContent='Email Sasha';}const phoneLink=document.getElementById('portfolio-contact-phone');if(phoneLink){const digits=phone.replace(/[^0-9+]/g,'');phoneLink.href='tel:'+digits;phoneLink.textContent=phone;phoneLink.classList.toggle('hidden',!phone);}}catch(err){console.warn('Portfolio service pricing or contact settings are invalid.',err)}
     if(!services.length) services=[
-      {name:'Wedding Photography',price:'$1,500–$3,500',details:'Custom quote based on coverage and requested deliverables.'},
-      {name:'Engagement Photography',price:'$150–$500'},
-      {name:'Event Photography',price:'$500–$1,000',details:'Confirm coverage duration, travel, setup, and editing in the booking request.'},
-      {name:'Family Photo Shoot',price:'$150–$500'},
-      {name:'Senior Pictures',price:'$125–$350'},
-      {name:'Portrait Photography',price:'$150–$370+'},
-      {name:'Birth, Baby & Newborn Photography',price:'$320–$650'},
-      {name:'Business Photography',price:'$175–$600'},
-      {name:'Prom Photography',price:'$150–$250'},
-      {name:'Graduation Photoshoot',price:'$250–$500'},
-      {name:'Headshots',price:'$75–$325',details:'Retouching and special lighting options may affect the final quote.'},
-      {name:'Band Photography',price:'$300–$1,000'},
-      {name:'Nature Photography',price:'$200–$500'},
-      {name:'Sports Photography',price:'$250–$350'},
-      {name:'Fashion Photography',price:'$400–$1,000 per session'},
-      {name:'Website Photography',price:'$35–$150 per image'},
-      {name:'MMA / Team Synergy digital photos (unedited)',price:'$3 each or $10 for 10'},
-      {name:'Standard hard-copy photo',price:'$5 each'},
-      {name:'Poster',price:'$45 unframed / $75 framed'},
-      {name:'Two unedited three-minute video rounds',price:'$50'},
-      {name:'Team Synergy fight-video session',price:'$150',details:'Any arena entry fee is included according to the supplied rate sheet.'}
+      {name:'Wedding Photography',category:'Photography & Sessions',price:'$1,500–$3,500',details:'Final quote depends on coverage duration, location, setup, and requested deliverables.'},
+      {name:'Engagement Photography',category:'Photography & Sessions',price:'$150–$500'},
+      {name:'Event Photography',category:'Photography & Sessions',price:'$500–$1,000',details:'The source rate sheet also lists $150–$250 per hour for the first two hours, then about $100 per additional hour; small birthday events $250–$500; and corporate photography $200–$600 per hour. Confirm coverage and the final quote before booking.'},
+      {name:'Family Photo Shoot',category:'Photography & Sessions',price:'$150–$500'},
+      {name:'Senior Pictures',category:'Photography & Sessions',price:'$125–$350'},
+      {name:'Portrait Photography',category:'Photography & Sessions',price:'$150–$370+',details:'The source sheet describes roughly one-hour on-location sessions, a $250 package, studio sessions at $125 per hour, and two-hour packages from $350 with around 12 edited high-resolution images. Confirm the exact package and deliverables.'},
+      {name:'Birth, Baby & Newborn Photography',category:'Photography & Sessions',price:'$320–$650'},
+      {name:'Business Photography',category:'Photography & Sessions',price:'$175–$600'},
+      {name:'Prom Photography',category:'Photography & Sessions',price:'$150–$250'},
+      {name:'Graduation Photoshoot',category:'Photography & Sessions',price:'$250–$500'},
+      {name:'Headshots',category:'Photography & Sessions',price:'$75–$325',details:'Basic shorter sessions may include little or no retouching. Enhanced lighting and professional editing may cost more.'},
+      {name:'Band Photography',category:'Photography & Sessions',price:'$300–$1,000'},
+      {name:'Nature Photography',category:'Photography & Sessions',price:'$200–$500'},
+      {name:'Sports Photography',category:'Photography & Sessions',price:'$250–$350'},
+      {name:'Fashion Photography',category:'Photography & Sessions',price:'$400–$1,000 per session'},
+      {name:'Lifestyle Photography',category:'Photography & Sessions',price:'$150–$370 per hour',details:'The source sheet describes packages up to $800 for a two-hour session for up to seven people with up to 40 professionally edited digital images. Confirm deliverables and final pricing.'},
+      {name:'Website Photography',category:'Photography & Sessions',price:'$35–$150 per image',details:'Large commercial setups or special lighting may affect the final quote.'},
+      {name:'Unedited video: two three-minute rounds',category:'Video & Event Coverage',price:'$50',details:'Listed as unedited video in the original rate sheet.'},
+      {name:'One-hour session (MMA members)',category:'MMA & Team Rates',price:'$50',details:'Listed under Fitness Quest MMA Members Only. Confirm what is included before booking.'},
+      {name:'Team Synergy fight-video session',category:'MMA & Team Rates',price:'$150',details:'The source rate sheet says any arena entry fee charged to the photographer is included.'},
+      {name:'Non-Photoshop digital photos (MMA members)',category:'Digital Photos & Prints',price:'$3 each or $10 for 10'},
+      {name:'Standard hard-copy photo (MMA members)',category:'Digital Photos & Prints',price:'$5 each'},
+      {name:'Poster (MMA members)',category:'Digital Photos & Prints',price:'$45 unframed / $75 framed',details:'The original sheet describes a wood frame with a durable plastic cover, not glass.'},
+      {name:'Team Synergy locker-room still photos',category:'MMA & Team Rates',price:'Contact for quote',details:'The source rate sheet says pricing depends on the number of photos requested.'}
     ];
     renderServices(services);
     const serviceSelect=$('b-service'),selectedService=serviceSelect.value;

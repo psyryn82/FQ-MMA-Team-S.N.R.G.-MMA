@@ -59,8 +59,9 @@ Deno.serve(async (req: Request) => {
   const paymentIntent = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
   if (session.amount_total !== purchase.amount_cents || session.currency !== String(purchase.currency || "USD").toLowerCase() || (purchase.stripe_payment_intent_id && purchase.stripe_payment_intent_id !== paymentIntent)) return respond({ error: "The payment details do not match the recorded entitlement." }, 403, origin);
 
-  const { data: config, error: configError } = await db.from("event_streams").select("livepeer_playback_id,is_enabled").eq("event_id", purchase.event_id).maybeSingle();
+  const { data: config, error: configError } = await db.from("event_streams").select("livepeer_playback_id,is_enabled,playback_token_ttl_seconds").eq("event_id", purchase.event_id).maybeSingle();
   if (configError || !config?.is_enabled || !config.livepeer_playback_id) return respond({ error: "Secure Livepeer playback is not enabled for this event yet." }, 409, origin);
+  const tokenTtlSeconds = Math.max(60, Math.min(600, Number(config.playback_token_ttl_seconds) || 600));
   const playbackId = String(config.livepeer_playback_id);
   if (!/^[A-Za-z0-9_-]{8,128}$/.test(playbackId)) return respond({ error: "The Livepeer playback ID is invalid." }, 503, origin);
   const { data: event, error: eventError } = await db.from("events").select("title,status").eq("id", purchase.event_id).maybeSingle();
@@ -71,7 +72,7 @@ Deno.serve(async (req: Request) => {
     const privateKey = await crypto.subtle.importKey("pkcs8", pemToDer(privatePem), { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
     const now = Math.floor(Date.now() / 1000);
     const header = { alg: "ES256", typ: "JWT" };
-    const payload = { action: "pull", iss: "https://fq-snrg-mma.com", pub: encodedPublic, sub: playbackId, video: "none", exp: now + 600, iat: now };
+    const payload = { action: "pull", iss: "https://fq-snrg-mma.com", pub: encodedPublic, sub: playbackId, video: "none", exp: now + tokenTtlSeconds, iat: now };
     const signingInput = base64UrlText(JSON.stringify(header)) + "." + base64UrlText(JSON.stringify(payload));
     const signature = new Uint8Array(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, privateKey, new TextEncoder().encode(signingInput)));
     const token = signingInput + "." + base64Url(signature);
