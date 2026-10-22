@@ -210,10 +210,10 @@ Deno.serve(async (req) => {
                 body: JSON.stringify({
                   from,
                   to: [buyerEmail],
-                  reply_to: "fqsnrgmma.info@gmail.com",
+                  reply_to: "support@fq-snrg-mma.com",
                   subject: "Your FQ MMA media purchase is ready",
-                  text: "Thanks for your purchase of " + title + ". Your secure download link expires in 30 minutes and can be used once: " + link + "\n\nAfter opening the link, select Download file. The generated file link is valid for 15 minutes. If you need help, contact fqsnrgmma.info@gmail.com.",
-                  html: "<div style=\"font-family:Arial,sans-serif;line-height:1.6;color:#222\"><h2>Your FQ MMA media is ready</h2><p>Thanks for purchasing <strong>" + safeTitle + "</strong>.</p><p>This secure download link expires in 30 minutes and can be used once.</p><p><a href=\"" + link + "\" style=\"display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:bold\">Download your purchase</a></p><p>After opening the link, select Download file. The generated file link is valid for 15 minutes.</p><p>If you need help, contact <a href=\"mailto:fqsnrgmma.info@gmail.com\">fqsnrgmma.info@gmail.com</a>.</p></div>",
+                  text: "Thanks for your purchase of " + title + ". Your secure download link expires in 30 minutes and can be used once: " + link + "\n\nAfter opening the link, select Download file. The generated file link is valid for 15 minutes. If you need help, contact support@fq-snrg-mma.com.",
+                  html: "<div style=\"font-family:Arial,sans-serif;line-height:1.6;color:#222\"><h2>Your FQ MMA media is ready</h2><p>Thanks for purchasing <strong>" + safeTitle + "</strong>.</p><p>This secure download link expires in 30 minutes and can be used once.</p><p><a href=\"" + link + "\" style=\"display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:bold\">Download your purchase</a></p><p>After opening the link, select Download file. The generated file link is valid for 15 minutes.</p><p>If you need help, contact <a href=\"mailto:support@fq-snrg-mma.com\">support@fq-snrg-mma.com</a>.</p></div>",
                 }),
               });
             } catch {

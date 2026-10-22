@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
   const emailResponse = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: [booking.customer_email], reply_to: "fqsnrgmma.info@gmail.com", subject, text: textBody, html })
+    body: JSON.stringify({ from, to: [booking.customer_email], reply_to: "info@fq-snrg-mma.com", subject, text: textBody, html })
   });
   const emailResult = await emailResponse.json().catch(() => ({}));
   if (!emailResponse.ok) {
