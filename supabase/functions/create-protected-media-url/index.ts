@@ -339,14 +339,16 @@ Deno.serve(async (req) => {
 
   if (sessionId) {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey || (!stripeKey.startsWith("sk_live_") && !stripeKey.startsWith("sk_test_"))) {
+    if (!stripeKey) {
       return respond({ error: "Secure payment verification is not configured." }, 503, origin);
     }
+    const stripeIsLive = /^(?:sk|rk)_live_/.test(stripeKey);
+    const stripeIsTest = /^(?:sk|rk)_test_/.test(stripeKey);
+    if (!stripeIsLive && !stripeIsTest) return respond({ error: "Secure payment verification is not configured." }, 503, origin);
     if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(sessionId)) {
       return respond({ error: "A valid checkout session is required." }, 400, origin);
     }
-    const stripeIsLive = stripeKey.startsWith("sk_live_");
-    if ((stripeIsLive && !sessionId.startsWith("cs_live_")) || (!stripeIsLive && !sessionId.startsWith("cs_test_"))) {
+    if ((stripeIsLive && !sessionId.startsWith("cs_live_")) || (stripeIsTest && !sessionId.startsWith("cs_test_"))) {
       return respond({ error: "Checkout session does not match the configured Stripe mode." }, 400, origin);
     }
 
