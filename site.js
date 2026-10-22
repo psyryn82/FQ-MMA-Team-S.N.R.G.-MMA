@@ -1429,7 +1429,7 @@
                 const row=contacts[key]&&typeof contacts[key]==='object'?contacts[key]:{};
                 const email=String(row.email||'').trim(),phone=String(row.phone||'').trim();
                 if(!email&&!phone)return '';
-                return '<div class="rounded-lg border border-gray-800 bg-black/20 p-3"><h3 class="font-bold text-sm">'+escapeHtml(label)+'</h3>'+(email?'<p class="text-sm mt-1 break-all">Email: '+escapeHtml(email)+'</p>':'')+(phone?'<p class="text-sm mt-1">Phone: '+escapeHtml(phone)+'</p>':'')+'</div>';
+                return '<div class="rounded-lg border border-gray-800 bg-black/20 p-3"><h3 class="font-bold text-sm">'+escapeHtml(label)+'</h3>'+(email?'<p class="text-sm mt-1 break-all">Email: <a class="underline text-red-300" href="mailto:'+escapeHtml(email)+'">'+escapeHtml(email)+'</a></p>':'')+(phone?'<p class="text-sm mt-1">Phone: <a class="underline text-red-300" href="tel:'+escapeHtml(phone)+'">'+escapeHtml(phone)+'</a></p>':'')+'</div>';
             }).join('');
         }
 
