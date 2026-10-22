@@ -617,7 +617,7 @@
                         : (mediaUrl ? `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(item.title || 'Photo listing image')}" loading="lazy" class="w-full max-h-72 object-cover rounded-lg">` : '');
                     const contactForPrice = !isPaid;
                     const action = isPaid
-                        ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">${isVideo ? 'Purchase to watch' : 'Purchase digital media'}</button>`
+                        ? `<button type="button" data-buy-media="${Number(item.mediaId)}" data-media-title="${escapeHtml(item.title || 'digital media')}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase ${isRed ? 'bg-brand-red text-white hover:bg-red-700' : 'bg-white text-black hover:bg-gray-200'}">${isVideo ? 'Purchase video download' : 'Purchase digital media'}</button>`
                         : `<button type="button" data-contact-pricing="true" data-media-title="${escapeHtml(item.title || 'digital media')}" data-media-collection="${item.collection === 'sasha_portfolio' ? 'photography' : 'MMA media'}" class="inline-flex rounded-lg px-4 py-2 text-xs font-black uppercase transition-all ${isRed ? 'bg-brand-red text-white hover:bg-red-700 hover:shadow-neon-red' : 'bg-white text-black hover:bg-gray-200'}">Ask about pricing</button>`;
                     return `
                         <article class="bg-gray-900/95 p-5 rounded-2xl border-l-4 ${borderColor} border-y border-r border-gray-800 space-y-3 ${glowStyle}">
