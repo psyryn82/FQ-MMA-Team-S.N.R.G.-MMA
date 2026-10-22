@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
   if (!name || !email || !service || !details || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return response(400, { success: false, error: "Please complete the required fields with a valid email address." }, origin);
   }
-  if (!new Set(["Photography session", "Event photography", "Portrait session", "Video service", "Other / discuss options"]).has(service)) {
+  if (!new Set(["Photography session", "Event photography", "Portrait session", "Video service", "Other / discuss options", "Wedding Photography", "Engagement Photography", "Family Photo Shoot", "Senior Pictures", "Portrait Photography", "Birth, Baby & Newborn Photography", "Business Photography", "Prom Photography", "Graduation Photoshoot", "Headshots", "Band Photography", "Nature Photography", "Sports Photography", "Fashion Photography", "Website Photography", "MMA / Team Synergy digital photos (unedited)", "Standard hard-copy photo", "Poster", "Two unedited three-minute video rounds", "Team Synergy fight-video session"]).has(service)) {
     return response(400, { success: false, error: "Please select a valid service." }, origin);
   }
 
@@ -172,7 +172,7 @@ Deno.serve(async (req: Request) => {
       const emailResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from, to: ["support@fq-snrg-mma.com"], reply_to: email, subject, text: message, html })
+        body: JSON.stringify({ from, to: ["info@fq-snrg-mma.com"], reply_to: email, subject, text: message, html })
       });
       notified = emailResponse.ok;
       if (!emailResponse.ok) console.error("Booking email notification failed:", emailResponse.status, await emailResponse.text().catch(() => ""));

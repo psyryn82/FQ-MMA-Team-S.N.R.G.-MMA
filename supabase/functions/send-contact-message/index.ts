@@ -178,7 +178,9 @@ Deno.serve(async (req: Request) => {
     "Ticket / Stream Access Inquiry",
     "Website Support",
   ]);
-  const sender = supportCategories.has(category)
+  const supportInbox = supportCategories.has(category);
+  const recipient = supportInbox ? "support@fq-snrg-mma.com" : "info@fq-snrg-mma.com";
+  const sender = supportInbox
     ? "FQ MMA Support <support@fq-snrg-mma.com>"
     : "FQ MMA / Team S.N.R.G. <info@fq-snrg-mma.com>";
   if (!apiKey) {
@@ -219,7 +221,7 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({
         from: sender,
-        to: ["support@fq-snrg-mma.com"],
+        to: [recipient],
         reply_to: email,
         subject,
         text: textBody,
