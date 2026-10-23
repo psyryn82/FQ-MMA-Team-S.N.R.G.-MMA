@@ -180,7 +180,7 @@ Deno.serve(async (req: Request) => {
     const safeTitle = escapeHtml(eventTitle);
     const safeDate = escapeHtml(eventDate);
     const safeLink = escapeHtml(watchLink);
-    const from = Deno.env.get("CONTACT_FROM_EMAIL") || "FQ MMA <info@fq-snrg-mma.com>";
+    const from = Deno.env.get("CONTACT_FROM_EMAIL") || "FQ MMA <downloads@fq-snrg-mma.com>";
     const emailBody = {
       from,
       to: [buyerEmail],
