@@ -22,6 +22,20 @@
 
         let availableStreamOptions = [];
 
+        async function getFunctionErrorMessage(error, fallback) {
+            try {
+                const response = error?.context;
+                if (response && typeof response.clone === 'function') {
+                    const payload = await response.clone().json();
+                    if (typeof payload?.error === 'string' && payload.error.trim()) return payload.error;
+                    if (typeof payload?.message === 'string' && payload.message.trim()) return payload.message;
+                }
+            } catch (_) {
+                // The response may be absent, already consumed, or not JSON.
+            }
+            return error?.message || fallback;
+        }
+
         function closeStreamCheckout() {
             document.getElementById('streamCheckoutModal').classList.add('hidden');
         }
@@ -85,7 +99,7 @@
             } catch (error) {
                 availableStreamOptions = [];
                 submit.disabled = true;
-                message.textContent = 'Live-stream checkout is temporarily unavailable. No payment was taken.';
+                message.textContent = await getFunctionErrorMessage(error, 'Live-stream checkout is temporarily unavailable. No payment was taken.');
             } finally {
                 if (focusPromo) document.getElementById('streamCheckoutPromotionCode')?.focus();
             }
@@ -116,7 +130,7 @@
                 if (!data?.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
                 window.location.assign(data.url);
             } catch (error) {
-                message.textContent = error?.message || 'Could not start checkout. No payment was taken.';
+                message.textContent = await getFunctionErrorMessage(error, 'Could not start checkout. No payment was taken.');
                 submit.disabled = false;
                 submit.textContent = 'Continue to secure payment';
             }
@@ -166,7 +180,7 @@
                 if (!data || !data.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
                 window.location.assign(data.url);
             } catch (error) {
-                message.textContent = error?.message || 'Could not start checkout. No payment was taken.';
+                message.textContent = await getFunctionErrorMessage(error, 'Could not start checkout. No payment was taken.');
                 submit.disabled = false;
                 submit.textContent = 'Continue to secure payment';
             }
@@ -1552,7 +1566,7 @@
                 if(error) throw error;
                 if(!data?.url||!data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error||'Could not open secure checkout.');
                 window.location.assign(data.url);
-            } catch(err){message.textContent=err.message||'Checkout failed. No payment was taken.';}
+            } catch(err){message.textContent=await getFunctionErrorMessage(err,'Checkout failed. No payment was taken.');}
             finally{button.disabled=false;button.textContent='Continue to secure payment';}
         });
         document.getElementById('mediaDeliveryForm')?.addEventListener('submit',async event=>{
@@ -1567,7 +1581,7 @@
                 message.innerHTML='';
                 const link=document.createElement('a');link.href=data.url;link.textContent='Download '+(data.title||'your media');link.target='_blank';link.rel='noopener noreferrer';link.className='inline-flex rounded-lg bg-brand-red px-4 py-2 text-xs font-black uppercase text-white';message.appendChild(link);
                 message.insertAdjacentText('beforeend',' This private link expires in 15 minutes.');
-            } catch(err){message.textContent=err.message||'Could not verify purchase yet.';}
+            } catch(err){message.textContent=await getFunctionErrorMessage(err,'Could not verify purchase yet.');}
             finally{button.disabled=false;button.textContent='Get my download';}
         });
         const mediaPurchaseResult=new URLSearchParams(window.location.search);
