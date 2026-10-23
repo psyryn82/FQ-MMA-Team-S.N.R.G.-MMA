@@ -1342,29 +1342,48 @@
                 if (scheduleResult.error) console.warn('Could not load training schedule from Supabase.', scheduleResult.error);
                 const savedEvents = new Map(siteData.schedule.map(item => [String(item.id), item]));
                 const fightQuestEvent=(eventsResult.data||[]).find(e=>String(e.title||'').toLowerCase().includes('fight quest xvi'));
-                const flyerImage=document.getElementById('fightQuestFlyerImage'),flyerDocument=document.getElementById('fightQuestFlyerDocument');
+                const flyerImage=document.getElementById('fightQuestFlyerImage'),flyerDocument=document.getElementById('fightQuestFlyerDocument'),flyerPlaceholder=document.getElementById('fightQuestFlyerPlaceholder');
                 if(flyerImage&&flyerDocument){
                     const flyerUrl=getSafeHttpUrl(fightQuestEvent?.flyer_image_url||'');
+                    const showFlyerPlaceholder=()=>flyerPlaceholder?.classList.remove('hidden');
+                    const hideFlyerPlaceholder=()=>flyerPlaceholder?.classList.add('hidden');
                     flyerImage.onerror=null;
                     flyerImage.onload=null;
                     flyerDocument.textContent='Open or download the official event flyer';
+                    showFlyerPlaceholder();
                     if(flyerUrl){
                         const path=flyerUrl.split('?')[0].toLowerCase();
-                        if(/\.(?:pdf|doc|docx)$/i.test(path)){flyerImage.removeAttribute('src');flyerImage.classList.add('hidden');flyerDocument.href=flyerUrl;flyerDocument.classList.remove('hidden');}
-                        else{
+                        if(/\.(?:pdf|doc|docx)$/i.test(path)){
+                            flyerImage.removeAttribute('src');
+                            flyerImage.classList.add('hidden');
+                            hideFlyerPlaceholder();
+                            flyerDocument.href=flyerUrl;
+                            flyerDocument.classList.remove('hidden');
+                        }else{
                             flyerDocument.href=flyerUrl;
                             flyerImage.onerror=()=>{
                                 flyerImage.removeAttribute('src');
                                 flyerImage.classList.add('hidden');
+                                showFlyerPlaceholder();
                                 flyerDocument.textContent='Flyer image could not be displayed. Open or download the official event flyer';
                                 flyerDocument.classList.remove('hidden');
                             };
-                            flyerImage.onload=()=>{flyerDocument.textContent='Open or download the official event flyer';flyerDocument.classList.add('hidden');};
+                            flyerImage.onload=()=>{
+                                hideFlyerPlaceholder();
+                                flyerDocument.textContent='Open or download the official event flyer';
+                                flyerDocument.classList.add('hidden');
+                            };
                             flyerImage.src=flyerUrl;
                             flyerImage.classList.remove('hidden');
                             flyerDocument.classList.add('hidden');
                         }
-                    }else{flyerImage.removeAttribute('src');flyerImage.classList.add('hidden');flyerDocument.removeAttribute('href');flyerDocument.classList.add('hidden');}
+                    }else{
+                        flyerImage.removeAttribute('src');
+                        flyerImage.classList.add('hidden');
+                        flyerDocument.removeAttribute('href');
+                        flyerDocument.classList.add('hidden');
+                        showFlyerPlaceholder();
+                    }
                 }
                 const eventItems = (eventsResult.data || []).map(e => {
                     const canSellStream = ['upcoming', 'live'].includes(e.status);

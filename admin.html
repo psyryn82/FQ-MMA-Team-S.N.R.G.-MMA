@@ -13,11 +13,11 @@
 <header class="border-b border-gray-800 bg-black px-4 py-4"><div class="max-w-6xl mx-auto flex items-center justify-between gap-4"><div><div class="head text-2xl font-bold uppercase"><span class="text-red-500">FQ MMA</span> Admin</div><div class="muted text-xs mt-1">Team S.N.R.G. MMA • Control panel</div></div><a href="./index.html" class="btn2 text-sm">View website ↗</a></div></header>
 <main class="max-w-6xl mx-auto px-4 py-8">
 
-<section id="loginPanel" class="panel p-6 max-w-md mx-auto"><div class="head text-3xl uppercase font-bold">Administrator sign in</div><p class="muted text-sm mt-2 mb-5">Only approved FQ MMA administrators can access this dashboard.</p>
+<section id="loginPanel" class="panel p-6 max-w-md mx-auto"><h1 class="head text-3xl uppercase font-bold">Administrator sign in</h1><p class="muted text-sm mt-2 mb-5">Only approved FQ MMA administrators can access this dashboard.</p>
 <form id="loginForm" class="space-y-4"><label class="block text-sm">Email<input id="email" class="field" type="email" autocomplete="username" required></label><label class="block text-sm">Password<input id="password" class="field" type="password" autocomplete="current-password" required></label><label class="inline-flex items-center gap-2 text-sm mt-2" for="showAdminLoginPassword"><input id="showAdminLoginPassword" type="checkbox" class="accent-red-600"> Show password</label><button class="btn w-full" type="submit">Sign in with email</button></form><button id="forgotPasswordBtn" class="mt-3 text-sm text-red-300 underline" type="button">Forgot password?</button>
 <button id="googleBtn" class="btn2 w-full mt-3" type="button">Continue with Google</button><p id="loginMessage" class="text-sm mt-4" role="status"></p></section>
 <section id="dashboard" class="hidden">
-<div class="panel p-4 flex flex-wrap items-center justify-between gap-3 mb-5"><div><div class="head text-2xl uppercase">Dashboard</div><p id="signedInAs" class="muted text-xs mt-1"></p></div><button id="logoutBtn" class="btn2">Sign out</button></div>
+<div class="panel p-4 flex flex-wrap items-center justify-between gap-3 mb-5"><div><h1 class="head text-2xl uppercase">Dashboard</h1><p id="signedInAs" class="muted text-xs mt-1"></p></div><button id="logoutBtn" class="btn2">Sign out</button></div>
 <details class="panel p-4 mb-5" open><summary class="head text-lg uppercase cursor-pointer">Quick start guide <span class="muted text-xs normal-case font-normal">for new dashboard users</span></summary><div class="grid md:grid-cols-3 gap-4 mt-4 text-sm"><div><strong class="text-red-400">1. Edit public pages</strong><p class="muted mt-1">Use Website for the homepage, events, fighters, training schedule, and support inbox. Use Portfolio for Sasha’s branding, media, and booking requests.</p></div><div><strong class="text-red-400">2. Add digital media</strong><p class="muted mt-1">Use Media for fight photos/videos and website assets. Use Portfolio → Portfolio Media for Sasha’s purchasable files. Set each item’s price and publish it in that same section.</p></div><div><strong class="text-red-400">3. Track money and access</strong><p class="muted mt-1">Use Purchases to review ticket, livestream, and digital-media sales separately, manage download access, and view promo codes. Pending checkout is not proof of payment.</p></div></div><p class="muted text-xs mt-4">Safety tip: paid originals belong in private storage. Only make a separate public copy when you intend the file to be publicly accessible. If a button is disabled or an error appears, read the message before retrying.</p></details><div id="tabs" class="flex flex-wrap gap-2 mb-5"></div>
 <div id="subTabs" class="flex flex-wrap gap-2 mb-5"></div>
 <div id="workspacePanels" class="space-y-4 min-w-0"></div>
@@ -622,7 +622,7 @@ async function loadSiteAssets(){
  const list=$('siteAssetList'),message=$('siteAssetMessage');
  list.innerHTML='<p class="muted text-sm">Loading private site assets…</p>';
  const {data,error}=await client.from('site_assets').select('id,title,category,description,file_name,content_type,private_path,external_url,public_path,public_url,is_public,created_at').order('created_at',{ascending:false}).limit(250);
- if(error){list.innerHTML='<p class="text-red-400 text-sm">Could not load Site Media library: '+esc(error.message)+'</p>';return}
+ if(error){message.textContent='Could not load Site Media library: '+esc(error.message);list.innerHTML='<p class="text-red-400 text-sm">Could not load Website Assets. Please refresh this section and try again.</p>';return}
  records.site_assets=data||[];
  list.innerHTML=records.site_assets.map(a=>'<article class="border border-gray-800 rounded-lg p-3 flex flex-col gap-3"><div class="flex flex-wrap justify-between gap-3"><div class="min-w-0"><b>'+esc(a.title)+'</b><p class="muted text-xs mt-1">'+esc(a.description||'No description')+'</p><p class="muted text-xs mt-1">Category: '+esc(a.category||'other')+'</p><p class="muted text-xs mt-1">'+esc(a.file_name)+' · '+(a.is_public?'<span class="text-green-400">Public copy explicitly enabled</span>':'<span class="text-yellow-300">Private only</span>')+'</p><p class="muted text-xs mt-1">Asset ID: '+esc(a.id)+'</p>'+(a.external_url?'<p class="text-xs mt-2 break-all">External URL: <a class="text-red-300 underline" href="'+esc(a.external_url)+'" target="_blank" rel="noopener noreferrer">Open link</a></p>':'')+(a.public_url?'<p class="text-xs mt-2 break-all"><a class="text-red-300 underline" href="'+esc(a.public_url)+'" target="_blank" rel="noopener noreferrer">Open public copy</a> <button class="btn2" type="button" data-copy-asset-url="'+esc(a.id)+'">Copy URL</button></p>':'')+'</div><div class="flex flex-wrap items-start gap-2">'+(a.is_public?'<button class="btn2" data-site-asset-publish="'+esc(a.id)+'" data-public="true">Make private</button>':'<button class="btn2" data-site-asset-publish="'+esc(a.id)+'" data-public="false">Publish copy</button>')+'<button class="btn2" data-site-asset-delete="'+esc(a.id)+'">Delete</button></div></div></article>').join('')||'<p class="muted text-sm">No site assets yet. Upload logos, graphics, or photos above.</p>';
  message.textContent='Loaded '+records.site_assets.length+' asset(s).';
@@ -1240,6 +1240,20 @@ $('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-group]');
 renderShells();
 client.auth.getSession().then(({data})=>{if(data.session)showDashboard(data.session.user)});
 client.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>{if(session&&!currentUser)showDashboard(session.user);},0)});
+</script>
+<script>
+/* Last-resort UI guard: network-level rejections must never leave admin panels stuck on loading text. */
+window.addEventListener('unhandledrejection', function(event) {
+  console.error('An admin dashboard operation did not complete.', event.reason);
+  const loadingNodes = Array.from(document.querySelectorAll('#dashboard p, #dashboard [role="status"], #workspacePanels p, #workspacePanels [role="status"]'))
+    .filter(node => /^loading(?:\s|…|\.{3})/i.test((node.textContent || '').trim()));
+  loadingNodes.forEach(node => {
+    node.textContent = 'This section could not finish loading. Use its Refresh button to try again.';
+    node.setAttribute('role', 'status');
+    node.setAttribute('aria-live', 'polite');
+    node.classList.add('text-amber-200');
+  });
+});
 </script>
 </body>
 </html>
