@@ -49,7 +49,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.create-vod-upload]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-booking-payment-link]
-verify_jwt = false
+verify_jwt = true
