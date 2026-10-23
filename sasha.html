@@ -89,11 +89,27 @@ footer{background:#fff!important;border-color:var(--line)!important}
   const status=$('portfolio-status');
   const safeText=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=v=>'$'+Number(v||0).toFixed(2);
+  function formatServiceDetails(value){
+    const raw=String(value??'');
+    const urlPattern=/https:\/\/[^\\s<>\"']+/gi;
+    let html='',cursor=0,match;
+    while((match=urlPattern.exec(raw))){
+      let urlWithPunctuation=match[0],trailing='';
+      while(/[),.;!?]$/.test(urlWithPunctuation)){trailing=urlWithPunctuation.slice(-1)+trailing;urlWithPunctuation=urlWithPunctuation.slice(0,-1);}
+      html+=safeText(raw.slice(cursor,match.index));
+      if(/^https:\/\/[^\\s]+$/i.test(urlWithPunctuation)){
+        html+='<a class="underline break-all" href="'+safeText(urlWithPunctuation)+'" target="_blank" rel="noopener noreferrer">'+safeText(urlWithPunctuation)+'</a>';
+      }else html+=safeText(urlWithPunctuation);
+      html+=safeText(trailing);
+      cursor=match.index+match[0].length;
+    }
+    return html+safeText(raw.slice(cursor));
+  }
   function renderServices(services){
     const host=$('portfolio-services-list');
     const rows=Array.isArray(services)?services.filter(s=>s&&String(s.name||'').trim()).map(s=>({...s,category:String(s.category||'Photography & Sessions').trim()})):[];
     const categories=[...new Set(rows.map(s=>s.category))];
-    host.innerHTML=rows.length?categories.map(category=>'<section class="space-y-3"><h3 class="section-kicker">'+safeText(category)+'</h3><div class="grid md:grid-cols-2 gap-3">'+rows.filter(s=>s.category===category).map(s=>'<article class="panel p-4"><h4 class="font-bold text-lg">'+safeText(s.name)+'</h4><p class="accent font-black mt-2">'+safeText(s.price||'Contact for quote')+'</p>'+(s.details?'<p class="muted text-sm mt-2">'+safeText(s.details)+'</p>':'')+'</article>').join('')+'</div></section>').join(''):'<p class="muted">Session rates are being updated. Send a booking request for a quote.</p>';
+    host.innerHTML=rows.length?categories.map(category=>'<section class="space-y-3"><h3 class="section-kicker">'+safeText(category)+'</h3><div class="grid md:grid-cols-2 gap-3">'+rows.filter(s=>s.category===category).map(s=>'<article class="panel p-4"><h4 class="font-bold text-lg">'+safeText(s.name)+'</h4><p class="accent font-black mt-2">'+safeText(s.price||'Contact for quote')+'</p>'+(s.details?'<p class="muted text-sm mt-2">'+formatServiceDetails(s.details)+'</p>':'')+'</article>').join('')+'</div></section>').join(''):'<p class="muted">Session rates are being updated. Send a booking request for a quote.</p>';
   }
   function mediaCard(m,client){
     const isVideo=String(m.category||'').toLowerCase()==='video';
@@ -126,7 +142,7 @@ footer{background:#fff!important;border-color:var(--line)!important}
     if(contentResult.error)console.warn('Portfolio service pricing could not be loaded.',contentResult.error);
     let services=[];
     try{const saved=contentResult.data&&contentResult.data.content_value?JSON.parse(contentResult.data.content_value):{};services=saved.general&&Array.isArray(saved.general.portfolioServices)?saved.general.portfolioServices:[];const contact=saved.general&&saved.general.sectionContacts&&saved.general.sectionContacts.portfolio?saved.general.sectionContacts.portfolio:{};const email=String(contact.email||'info@fq-snrg-mma.com').trim();const phone=String(contact.phone||'253-670-4451').trim();const emailValid=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);const emailLink=document.getElementById('portfolio-contact-email');const emailCard=document.getElementById('portfolio-contact-email-card');const emailFooter=document.getElementById('portfolio-contact-email-footer');if(emailValid){[emailLink,emailCard,emailFooter].forEach(link=>{if(link){link.href='mailto:'+email;const text=link.querySelector('.contact-link');if(text)text.textContent=email;else link.textContent='Email Sasha';}})}const phoneLink=document.getElementById('portfolio-contact-phone');const phoneCard=document.getElementById('portfolio-contact-phone-card');const phoneFooter=document.getElementById('portfolio-contact-phone-footer');if(phone){const digits=phone.replace(/[^0-9+]/g,'');[phoneLink,phoneCard,phoneFooter].forEach(link=>{if(link){link.href='tel:'+digits;const text=link.querySelector('.contact-link');if(text)text.textContent=phone;else link.textContent=phone;link.classList.toggle('hidden',!phone);}})}}catch(err){console.warn('Portfolio service pricing or contact settings are invalid.',err)}
-    if(!services.length) services=[
+    const fallbackServices=[
       {name:'Wedding Photography',category:'Photography & Sessions',price:'$1,500–$3,500',details:'Final quote depends on coverage duration, location, setup, and requested deliverables.'},
       {name:'Engagement Photography',category:'Photography & Sessions',price:'$150–$500'},
       {name:'Event Photography',category:'Photography & Sessions',price:'$500–$1,000',details:'The source rate sheet also lists $150–$250 per hour for the first two hours, then about $100 per additional hour; small birthday events $250–$500; and corporate photography $200–$600 per hour. Confirm coverage and the final quote before booking.'},
@@ -152,6 +168,21 @@ footer{background:#fff!important;border-color:var(--line)!important}
       {name:'Poster (MMA members)',category:'Digital Photos & Prints',price:'$45 unframed / $75 framed',details:'The original sheet describes a wood frame with a durable plastic cover, not glass.'},
       {name:'Team Synergy locker-room still photos',category:'MMA & Team Rates',price:'Contact for quote',details:'The source rate sheet says pricing depends on the number of photos requested.'}
     ];
+    const genericPriceLists=services.filter(s=>/full price list|full packet|all services and rates/i.test(String(s.name||'')+' '+String(s.price||'')));
+    if(!services.length){
+      services=fallbackServices;
+    }else if(genericPriceLists.length){
+      const explicitServices=services.filter(s=>!genericPriceLists.includes(s));
+      const normalizeServiceName=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+      const usedOverrides=new Set();
+      services=fallbackServices.map(base=>{
+        const override=explicitServices.find(item=>normalizeServiceName(item.name)===normalizeServiceName(base.name));
+        if(override)usedOverrides.add(override);
+        return override?{...base,...override}:base;
+      });
+      services.push(...explicitServices.filter(item=>!usedOverrides.has(item)));
+      services.push(...genericPriceLists);
+    }
     renderServices(services);
     const serviceSelect=$('b-service'),selectedService=serviceSelect.value;
     const configuredNames=services.filter(s=>s&&String(s.name||'').trim()).map(s=>String(s.name).trim());
