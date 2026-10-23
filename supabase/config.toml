@@ -38,3 +38,18 @@ verify_jwt = false
 
 [functions.create-booking-request]
 verify_jwt = false
+# These endpoints implement their own authorization and/or request validation.
+[functions.create-livepeer-stream-playback]
+verify_jwt = false
+
+[functions.create-free-stream-playback]
+verify_jwt = false
+
+[functions.send-inquiry]
+verify_jwt = false
+
+[functions.create-vod-upload]
+verify_jwt = true
+
+[functions.send-booking-payment-link]
+verify_jwt = true

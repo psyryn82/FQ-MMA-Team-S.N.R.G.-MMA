@@ -22,6 +22,20 @@
 
         let availableStreamOptions = [];
 
+        async function getFunctionErrorMessage(error, fallback) {
+            try {
+                const response = error?.context;
+                if (response && typeof response.clone === 'function') {
+                    const payload = await response.clone().json();
+                    if (typeof payload?.error === 'string' && payload.error.trim()) return payload.error;
+                    if (typeof payload?.message === 'string' && payload.message.trim()) return payload.message;
+                }
+            } catch (_) {
+                // The response may be absent, already consumed, or not JSON.
+            }
+            return error?.message || fallback;
+        }
+
         function closeStreamCheckout() {
             document.getElementById('streamCheckoutModal').classList.add('hidden');
         }
@@ -85,7 +99,7 @@
             } catch (error) {
                 availableStreamOptions = [];
                 submit.disabled = true;
-                message.textContent = 'Live-stream checkout is temporarily unavailable. No payment was taken.';
+                message.textContent = await getFunctionErrorMessage(error, 'Live-stream checkout is temporarily unavailable. No payment was taken.');
             } finally {
                 if (focusPromo) document.getElementById('streamCheckoutPromotionCode')?.focus();
             }
@@ -116,7 +130,7 @@
                 if (!data?.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
                 window.location.assign(data.url);
             } catch (error) {
-                message.textContent = error?.message || 'Could not start checkout. No payment was taken.';
+                message.textContent = await getFunctionErrorMessage(error, 'Could not start checkout. No payment was taken.');
                 submit.disabled = false;
                 submit.textContent = 'Continue to secure payment';
             }
@@ -166,7 +180,7 @@
                 if (!data || !data.url || !data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error || 'Secure checkout could not be opened.');
                 window.location.assign(data.url);
             } catch (error) {
-                message.textContent = error?.message || 'Could not start checkout. No payment was taken.';
+                message.textContent = await getFunctionErrorMessage(error, 'Could not start checkout. No payment was taken.');
                 submit.disabled = false;
                 submit.textContent = 'Continue to secure payment';
             }
@@ -671,7 +685,7 @@
         function renderAdminManagerLists() {
             const admDisc = document.getElementById('admin-list-disciplines');
             if(admDisc) {
-                admDisc.innerHTML = siteData.disciplines.map(item => `
+                admDisc.innerHTML = siteData.disciplines.length ? siteData.disciplines.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-white font-bold">${item.name}</span> <span class="text-gray-500 text-[10px]">(${item.link})</span>
@@ -681,12 +695,12 @@
                             <button onclick="adminDeleteItem('disciplines', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No disciplines yet. Add one using the form above.</p>';
             }
 
             const admSch = document.getElementById('admin-list-schedule');
             if(admSch) {
-                admSch.innerHTML = siteData.schedule.map(item => `
+                admSch.innerHTML = siteData.schedule.length ? siteData.schedule.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-brand-red font-bold">${escapeHtml(item.date)}</span> - <span class="text-white font-bold">${escapeHtml(item.title)}</span> <span class="text-brand-neon">${escapeHtml(item.ticketPrice || 'Price TBA')}</span> <span class="text-gray-500 text-[10px]">(${escapeHtml(item.link)})</span>
@@ -696,12 +710,12 @@
                             <button onclick="adminDeleteItem('schedule', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No events or training sessions yet. Add one using the form above.</p>';
             }
 
             const admF = document.getElementById('admin-list-fighters');
             if(admF) {
-                admF.innerHTML = siteData.fighters.map(item => `
+                admF.innerHTML = siteData.fighters.length ? siteData.fighters.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-white font-bold">${item.name}</span> (${item.record})
@@ -711,12 +725,12 @@
                             <button onclick="adminDeleteItem('fighters', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No fighter profiles yet. Add one using the form above.</p>';
             }
 
             const admS = document.getElementById('admin-list-store');
             if(admS) {
-                admS.innerHTML = siteData.store.map(item => `
+                admS.innerHTML = siteData.store.length ? siteData.store.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-white font-bold">${item.title}</span> - <span class="text-brand-neon">${item.price}</span> <span class="text-gray-500 text-[10px]">(${item.link})</span>
@@ -726,12 +740,12 @@
                             <button onclick="adminDeleteItem('store', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No store items yet. Add one using the form above.</p>';
             }
 
             const admP = document.getElementById('admin-list-portfolio');
             if(admP) {
-                admP.innerHTML = siteData.portfolio.map(item => `
+                admP.innerHTML = siteData.portfolio.length ? siteData.portfolio.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-white font-bold">${item.title}</span> - <span class="text-brand-neon">${item.price || 'Free'}</span> <span class="text-gray-500 text-[10px]">(${item.link})</span>
@@ -741,12 +755,12 @@
                             <button onclick="adminDeleteItem('portfolio', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No media or portfolio items yet. Add or upload media to populate this list.</p>';
             }
 
             const admPromos = document.getElementById('admin-list-promos');
             if(admPromos) {
-                admPromos.innerHTML = siteData.promos.map(item => `
+                admPromos.innerHTML = siteData.promos.length ? siteData.promos.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-brand-neon font-mono font-bold">${item.code}</span> (${item.event}) — Expires: <span class="text-gray-300">${item.expiry}</span>
@@ -756,7 +770,7 @@
                             <button onclick="adminDeleteItem('promos', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No promotion codes yet. Create one when a promotion is ready.</p>';
             }
         }
 
@@ -1440,7 +1454,21 @@
                     if (!merged.some(item => disciplineAliasKey(item.name) === disciplineAliasKey(def.name))) merged.push({ ...def });
                 }
             }
-            content.disciplines = merged;
+            // Saved public settings may contain duplicate IDs. Admin edit/delete actions
+            // use IDs as identity, so make every ID unique before rendering those controls.
+            const seenIds = new Set();
+            content.disciplines = merged.map((item, index) => {
+                let normalized = item && typeof item === 'object' ? { ...item } : { name: String(item || '') };
+                let key = String(normalized.id ?? '').trim();
+                if (!key || seenIds.has(key)) {
+                    let nextId = Date.now() + index;
+                    while (seenIds.has(String(nextId))) nextId += 1;
+                    normalized.id = nextId;
+                    key = String(nextId);
+                }
+                seenIds.add(key);
+                return normalized;
+            });
             content.disciplineDefaultsVersion = 2;
             return content;
         }
@@ -1571,7 +1599,7 @@
                 if(error) throw error;
                 if(!data?.url||!data.url.startsWith('https://checkout.stripe.com/')) throw new Error(data?.error||'Could not open secure checkout.');
                 window.location.assign(data.url);
-            } catch(err){message.textContent=err.message||'Checkout failed. No payment was taken.';}
+            } catch(err){message.textContent=await getFunctionErrorMessage(err,'Checkout failed. No payment was taken.');}
             finally{button.disabled=false;button.textContent='Continue to secure payment';}
         });
         document.getElementById('mediaDeliveryForm')?.addEventListener('submit',async event=>{
@@ -1586,7 +1614,7 @@
                 message.innerHTML='';
                 const link=document.createElement('a');link.href=data.url;link.textContent='Download '+(data.title||'your media');link.target='_blank';link.rel='noopener noreferrer';link.className='inline-flex rounded-lg bg-brand-red px-4 py-2 text-xs font-black uppercase text-white';message.appendChild(link);
                 message.insertAdjacentText('beforeend',' This private link expires in 15 minutes.');
-            } catch(err){message.textContent=err.message||'Could not verify purchase yet.';}
+            } catch(err){message.textContent=await getFunctionErrorMessage(err,'Could not verify purchase yet.');}
             finally{button.disabled=false;button.textContent='Get my download';}
         });
         const mediaPurchaseResult=new URLSearchParams(window.location.search);
