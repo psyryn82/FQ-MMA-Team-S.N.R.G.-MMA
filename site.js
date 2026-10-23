@@ -685,7 +685,7 @@
         function renderAdminManagerLists() {
             const admDisc = document.getElementById('admin-list-disciplines');
             if(admDisc) {
-                admDisc.innerHTML = siteData.disciplines.map(item => `
+                admDisc.innerHTML = siteData.disciplines.length ? siteData.disciplines.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-white font-bold">${item.name}</span> <span class="text-gray-500 text-[10px]">(${item.link})</span>
@@ -695,12 +695,12 @@
                             <button onclick="adminDeleteItem('disciplines', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No disciplines yet. Add one using the form above.</p>';
             }
 
             const admSch = document.getElementById('admin-list-schedule');
             if(admSch) {
-                admSch.innerHTML = siteData.schedule.map(item => `
+                admSch.innerHTML = siteData.schedule.length ? siteData.schedule.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-brand-red font-bold">${escapeHtml(item.date)}</span> - <span class="text-white font-bold">${escapeHtml(item.title)}</span> <span class="text-brand-neon">${escapeHtml(item.ticketPrice || 'Price TBA')}</span> <span class="text-gray-500 text-[10px]">(${escapeHtml(item.link)})</span>
@@ -710,12 +710,12 @@
                             <button onclick="adminDeleteItem('schedule', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No events or training sessions yet. Add one using the form above.</p>';
             }
 
             const admF = document.getElementById('admin-list-fighters');
             if(admF) {
-                admF.innerHTML = siteData.fighters.map(item => `
+                admF.innerHTML = siteData.fighters.length ? siteData.fighters.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-white font-bold">${item.name}</span> (${item.record})
@@ -725,12 +725,12 @@
                             <button onclick="adminDeleteItem('fighters', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No fighter profiles yet. Add one using the form above.</p>';
             }
 
             const admS = document.getElementById('admin-list-store');
             if(admS) {
-                admS.innerHTML = siteData.store.map(item => `
+                admS.innerHTML = siteData.store.length ? siteData.store.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-white font-bold">${item.title}</span> - <span class="text-brand-neon">${item.price}</span> <span class="text-gray-500 text-[10px]">(${item.link})</span>
@@ -740,12 +740,12 @@
                             <button onclick="adminDeleteItem('store', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No store items yet. Add one using the form above.</p>';
             }
 
             const admP = document.getElementById('admin-list-portfolio');
             if(admP) {
-                admP.innerHTML = siteData.portfolio.map(item => `
+                admP.innerHTML = siteData.portfolio.length ? siteData.portfolio.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-white font-bold">${item.title}</span> - <span class="text-brand-neon">${item.price || 'Free'}</span> <span class="text-gray-500 text-[10px]">(${item.link})</span>
@@ -755,12 +755,12 @@
                             <button onclick="adminDeleteItem('portfolio', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No media or portfolio items yet. Add or upload media to populate this list.</p>';
             }
 
             const admPromos = document.getElementById('admin-list-promos');
             if(admPromos) {
-                admPromos.innerHTML = siteData.promos.map(item => `
+                admPromos.innerHTML = siteData.promos.length ? siteData.promos.map(item => `
                     <div class="bg-black p-3 rounded border border-gray-800 flex items-center justify-between text-xs gap-2">
                         <div class="truncate">
                             <span class="text-brand-neon font-mono font-bold">${item.code}</span> (${item.event}) — Expires: <span class="text-gray-300">${item.expiry}</span>
@@ -770,7 +770,7 @@
                             <button onclick="adminDeleteItem('promos', ${item.id})" class="text-red-400 hover:text-red-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                `).join('');
+                `).join('') : '<p class="text-xs text-gray-400 p-3">No promotion codes yet. Create one when a promotion is ready.</p>';
             }
         }
 
