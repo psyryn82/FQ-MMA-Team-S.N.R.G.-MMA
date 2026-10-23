@@ -437,9 +437,16 @@
     <section id="fight-quest-xvi-flyer" class="bg-black border-b border-red-900/40 px-4 py-8">
       <div class="max-w-5xl mx-auto grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-6 items-center">
         <div class="rounded-xl border border-red-900/60 bg-gray-950 p-3 text-center">
-          <img id="fightQuestFlyerImage" alt="Fight Quest XVI: MMA Showdown flyer" class="hidden mx-auto w-full max-w-md h-auto rounded-lg" loading="eager">
-          <a id="fightQuestFlyerDocument" class="hidden inline-flex mt-2 text-red-300 underline" href="#" target="_blank" rel="noopener noreferrer">Open or download the official event flyer</a>
-          <p class="mt-2 text-xs text-gray-400">Official Fight Quest XVI event flyer. Add an uploaded public asset or HTTPS URL in Admin → Events.</p>
+          <div id="fightQuestFlyerPlaceholder" class="relative flex min-h-[300px] flex-col items-center justify-center overflow-hidden rounded-lg border border-red-900/60 bg-gradient-to-br from-red-950 via-gray-950 to-black px-5 py-8">
+            <span class="text-[10px] font-black uppercase tracking-[.28em] text-red-300">Official event flyer</span>
+            <div class="mt-4 font-heading text-4xl sm:text-5xl font-black uppercase leading-none tracking-tight text-white">Fight Quest <span class="text-red-500">XVI</span></div>
+            <div class="mt-4 h-1 w-16 rounded-full bg-red-500"></div>
+            <p class="mt-4 text-sm font-bold uppercase tracking-wider text-gray-200">Saturday · November 7, 2026</p>
+            <p class="mt-1 text-xs uppercase tracking-widest text-gray-400">Doors 6 PM · Fights 7 PM</p>
+            <p class="mt-5 max-w-xs text-xs leading-relaxed text-gray-400">The official flyer will appear here when it is published.</p>
+          </div>
+          <img id="fightQuestFlyerImage" alt="Fight Quest XVI: MMA Showdown flyer" class="hidden mx-auto w-full max-w-md h-auto rounded-lg" loading="eager" decoding="async">
+          <a id="fightQuestFlyerDocument" class="hidden inline-flex mt-3 rounded-lg border border-red-800 px-4 py-2 text-sm font-bold text-red-200 underline underline-offset-4 hover:bg-red-950/60" href="#" target="_blank" rel="noopener noreferrer">Open or download the official event flyer</a>
         </div>
         <div class="space-y-4">
           <p class="font-heading text-xs font-black uppercase tracking-[.2em] text-red-400">Saturday, November 7, 2026 · Auburn, Washington</p>
