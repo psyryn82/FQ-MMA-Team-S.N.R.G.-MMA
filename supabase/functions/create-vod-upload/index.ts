@@ -15,6 +15,15 @@ function respond(body: unknown, status = 200, origin = "") {
     "Vary": "Origin",
   }});
 }
+function normalizeLivepeerStatus(value: unknown): "processing" | "ready" | "failed" {
+  const status = String(value ?? "").trim().toLowerCase();
+  if (["ready", "completed", "complete", "published"].includes(status)) return "ready";
+  if (["failed", "error", "errored"].includes(status)) return "failed";
+  // Livepeer can report waiting/queued/uploading states, but the database enum
+  // intentionally stores these under the broader "processing" state.
+  return "processing";
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin") || "";
   const cors = { ...baseHeaders, "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://fq-snrg-mma.com", "Vary": "Origin" };
@@ -71,7 +80,7 @@ Deno.serve(async (req: Request) => {
       title,
       livepeer_asset_id: asset.id,
       livepeer_playback_id: asset.playbackId,
-      livepeer_status: asset.status?.phase || asset.status?.status || "waiting",
+      livepeer_status: normalizeLivepeerStatus(asset.status?.phase || asset.status?.status),
       livepeer_playback_policy: "jwt",
       updated_at: new Date().toISOString(),
     }).eq("id", mediaId);
@@ -79,7 +88,7 @@ Deno.serve(async (req: Request) => {
       console.error("Could not save Livepeer asset metadata", { message: updateError.message });
       return respond({ error: "Livepeer asset was created but its metadata could not be saved. Contact an administrator before retrying.", asset_id: asset.id }, 500, origin);
     }
-    return respond({ success: true, asset_id: asset.id, playback_id: asset.playbackId, status: asset.status?.phase || asset.status?.status || "waiting", tus_endpoint: tusEndpoint || null, upload_url: uploadUrl || null, upload_headers: body.headers || body.upload?.headers || {} }, 200, origin);
+    return respond({ success: true, asset_id: asset.id, playback_id: asset.playbackId, status: normalizeLivepeerStatus(asset.status?.phase || asset.status?.status), tus_endpoint: tusEndpoint || null, upload_url: uploadUrl || null, upload_headers: body.headers || body.upload?.headers || {} }, 200, origin);
   } catch (error) {
     console.error("VOD upload session failed", error instanceof Error ? error.message : "unknown error");
     return respond({ error: "Could not create the Livepeer upload session." }, 502, origin);
