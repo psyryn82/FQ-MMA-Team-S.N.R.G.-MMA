@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
 
             // Email is a best-effort side effect. A Resend outage must never
             // undo a paid purchase or cause Stripe to retry payment recording.
-            const buyerEmail = String(session.customer_details?.email || purchase.buyer_email || "").trim().toLowerCase();
+            const buyerEmail = (String(session.customer_details?.email || "").trim() || String(purchase.buyer_email || "").trim()).toLowerCase();
             const resendKey = Deno.env.get("RESEND_API_KEY");
             if (!buyerEmail || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(buyerEmail)) {
               console.error("Stream access email skipped: no valid buyer email for purchase", purchaseId);
