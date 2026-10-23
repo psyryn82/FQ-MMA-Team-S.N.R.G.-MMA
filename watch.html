@@ -58,7 +58,8 @@ async function startPlayback() {
     return;
   }
   if (!freeMode && (!sessionId || !/^cs_(test|live)_[A-Za-z0-9_]+$/.test(sessionId))) {
-    message.textContent = "A valid completed checkout link is required. If you paid, use the recovery form below to request your link again.";\n    document.getElementById("recoveryPanel").hidden = !freeMode;
+    message.textContent = "A valid completed checkout link is required. If you paid, use the recovery form below to request your link again.";
+    document.getElementById("recoveryPanel").hidden = freeMode;
     return;
   }
   try {
