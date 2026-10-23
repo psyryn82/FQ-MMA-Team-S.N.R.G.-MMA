@@ -44,7 +44,7 @@ Fight Quest XVI in-person admission is separate from online livestream access: G
 
 ## Media, uploads, and chat
 
-- **Fight Media** and **Portfolio Media** publish private photo/video originals for confirmed one-time purchase and authorized download. Uploaded videos do not create Livepeer VODs or play on the website; actual event livestreams are managed separately under Tickets → Livestream Access.
+- **Fight Media** and **Portfolio Media** keep photo/video originals in private storage for confirmed one-time purchase and authorized download. Uploaded videos use Livepeer for JWT-protected paid on-site playback after processing; the original stays private. Media VOD playback is separate from event livestreams, which are managed under Tickets → Livestream Access.
 - The public website reads listing-only fields from `public.public_media_catalog`; private object paths, storage bucket names, and Livepeer asset metadata are not part of that public view.
 - `fqmma-private` is the private original bucket. The matching migration sets its per-file limit to 5 GiB, matching the admin uploader. Public listing imagery belongs in `fqmma-media` only when intentionally approved..
 - `fqmma-private` is an admin-only archive. Private archive uploads are not automatically sold or delivered to customers.

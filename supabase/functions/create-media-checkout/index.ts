@@ -55,15 +55,18 @@ Deno.serve(async (req) => {
   const rateLimit = await checkoutRateLimit(req, email, supabaseUrl, serviceKey);
   if (!rateLimit.allowed) return respond({ error: rateLimit.message }, rateLimit.status, origin);
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: media, error } = await db.from("media").select("id,title,description,category,price,price_confirmed,is_published,file_path,storage_bucket").eq("id", mediaId).eq("is_published", true).maybeSingle();
+  const { data: media, error } = await db.from("media").select("id,title,description,category,price,price_confirmed,is_published,file_path,storage_bucket,livepeer_asset_id,livepeer_playback_id,livepeer_playback_policy,livepeer_status").eq("id", mediaId).eq("is_published", true).maybeSingle();
   if (error || !media || media.price_confirmed !== true || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This paid media is not available for secure checkout." }, 404, origin);
+  if (String(media.category || "").toLowerCase() === "video" && (String(media.livepeer_status || "").toLowerCase() === "failed" || !media.livepeer_asset_id || !media.livepeer_playback_id || media.livepeer_playback_policy !== "jwt" || !/^[A-Za-z0-9_-]{8,128}$/.test(String(media.livepeer_playback_id)))) return respond({ error: "This video is not ready for secure playback yet. Please contact support or try again later." }, 409, origin);
   const stripe = new Stripe(stripeKey, { httpClient: Stripe.createFetchHttpClient() });
   const expectedAmountCents = Math.round(Number(media.price) * 100);
   if (!Number.isSafeInteger(expectedAmountCents) || expectedAmountCents < 1) return respond({ error: "The configured media price is invalid." }, 409, origin);
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "payment", payment_method_types: ["card"], customer_email: email,
-      success_url: siteUrl + "/?media_purchase=success&media_id=" + media.id + "&session_id={CHECKOUT_SESSION_ID}",
+      success_url: String(media.category || "").toLowerCase() === "video"
+        ? siteUrl + "/media-stream.html?media_id=" + media.id + "&session_id={CHECKOUT_SESSION_ID}"
+        : siteUrl + "/?media_purchase=success&media_id=" + media.id + "&session_id={CHECKOUT_SESSION_ID}",
       cancel_url: siteUrl + "/?media_purchase=cancelled",
       line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: Math.round(Number(media.price) * 100), product_data: { name: String(media.title).slice(0, 200), description: String(media.description || "FQ MMA digital media").slice(0, 500) } } }],
       metadata: { purchase_type: "media", media_id: String(media.id), expected_amount_cents: String(expectedAmountCents), terms_accepted: "true", terms_version: "2026-10-21", terms_accepted_at: acceptedAt, terms_url: "https://fq-snrg-mma.com/terms.html", refund_policy_url: "https://fq-snrg-mma.com/refunds-outages.html" },
