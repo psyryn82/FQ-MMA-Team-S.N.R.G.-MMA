@@ -1435,7 +1435,21 @@
                     if (!merged.some(item => disciplineAliasKey(item.name) === disciplineAliasKey(def.name))) merged.push({ ...def });
                 }
             }
-            content.disciplines = merged;
+            // Saved public settings may contain duplicate IDs. Admin edit/delete actions
+            // use IDs as identity, so make every ID unique before rendering those controls.
+            const seenIds = new Set();
+            content.disciplines = merged.map((item, index) => {
+                let normalized = item && typeof item === 'object' ? { ...item } : { name: String(item || '') };
+                let key = String(normalized.id ?? '').trim();
+                if (!key || seenIds.has(key)) {
+                    let nextId = Date.now() + index;
+                    while (seenIds.has(String(nextId))) nextId += 1;
+                    normalized.id = nextId;
+                    key = String(nextId);
+                }
+                seenIds.add(key);
+                return normalized;
+            });
             content.disciplineDefaultsVersion = 2;
             return content;
         }
