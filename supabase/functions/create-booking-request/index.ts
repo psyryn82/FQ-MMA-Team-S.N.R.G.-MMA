@@ -94,9 +94,9 @@ Deno.serve(async (req: Request) => {
   if (!name || !email || !service || !details || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return response(400, { success: false, error: "Please complete the required fields with a valid email address." }, origin);
   }
-  if (!new Set(["Photography session", "Event photography", "Portrait session", "Video service", "Other / discuss options", "Wedding Photography", "Engagement Photography", "Family Photo Shoot", "Senior Pictures", "Portrait Photography", "Birth, Baby & Newborn Photography", "Business Photography", "Prom Photography", "Graduation Photoshoot", "Headshots", "Band Photography", "Nature Photography", "Sports Photography", "Fashion Photography", "Website Photography", "MMA / Team Synergy digital photos (unedited)", "Standard hard-copy photo", "Poster", "Two unedited three-minute video rounds", "Team Synergy fight-video session"]).has(service)) {
-    return response(400, { success: false, error: "Please select a valid service." }, origin);
-  }
+  // The public booking form includes administrator-configured portfolio services.
+  // Keep the bounded, required service text flexible so new custom packages are not
+  // rejected here; every request is reviewed by staff before any payment is requested.
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const credential = getServiceCredential();
