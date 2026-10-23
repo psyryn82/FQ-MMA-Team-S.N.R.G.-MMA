@@ -91,13 +91,13 @@ footer{background:#fff!important;border-color:var(--line)!important}
   const money=v=>'$'+Number(v||0).toFixed(2);
   function formatServiceDetails(value){
     const raw=String(value??'');
-    const urlPattern=/https:\/\/[^\\s<>\"']+/gi;
+    const urlPattern=/https:\/\/[^\s<>\"']+/gi;
     let html='',cursor=0,match;
     while((match=urlPattern.exec(raw))){
       let urlWithPunctuation=match[0],trailing='';
       while(/[),.;!?]$/.test(urlWithPunctuation)){trailing=urlWithPunctuation.slice(-1)+trailing;urlWithPunctuation=urlWithPunctuation.slice(0,-1);}
       html+=safeText(raw.slice(cursor,match.index));
-      if(/^https:\/\/[^\\s]+$/i.test(urlWithPunctuation)){
+      if(/^https:\/\/[^\s]+$/i.test(urlWithPunctuation)){
         html+='<a class="underline break-all" href="'+safeText(urlWithPunctuation)+'" target="_blank" rel="noopener noreferrer">'+safeText(urlWithPunctuation)+'</a>';
       }else html+=safeText(urlWithPunctuation);
       html+=safeText(trailing);
