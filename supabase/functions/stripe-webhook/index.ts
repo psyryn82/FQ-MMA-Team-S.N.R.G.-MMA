@@ -38,16 +38,34 @@ Deno.serve(async (req) => {
   }
 
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: prior, error: priorError } = await db.from("stripe_webhook_events").select("event_id,status").eq("event_id", event.id).maybeSingle();
+  const { data: prior, error: priorError } = await db.from("stripe_webhook_events").select("event_id,status,received_at").eq("event_id", event.id).maybeSingle();
   if (priorError) return new Response("Webhook storage unavailable", { status: 500 });
   if (prior?.status === "processed") return json({ received: true, duplicate: true });
-  if (prior?.status === "processing") return new Response("Event is already processing", { status: 409 });
 
-  const { error: ledgerError } = await db.from("stripe_webhook_events").insert({ event_id: event.id, event_type: event.type, status: "processing" });
-  if (ledgerError) {
-    const { data: raced } = await db.from("stripe_webhook_events").select("status").eq("event_id", event.id).maybeSingle();
-    if (raced?.status === "processed") return json({ received: true, duplicate: true });
-    return new Response("Event is already processing; retry shortly", { status: 409 });
+  // Recover abandoned processing leases. Claim the stale row with a conditional
+  // timestamp update so concurrent Stripe retries cannot both take ownership.
+  let claimedStaleEvent = false;
+  if (prior?.status === "processing") {
+    const staleBefore = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: reclaimed, error: reclaimError } = await db.from("stripe_webhook_events")
+      .update({ received_at: new Date().toISOString() })
+      .eq("event_id", event.id)
+      .eq("status", "processing")
+      .lt("received_at", staleBefore)
+      .select("event_id")
+      .maybeSingle();
+    if (reclaimError) return new Response("Webhook storage unavailable", { status: 500 });
+    if (!reclaimed) return new Response("Event is already processing; retry shortly", { status: 409 });
+    claimedStaleEvent = true;
+  }
+
+  if (!claimedStaleEvent) {
+    const { error: ledgerError } = await db.from("stripe_webhook_events").insert({ event_id: event.id, event_type: event.type, status: "processing" });
+    if (ledgerError) {
+      const { data: raced } = await db.from("stripe_webhook_events").select("status").eq("event_id", event.id).maybeSingle();
+      if (raced?.status === "processed") return json({ received: true, duplicate: true });
+      return new Response("Event is already processing; retry shortly", { status: 409 });
+    }
   }
 
   try {
