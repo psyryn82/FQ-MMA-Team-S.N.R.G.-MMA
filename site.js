@@ -106,6 +106,8 @@
             submit.textContent = 'Preparing stream access…';
             message.textContent = '';
             try {
+                await window.ensureSupabaseClient();
+                if (!window.supabaseReady || !window.sb) throw new Error('Secure checkout is temporarily unavailable. Please try again shortly.');
                 const { data, error } = await window.sb.functions.invoke('create-stream-checkout', {
                     body: { event_id: select.value, buyer_email: email, promotion_code: document.getElementById('streamCheckoutPromotionCode').value.trim(), accepted_terms: document.getElementById('streamCheckoutTermsAccepted').checked }
                 });
@@ -155,6 +157,8 @@
             submit.textContent = 'Preparing secure checkout…';
             message.textContent = '';
             try {
+                await window.ensureSupabaseClient();
+                if (!window.supabaseReady || !window.sb) throw new Error('Secure checkout is temporarily unavailable. Please try again shortly.');
                 const { data, error } = await window.sb.functions.invoke('create-ticket-checkout', {
                     body: { ticket_option_id: document.getElementById('ticketCheckoutOptionId').value, quantity, buyer_email: email, promotion_code: document.getElementById('ticketCheckoutPromotionCode').value.trim(), accepted_terms: document.getElementById('ticketCheckoutTermsAccepted').checked }
                 });
@@ -471,6 +475,8 @@
             const portfolioBannerUrl=getSafeHttpUrl(siteData.general.portfolioBannerUrl||'')||
                 (featuredPortfolioImage?getSafeHttpUrl(featuredPortfolioImage.image||featuredPortfolioImage.imageUrl||featuredPortfolioImage.file_url||''):'');
             if(portfolioBanner){
+                portfolioBanner.onerror=()=>{portfolioBanner.removeAttribute('src');portfolioBanner.classList.add('hidden');};
+                portfolioBanner.onload=()=>portfolioBanner.classList.remove('hidden');
                 if(portfolioBannerUrl){
                     portfolioBanner.src=portfolioBannerUrl;
                     portfolioBanner.loading='lazy';
@@ -1344,10 +1350,11 @@
                     flyerDocument.textContent='Open or download the official event flyer';
                     if(flyerUrl){
                         const path=flyerUrl.split('?')[0].toLowerCase();
-                        if(/\.(?:pdf|doc|docx)$/i.test(path)){flyerImage.classList.add('hidden');flyerDocument.href=flyerUrl;flyerDocument.classList.remove('hidden');}
+                        if(/\.(?:pdf|doc|docx)$/i.test(path)){flyerImage.removeAttribute('src');flyerImage.classList.add('hidden');flyerDocument.href=flyerUrl;flyerDocument.classList.remove('hidden');}
                         else{
                             flyerDocument.href=flyerUrl;
                             flyerImage.onerror=()=>{
+                                flyerImage.removeAttribute('src');
                                 flyerImage.classList.add('hidden');
                                 flyerDocument.textContent='Flyer image could not be displayed. Open or download the official event flyer';
                                 flyerDocument.classList.remove('hidden');
@@ -1357,7 +1364,7 @@
                             flyerImage.classList.remove('hidden');
                             flyerDocument.classList.add('hidden');
                         }
-                    }else{flyerImage.classList.add('hidden');flyerDocument.classList.add('hidden');}
+                    }else{flyerImage.removeAttribute('src');flyerImage.classList.add('hidden');flyerDocument.removeAttribute('href');flyerDocument.classList.add('hidden');}
                 }
                 const eventItems = (eventsResult.data || []).map(e => {
                     const canSellStream = ['upcoming', 'live'].includes(e.status);
