@@ -1246,7 +1246,7 @@ client.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>{if(session&&!cu
 window.addEventListener('unhandledrejection', function(event) {
   console.error('An admin dashboard operation did not complete.', event.reason);
   const loadingNodes = Array.from(document.querySelectorAll('#dashboard p, #dashboard [role="status"], #workspacePanels p, #workspacePanels [role="status"]'))
-    .filter(node => /^loading(?:\\s|…|\\.{3})/i.test((node.textContent || '').trim()));
+    .filter(node => /^loading(?:\s|…|\.{3})/i.test((node.textContent || '').trim()));
   loadingNodes.forEach(node => {
     node.textContent = 'This section could not finish loading. Use its Refresh button to try again.';
     node.setAttribute('role', 'status');
