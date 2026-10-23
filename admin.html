@@ -304,7 +304,7 @@ function activateTab(tab){
  if(panelTab==='media'){
   $('mediaCollection').value=activeMediaCollection;
   $('mediaSectionTitle').textContent=activeMediaCollection==='sasha_portfolio'?'Portfolio Media':'Fight Media';
-  $('mediaSectionDescription').textContent=activeMediaCollection==='sasha_portfolio'?'Manage Sasha’s purchasable portfolio photos and videos. Set each item’s price and publication status here. Customers purchase digital files and receive authorized download access; videos are not streamed on the website.':'Manage fight photos and videos for purchase and download. Link fight media to an event when useful. Set the price and publication status here. Video uploads are stored privately and do not create livestreams or online playback.';
+  $('mediaSectionDescription').textContent=activeMediaCollection==='sasha_portfolio'?'Manage Sasha’s purchasable portfolio photos and videos. Set each item’s price and publication status here. Customers can purchase digital media; paid videos use secure Livepeer playback after payment and processing. Private originals stay protected.':'Manage fight photos and videos for purchase and download. Link fight media to an event when useful. Set the price and publication status here. Video uploads are stored privately and use secure Livepeer playback for paid access after processing. This is separate from event livestreams.';
   $('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';if(activeMediaCollection==='sasha_portfolio')$('mediaEvent').value='';
   loadMedia();
  }
@@ -602,7 +602,10 @@ async function loadMedia(){
     let preview='';
     const isVideo=String(m.category||'').toLowerCase()==='video';
     if(isVideo){
-      preview='<div class="mt-2 rounded-lg border border-gray-700 bg-black/40 p-4 text-sm"><strong>Private video original</strong><p class="muted text-xs mt-1">Available for purchase and authorized download only. No livestream or website playback is configured.</p></div>';
+      const playbackConfigured=!!(m.livepeer_asset_id&&m.livepeer_playback_id&&m.livepeer_playback_policy==='jwt');
+      const playbackState=playbackConfigured?'Livepeer status: '+esc(m.livepeer_status||'unknown')+'. Secure playback requires payment and completed processing.':'Secure Livepeer playback metadata is missing; paid playback cannot be authorized yet.';
+      const thumbnailUrl=m.preview_path?client.storage.from('fqmma-media').getPublicUrl(m.preview_path).data?.publicUrl||'':'';
+      preview='<div class="mt-2 rounded-lg border border-gray-700 bg-black/40 p-4 text-sm"><strong>Private video original</strong><p class="muted text-xs mt-1">'+playbackState+'</p>'+(thumbnailUrl?'<p class="muted text-xs mt-2"><a class="text-red-300 underline" href="'+esc(thumbnailUrl)+'" target="_blank" rel="noopener noreferrer">Open public thumbnail</a></p>':'<p class="text-amber-200 text-xs mt-2">No public thumbnail yet. The public listing stays hidden until a safe preview image is added.</p>')+'</div>';
     }else if(m.preview_path&&m.file_url){
       preview='<a class="text-red-400 underline text-xs" target="_blank" rel="noopener" href="'+esc(m.file_url)+'">Open listing image</a>';
     }else if(m.file_url){
