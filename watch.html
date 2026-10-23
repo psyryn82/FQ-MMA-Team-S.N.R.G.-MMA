@@ -20,6 +20,16 @@ main{width:min(100%,1000px)}.brand{font-size:.8rem;font-weight:900;letter-spacin
     <h1 id="eventTitle">Secure live stream</h1>
     <p>This page verifies your Stripe payment before requesting a short-lived signed playback token. Please do not share your checkout link.</p>
     <p id="streamMessage" class="message" role="status">Verifying your purchase…</p>
+    <section id="recoveryPanel" class="message" hidden style="margin-top:14px">
+      <h2 style="font-size:1.05rem;margin:.2rem 0 .5rem">Lost your stream link?</h2>
+      <p style="margin:.3rem 0 .7rem">Enter the email address you used at checkout and we'll resend your access link if there's a paid pass for Fight Quest XVI.</p>
+      <form id="recoveryForm">
+        <label for="recoveryEmail" style="display:block;margin-bottom:6px">Checkout email</label>
+        <input id="recoveryEmail" name="email" type="email" autocomplete="email" maxlength="254" required style="width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;background:#07080a;color:var(--text)">
+        <button id="recoverySubmit" class="btn" type="submit" style="border:0;cursor:pointer">Send my link</button>
+        <p id="recoveryMessage" role="status" style="margin-bottom:0" hidden></p>
+      </form>
+    </section>
     <div id="playerWrap" class="player" hidden><video id="hlsPlayer" controls playsinline hidden></video></div>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
     <a class="btn" href="./index.html">Back to FQ MMA</a>
@@ -34,7 +44,12 @@ const playerWrap = document.getElementById("playerWrap");
 const hlsPlayer = document.getElementById("hlsPlayer");
 let hlsInstance = null;
 const params = new URLSearchParams(window.location.search);
-const sessionId = params.get("session_id");
+let sessionId = params.get("session_id");
+try {
+  if (!sessionId) sessionId = localStorage.getItem("fqmma_stream_session");
+} catch {
+  // Private browsing or storage restrictions should not block URL-based access.
+}
 const freeEventId = params.get("free_event_id");
 async function startPlayback() {
   const freeMode = Boolean(freeEventId);
@@ -43,7 +58,8 @@ async function startPlayback() {
     return;
   }
   if (!freeMode && (!sessionId || !/^cs_(test|live)_[A-Za-z0-9_]+$/.test(sessionId))) {
-    message.textContent = "A valid completed checkout link is required. If you paid, use the link from your checkout confirmation.";
+    message.textContent = "A valid completed checkout link is required. If you paid, use the recovery form below to request your link again.";
+    document.getElementById("recoveryPanel").hidden = freeMode;
     return;
   }
   try {
@@ -67,6 +83,7 @@ async function startPlayback() {
       throw new Error(error.message || "Secure playback could not be verified. Stream access remains locked.");
     }
     if (!data?.playback_url) throw new Error(data?.error || "Secure playback is not available yet.");
+    document.getElementById("recoveryPanel").hidden = true;
     document.getElementById("eventTitle").textContent = data.event_title || "FQ MMA Live Stream";
     playerWrap.hidden = false;
     if (/^https:\/\/playback\.livepeer\.studio\/hls\/[A-Za-z0-9_-]{8,128}\/index\.m3u8\?jwt=[A-Za-z0-9._~-]+$/i.test(data.playback_url)) {
@@ -87,11 +104,49 @@ async function startPlayback() {
     } else {
       throw new Error("The Livepeer playback address was not recognized as a secure stream.");
     }
+    if (!freeMode) {
+      try { localStorage.setItem("fqmma_stream_session", sessionId); } catch {
+        // Playback remains available for this visit if storage is disabled.
+      }
+    }
     message.textContent = freeMode ? "Free stream access confirmed. Press play when you are ready." : "Payment verified. Press play when you are ready.";
   } catch (error) {
     message.textContent = error?.message || "Secure playback could not be started. If you just paid, wait a moment and refresh.";
+    if (!freeMode) document.getElementById("recoveryPanel").hidden = false;
   }
 }
+document.getElementById("recoveryForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const emailInput = document.getElementById("recoveryEmail");
+  const submit = document.getElementById("recoverySubmit");
+  const status = document.getElementById("recoveryMessage");
+  submit.disabled = true;
+  status.hidden = false;
+  status.textContent = "Checking stream availability…";
+  const genericMessage = "If that email has a paid pass, we've sent the link.";
+  try {
+    const { data: listing, error: listingError } = await client.functions.invoke("list-available-streams", { body: {} });
+    if (listingError) throw listingError;
+    const event = (Array.isArray(listing?.streams) ? listing.streams : []).find((stream) => /fight quest xvi/i.test(String(stream.title || "")));
+    if (!event?.event_id) {
+      status.textContent = genericMessage;
+      return;
+    }
+    const { data, error } = await client.functions.invoke("resend-stream-access", {
+      body: { email: emailInput.value.trim(), event_id: event.event_id }
+    });
+    if (error) {
+      if (error.context?.status === 429) status.textContent = "Too many requests. Please wait before trying again.";
+      else status.textContent = genericMessage;
+      return;
+    }
+    status.textContent = typeof data?.message === "string" ? data.message : genericMessage;
+  } catch {
+    status.textContent = genericMessage;
+  } finally {
+    submit.disabled = false;
+  }
+});
 startPlayback();
 </script>
 </body>

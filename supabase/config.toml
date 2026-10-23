@@ -36,6 +36,9 @@ verify_jwt = false
 [functions.send-contact-message]
 verify_jwt = false
 
+[functions.resend-stream-access]
+verify_jwt = false
+
 [functions.create-booking-request]
 verify_jwt = false
 # These endpoints implement their own authorization and/or request validation.

@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
         if (session.payment_status === "paid") {
           if (session.amount_total !== Number(session.metadata.expected_amount_cents || NaN)) throw new Error("Stream checkout amount does not match expected amount");
           const { data: purchase, error: findError } = await db.from("stream_purchases")
-            .select("id,event_id,status,amount_cents,currency,stripe_checkout_session_id").eq("id", purchaseId).maybeSingle();
+            .select("id,event_id,buyer_email,status,amount_cents,currency,stripe_checkout_session_id").eq("id", purchaseId).maybeSingle();
           if (findError) throw findError;
           if (!purchase) throw new Error("Stream purchase reservation was not found");
           if (purchase.stripe_checkout_session_id && purchase.stripe_checkout_session_id !== session.id) throw new Error("Stream reservation/session mismatch");
@@ -114,6 +114,72 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             }).eq("id", purchaseId);
             if (error) throw error;
+
+            // Email is a best-effort side effect. A Resend outage must never
+            // undo a paid purchase or cause Stripe to retry payment recording.
+            const buyerEmail = (String(session.customer_details?.email || "").trim() || String(purchase.buyer_email || "").trim()).toLowerCase();
+            const resendKey = Deno.env.get("RESEND_API_KEY");
+            if (!buyerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail)) {
+              console.error("Stream access email skipped: no valid buyer email for purchase", purchaseId);
+            } else if (!resendKey) {
+              console.error("Stream access email skipped: RESEND_API_KEY is not configured for purchase", purchaseId);
+            } else {
+              let eventTitle = "Fight Quest XVI";
+              let eventDate = "Date and time to be announced";
+              try {
+                const { data: eventDetails, error: eventDetailsError } = await db.from("events")
+                  .select("title,event_date").eq("id", purchase.event_id).maybeSingle();
+                if (eventDetailsError) throw eventDetailsError;
+                if (eventDetails?.title) eventTitle = String(eventDetails.title);
+                if (eventDetails?.event_date) {
+                  const parsedDate = new Date(eventDetails.event_date);
+                  if (!Number.isNaN(parsedDate.getTime())) {
+                    eventDate = new Intl.DateTimeFormat("en-US", {
+                      timeZone: "America/Los_Angeles",
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                      timeZoneName: "short",
+                    }).format(parsedDate);
+                  }
+                }
+              } catch (emailContextError) {
+                console.error("Could not load event details for stream access email", purchaseId, emailContextError instanceof Error ? emailContextError.message : "unknown error");
+              }
+
+              const watchLink = "https://fq-snrg-mma.com/watch.html?session_id=" + encodeURIComponent(session.id);
+              const safeTitle = escapeHtml(eventTitle);
+              const safeDate = escapeHtml(eventDate);
+              const safeLink = escapeHtml(watchLink);
+              const from = Deno.env.get("CONTACT_FROM_EMAIL") || "FQ MMA <downloads@fq-snrg-mma.com>";
+              try {
+                const emailResponse = await fetch("https://api.resend.com/emails", {
+                  method: "POST",
+                  headers: {
+                    "Authorization": "Bearer " + resendKey,
+                    "Content-Type": "application/json",
+                    "Idempotency-Key": "stream-access-" + purchaseId,
+                  },
+                  body: JSON.stringify({
+                    from,
+                    to: [buyerEmail],
+                    reply_to: "support@fq-snrg-mma.com",
+                    subject: "Your Fight Quest XVI live stream access",
+                    text: "Your live stream access for " + eventTitle + "\nEvent date and time: " + eventDate + " (America/Los_Angeles).\n\nWatch your live stream: " + watchLink + "\n\nThis pass is live-only and includes no replay. Don't share this link.\n\nFor help, contact support@fq-snrg-mma.com.",
+                    html: "<div style=\"font-family:Arial,sans-serif;line-height:1.6;color:#222\"><h2>Your Fight Quest XVI live stream access</h2><p>Your access is for <strong>" + safeTitle + "</strong>.</p><p><strong>Event date and time:</strong> " + safeDate + " (America/Los_Angeles).</p><p><a href=\"" + safeLink + "\" style=\"display:inline-block;background:#c62828;color:#fff;text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:bold\">Watch the live stream</a></p><p>This pass is live-only and includes no replay. <strong>Don't share this link.</strong></p><p>For help, contact <a href=\"mailto:support@fq-snrg-mma.com\">support@fq-snrg-mma.com</a>.</p></div>",
+                  }),
+                });
+                if (!emailResponse.ok) {
+                  const detail = await emailResponse.text().catch(() => "");
+                  console.error("Resend rejected stream access email", purchaseId, emailResponse.status, detail.slice(0, 500));
+                }
+              } catch (emailError) {
+                console.error("Stream access email request failed", purchaseId, emailError instanceof Error ? emailError.message : "unknown error");
+              }
+            }
           }
         }
       } else if (session.metadata?.purchase_type === "media") {
