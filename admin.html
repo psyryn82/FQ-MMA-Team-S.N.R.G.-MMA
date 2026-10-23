@@ -826,10 +826,10 @@ $('mediaForm').addEventListener('submit',async e=>{
           const upload=new window.tus.Upload(file,{endpoint:livepeerSession.tus_endpoint,chunkSize:50*1024*1024,retryDelays:[0,1000,3000,5000,10000],metadata:{name:title,filename:file.name,filetype:file.type},onProgress:(sent,total)=>updateMediaProgress('Uploading video to Livepeer…',Math.round(sent/Math.max(total,1)*100),(sent/1048576).toFixed(1)+' MB of '+(total/1048576).toFixed(1)+' MB sent to secure video processing.'),onError:error=>reject(error),onSuccess:()=>resolve()});
           try{const previous=await upload.findPreviousUploads();if(previous.length)upload.resumeFromPreviousUpload(previous[0]);else upload.start();}catch(error){reject(error);}
         });
-        sessionStorage.removeItem(resumeKey);
         const normalizedStatus=livepeerSession.status==='ready'?'ready':livepeerSession.status==='failed'?'failed':'processing';
         const {error:mediaLivepeerError}=await client.from('media').update({livepeer_asset_id:livepeerSession.asset_id,livepeer_playback_id:livepeerSession.playback_id,livepeer_status:normalizedStatus,livepeer_playback_policy:'jwt',updated_at:new Date().toISOString()}).eq('id',livepeerMediaId);
         if(mediaLivepeerError)throw mediaLivepeerError;
+        sessionStorage.removeItem(resumeKey);
         if(livepeerSiblingId){const {error:siblingLivepeerError}=await client.from('media').update({livepeer_asset_id:livepeerSession.asset_id,livepeer_playback_id:livepeerSession.playback_id,livepeer_status:normalizedStatus,livepeer_playback_policy:'jwt',updated_at:new Date().toISOString()}).eq('id',livepeerSiblingId);if(siblingLivepeerError)throw siblingLivepeerError;}
         message.textContent='Video uploaded privately and sent to Livepeer. Secure playback will become available after Livepeer finishes processing. The listing is saved; no payment was taken.';
       }catch(livepeerError){message.textContent='The listing and private original were saved, but Livepeer video upload did not finish. This video will not play until its Livepeer asset is completed. Details: '+(livepeerError?.message||String(livepeerError))+'. The upload session is saved in this browser tab; edit this listing and select the same original file to resume. Do not create a duplicate listing.';}
