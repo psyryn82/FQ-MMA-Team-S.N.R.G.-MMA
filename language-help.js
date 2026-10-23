@@ -32,6 +32,9 @@
     panel.id = "fq-language-help";
     panel.setAttribute("aria-label", "Page translation");
     panel.style.cssText = "position:fixed;right:12px;bottom:12px;z-index:9998;max-width:calc(100vw - 24px);padding:9px 11px;border:1px solid #8a8f98;border-radius:10px;background:#101216;color:#fff;box-shadow:0 4px 18px #0005;font:500 13px/1.4 system-ui,sans-serif;display:flex;align-items:center;gap:8px";
+    const mobileStyle = document.createElement("style");
+    mobileStyle.textContent = "@media(max-width:640px){#fq-language-help{right:8px!important;bottom:8px!important;padding:6px 8px!important;gap:5px!important;max-width:calc(100vw - 16px)!important}#fq-language-help label{font-size:12px}#fq-language-select{max-width:44vw!important;min-height:30px!important;font-size:12px!important}}";
+    document.head.appendChild(mobileStyle);
     const label = document.createElement("label");
     label.htmlFor = "fq-language-select";
     label.textContent = "🌐 Translate";
