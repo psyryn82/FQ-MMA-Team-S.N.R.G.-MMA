@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const allowedOrigins = new Set(["https://fq-snrg-mma.com", "https://www.fq-snrg-mma.com"]);
 const corsHeaders = {
@@ -121,10 +122,6 @@ Deno.serve(async (req: Request) => {
   if (!emailAllowed) return respond(429, { success: false, error: "Too many requests. Please wait before trying again." }, origin);
 
   try {
-    const baseUrl = supabaseUrl.endsWith("/") ? supabaseUrl.slice(0, -1) : supabaseUrl;
-    const authHeaders: Record<string, string> = { apikey: credential.key, "Content-Type": "application/json" };
-    if (credential.legacyJwt) authHeaders.Authorization = `Bearer ${credential.key}`;
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
     const db = createClient(supabaseUrl, credential.key, { auth: { persistSession: false, autoRefreshToken: false } });
     const escapedEmail = email.replace(/[\\%_]/g, "\\$&");
     const { data: purchase, error: purchaseError } = await db.from("stream_purchases")
