@@ -132,7 +132,12 @@ footer{background:#fff!important;border-color:var(--line)!important}
     $('media-checkout-email').focus();
   }
   async function loadPortfolio(){
-    if(!window.supabase){status.textContent='Portfolio service is temporarily unavailable.';return}
+    if(!window.supabase){
+      status.textContent='Portfolio service is temporarily unavailable.';
+      $('portfolio-grid').innerHTML='<div class="panel p-5"><p class="font-semibold">Portfolio listings are temporarily unavailable.</p><p class="muted text-sm mt-2">Please refresh this page or contact Sasha to discuss a session.</p></div>';
+      $('portfolio-services-list').innerHTML='<p class="muted">Service pricing is temporarily unavailable. Send a booking request for a quote.</p>';
+      return
+    }
     status.textContent='Loading published portfolio items…';
     const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     const results=await Promise.all([
@@ -191,14 +196,33 @@ footer{background:#fff!important;border-color:var(--line)!important}
     const serviceNames=Array.from(new Set(configuredNames.concat(defaults)));
     serviceSelect.innerHTML='<option value="">Choose a service</option>'+serviceNames.map(name=>'<option>'+safeText(name)+'</option>').join('')+'<option>Other / custom project</option>';
     if(serviceNames.includes(selectedService))serviceSelect.value=selectedService;
-    if(mediaResult.error){status.textContent='We could not load the portfolio right now. Please try again later.';console.error('Sasha portfolio load failed:',mediaResult.error);return}
+    if(mediaResult.error){
+      status.textContent='We could not load the portfolio right now. Please try again later.';
+      console.error('Sasha portfolio load failed:',mediaResult.error);
+      $('portfolio-grid').innerHTML='<div class="panel p-5"><p class="font-semibold">Portfolio listings could not be loaded.</p><p class="muted text-sm mt-2">Please refresh this page or contact Sasha to discuss a session.</p></div>';
+      $('portfolio-vault').hidden=true;
+      return
+    }
     // Preserve all records and prices, but publish cards only when a safe preview is available.
     const rows=(mediaResult.data||[]).filter(m=>m.collection==='sasha_portfolio'||m.media_destination==='portfolio').filter(m=>{const isVideo=String(m.category||'').toLowerCase()==='video';const hasPreview=!!String(m.preview_path||'').trim();const hasPhotoUrl=!isVideo&&/^https:\/\//i.test(String(m.file_url||''));return hasPreview||hasPhotoUrl;});
     $('portfolio-grid').innerHTML=rows.map(m=>mediaCard(m,client)).join('');
+    $('portfolio-grid').querySelectorAll('img').forEach(image=>{
+      image.addEventListener('error',()=>{
+        const fallback=document.createElement('div');
+        fallback.className='w-full aspect-[4/3] flex items-center justify-center bg-zinc-900 px-4 text-center text-sm text-zinc-300';
+        fallback.textContent='Preview unavailable';
+        image.replaceWith(fallback);
+      },{once:true});
+    });
     $('portfolio-vault').hidden=rows.length>0;
     const feature=$('portfolio-feature-visual');
     const featuredPhoto=rows.find(m=>String(m.category||'').toLowerCase()!=='video'&&m.file_url&&/^https:\/\//i.test(m.file_url));
-    if(featuredPhoto){feature.innerHTML='<img src="'+safeText(featuredPhoto.file_url)+'" alt="'+safeText(featuredPhoto.title||'Featured portfolio photograph')+'" fetchpriority="high"><div class="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none"></div>';}
+    if(featuredPhoto){
+      feature.innerHTML='<img src="'+safeText(featuredPhoto.file_url)+'" alt="'+safeText(featuredPhoto.title||'Featured portfolio photograph')+'" fetchpriority="high"><div class="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none"></div>';
+      feature.querySelector('img')?.addEventListener('error',()=>{
+        feature.innerHTML='<div class="feature-empty"><span>Selected work</span><strong>Real moments. Thoughtfully captured.</strong><p class="mt-3 text-sm text-white/75">Published portfolio images will appear here.</p></div>';
+      },{once:true});
+    }
     status.textContent=rows.length?'Showing '+rows.length+' published portfolio item(s).':'Published portfolio work is being prepared. Contact Sasha to discuss a session.';
   }
   $('booking-form').addEventListener('submit',async e=>{
@@ -280,7 +304,19 @@ footer{background:#fff!important;border-color:var(--line)!important}
     for(const [key,value] of Object.entries(vals)){const el=$('event-'+key);if(el)el.textContent=String(value).padStart(2,'0')}
   }
   updateCountdown();setInterval(updateCountdown,1000);
-  loadPortfolio();
+  loadPortfolio().catch(error=>{
+    console.error('Sasha portfolio could not finish loading.',error);
+    status.textContent='Portfolio content could not be loaded. Please refresh this page or contact Sasha directly.';
+    const grid=$('portfolio-grid');
+    if(/^loading\b/i.test(grid.textContent.trim())){
+      grid.innerHTML='<div class="panel p-5"><p class="font-semibold">Portfolio listings are temporarily unavailable.</p><p class="muted text-sm mt-2">Please refresh this page or contact Sasha to discuss a session.</p></div>';
+    }
+    const services=$('portfolio-services-list');
+    if(/^loading\b/i.test(services.textContent.trim())){
+      services.innerHTML='<p class="muted">Service pricing is temporarily unavailable. Send a booking request for a quote.</p>';
+    }
+    $('portfolio-vault').hidden=true;
+  });
 })();
 </script>
 </body>
