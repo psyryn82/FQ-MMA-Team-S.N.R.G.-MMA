@@ -83,11 +83,6 @@ async function startPlayback() {
       throw new Error(error.message || "Secure playback could not be verified. Stream access remains locked.");
     }
     if (!data?.playback_url) throw new Error(data?.error || "Secure playback is not available yet.");
-    if (!freeMode) {
-      try { localStorage.setItem("fqmma_stream_session", sessionId); } catch {
-        // Playback remains available for this visit if storage is disabled.
-      }
-    }
     document.getElementById("recoveryPanel").hidden = true;
     document.getElementById("eventTitle").textContent = data.event_title || "FQ MMA Live Stream";
     playerWrap.hidden = false;
@@ -108,6 +103,11 @@ async function startPlayback() {
       }
     } else {
       throw new Error("The Livepeer playback address was not recognized as a secure stream.");
+    }
+    if (!freeMode) {
+      try { localStorage.setItem("fqmma_stream_session", sessionId); } catch {
+        // Playback remains available for this visit if storage is disabled.
+      }
     }
     message.textContent = freeMode ? "Free stream access confirmed. Press play when you are ready." : "Payment verified. Press play when you are ready.";
   } catch (error) {
