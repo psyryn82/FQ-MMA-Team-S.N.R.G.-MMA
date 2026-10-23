@@ -82,6 +82,9 @@
             outline: 3px solid #ff2a2a;
             outline-offset: 3px;
         }
+        html { scroll-behavior: smooth; scroll-padding-top: 8rem; }
+        .anchor-alias { display: block; height: 0; scroll-margin-top: 8rem; }
+        @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
     
         /* Sasha's Portfolio: a distinct photography-studio experience within the main site */
         #tab-portfolio.sasha-portfolio-page{color:#f6f1ee}
@@ -434,7 +437,7 @@
     <section id="fight-quest-xvi-flyer" class="bg-black border-b border-red-900/40 px-4 py-8">
       <div class="max-w-5xl mx-auto grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-6 items-center">
         <div class="rounded-xl border border-red-900/60 bg-gray-950 p-3 text-center">
-          <img id="fightQuestFlyerImage" src="" alt="Fight Quest XVI: MMA Showdown flyer" class="hidden mx-auto w-full max-w-md h-auto rounded-lg" loading="eager">
+          <img id="fightQuestFlyerImage" alt="Fight Quest XVI: MMA Showdown flyer" class="hidden mx-auto w-full max-w-md h-auto rounded-lg" loading="eager">
           <a id="fightQuestFlyerDocument" class="hidden inline-flex mt-2 text-red-300 underline" href="#" target="_blank" rel="noopener noreferrer">Open or download the official event flyer</a>
           <p class="mt-2 text-xs text-gray-400">Official Fight Quest XVI event flyer. Add an uploaded public asset or HTTPS URL in Admin → Events.</p>
         </div>
@@ -640,6 +643,7 @@
 
         <!-- TAB 2: DISCIPLINES -->
         <div id="tab-disciplines" class="tab-content hidden space-y-6">
+            <span id="disciplines" class="anchor-alias" aria-hidden="true"></span>
             <div class="text-center space-y-2 mb-6">
                 <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Combat Arts & Training</span>
                 <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
@@ -648,11 +652,12 @@
                 <p class="text-sm text-gray-400 max-w-xl mx-auto">Explore combat sports and disciplines. Official training links will be posted when available.</p>
             </div>
 
-            <div id="disciplines-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto"><p class="text-center text-sm text-gray-400 md:col-span-2" role="status" aria-live="polite">Loading published training disciplines…</p></div>
+            <div id="disciplines-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto"><p class="text-center text-sm text-gray-400 md:col-span-2" role="status" aria-live="polite">Training disciplines will appear here when published. Please check back soon.</p></div>
         </div>
 
         <!-- TAB 3: SCHEDULE -->
         <div id="tab-schedule" class="tab-content hidden space-y-6">
+            <span id="schedule" class="anchor-alias" aria-hidden="true"></span>
             <div class="text-center space-y-2 mb-6">
                 <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Multi-Discipline Fight Cards</span>
                 <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
@@ -662,7 +667,7 @@
             </div>
 
             <div id="schedule-container" class="max-w-3xl mx-auto space-y-4">
-                <p class="text-center text-sm text-gray-400" role="status" aria-live="polite">Loading the latest event schedule…</p>
+                <p class="text-center text-sm text-gray-400" role="status" aria-live="polite">Event updates will appear here when published. Please check back soon.</p>
                 <article class="rounded-xl border border-gray-800 bg-gray-900/70 p-5">
                     <h3 class="font-heading text-xl font-black uppercase text-white">Fight Quest XVI</h3>
                     <p class="mt-1 text-sm text-gray-300">Saturday, November 7, 2026 · Doors 6 PM · Fights 7 PM</p>
@@ -675,6 +680,7 @@
 
         <!-- TAB 4: ROSTER -->
         <div id="tab-fighters" class="tab-content hidden space-y-6">
+            <span id="roster" class="anchor-alias" aria-hidden="true"></span>
             <div class="text-center space-y-2 mb-6">
                 <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Athletes</span>
                 <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
@@ -683,11 +689,12 @@
                 <p class="text-sm text-gray-400 max-w-xl mx-auto">Fighter profiles will be posted here when available.</p>
             </div>
 
-            <div id="roster-container" class="max-w-3xl mx-auto space-y-4"><p class="text-center text-sm text-gray-400" role="status" aria-live="polite">Loading published athlete profiles. Only approved fighter profiles appear here.</p></div>
+            <div id="roster-container" class="max-w-3xl mx-auto space-y-4"><p class="text-center text-sm text-gray-400" role="status" aria-live="polite">No fighter profiles are published yet. Please check back soon.</p></div>
         </div>
 
         <!-- TAB 5: STORE -->
         <div id="tab-store" class="tab-content hidden space-y-6">
+            <span id="media" class="anchor-alias" aria-hidden="true"></span>
             <div class="text-center space-y-2 mb-6">
                 <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase bg-red-950/40 px-3 py-1 rounded-full border border-red-900">Photos, Videos &amp; Portfolio</span>
                 <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white tracking-wider">
@@ -696,14 +703,14 @@
                 <p class="text-sm text-gray-400 max-w-xl mx-auto">Browse official FQ MMA fight photos and videos, plus Sasha’s separate professional portfolio.</p>
             </div>
 
-            <div id="store-container" class="max-w-3xl mx-auto space-y-4"><p class="text-center text-sm text-gray-400" role="status" aria-live="polite">Loading published media and products…</p></div>
+            <div id="store-container" class="max-w-3xl mx-auto space-y-4"><p class="text-center text-sm text-gray-400" role="status" aria-live="polite">Published media and products will appear here when available. Please check back soon.</p></div>
             
             <section class="max-w-5xl mx-auto space-y-4 mt-10">
                 <div class="border-b border-gray-800 pb-3">
                     <h3 class="font-heading text-2xl font-black uppercase text-brand-red">MMA Event Media</h3>
                     <p class="text-sm text-gray-400 mt-1">Fight photos, recorded fights, and media connected to FQ MMA events.</p>
                 </div>
-                <div id="mma-event-media-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"><p class="text-sm text-gray-400 md:col-span-2" role="status" aria-live="polite">Loading published MMA event media…</p></div>
+                <div id="mma-event-media-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"><p class="text-sm text-gray-400 md:col-span-2" role="status" aria-live="polite">New MMA event photos and videos will appear here when available.</p></div>
             </section>
             
         </div>
@@ -727,6 +734,7 @@
 
         <!-- TAB 7: CONTACT -->
         <div id="tab-contact" class="tab-content hidden space-y-6">
+            <span id="contact" class="anchor-alias" aria-hidden="true"></span>
             <div class="text-center space-y-3">
                 <span class="text-brand-red font-heading font-black tracking-widest text-xs uppercase">GET IN TOUCH</span>
                 <h2 class="font-heading text-4xl sm:text-5xl font-black uppercase text-white">
@@ -800,7 +808,7 @@
       <label class="flex items-start gap-3 text-sm leading-6"><input id="ticketCheckoutTermsAccepted" class="checkout-terms-checkbox" type="checkbox" required><span>I agree to the <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Terms of Service</a> and have read the <a href="/refunds-outages.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Refund Policy</a>.</span></label>
       <p class="text-xs text-gray-400">Your ticket is confirmed only after payment is verified.</p>
       <button id="ticketCheckoutSubmit" class="btn w-full" type="submit">Continue to secure payment</button>
-      <p id="ticketCheckoutMessage" class="text-sm" role="status"></p>
+      <p id="ticketCheckoutMessage" class="text-sm" role="status" aria-live="polite" aria-atomic="true"></p>
     </form>
   </div>
 </div>
@@ -818,7 +826,7 @@
       <label class="flex items-start gap-3 text-sm leading-6"><input id="streamCheckoutTermsAccepted" class="checkout-terms-checkbox" type="checkbox" required><span>I agree to the <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Terms of Service</a> and have read the <a href="/refunds-outages.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Refund Policy</a>.</span></label>
       <p class="text-xs text-gray-400">One-time payment. Access is confirmed after payment is verified.</p>
       <button id="streamCheckoutSubmit" type="submit" class="btn w-full" disabled>Continue to secure payment</button>
-      <p id="streamCheckoutMessage" class="text-sm" role="status"></p>
+      <p id="streamCheckoutMessage" class="text-sm" role="status" aria-live="polite" aria-atomic="true"></p>
     </form>
   </div>
 </div>
@@ -829,8 +837,8 @@
 <div id="mediaPurchaseModal" class="hidden fixed inset-0 z-[130] bg-black/85 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="mediaPurchaseTitle">
   <div class="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-950 p-6">
     <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-widest text-brand-red">Secure media checkout</p><h2 id="mediaPurchaseTitle" class="mt-1 font-heading text-2xl font-black uppercase">Purchase media</h2></div><button id="mediaPurchaseClose" type="button" class="btn2" aria-label="Close media checkout">✕</button></div>
-    <form id="mediaPurchaseForm" class="mt-5 space-y-4"><input id="mediaPurchaseId" type="hidden"><label class="block text-sm">Email for receipt and download access<input id="mediaPurchaseEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label><label class="flex items-start gap-3 text-sm leading-6"><input id="mediaPurchaseTermsAccepted" class="checkout-terms-checkbox" type="checkbox" required><span>I agree to the <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Terms of Service</a> and have read the <a href="/refunds-outages.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Refund Policy</a>.</span></label><button id="mediaPurchaseSubmit" class="btn w-full" type="submit">Continue to secure payment</button><p id="mediaPurchaseMessage" class="text-sm" role="status"></p></form>
-    <form id="mediaDeliveryForm" class="hidden mt-5 space-y-4"><p class="text-sm text-gray-300">Payment return detected. Enter the same email used at checkout to retrieve your private download.</p><input id="mediaDeliveryId" type="hidden"><input id="mediaDeliverySessionId" type="hidden"><label class="block text-sm">Checkout email<input id="mediaDeliveryEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label><button id="mediaDeliverySubmit" class="btn w-full" type="submit">Get my download</button><p id="mediaDeliveryMessage" class="text-sm" role="status"></p></form>
+    <form id="mediaPurchaseForm" class="mt-5 space-y-4"><input id="mediaPurchaseId" type="hidden"><label class="block text-sm">Email for receipt and download access<input id="mediaPurchaseEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label><label class="flex items-start gap-3 text-sm leading-6"><input id="mediaPurchaseTermsAccepted" class="checkout-terms-checkbox" type="checkbox" required><span>I agree to the <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Terms of Service</a> and have read the <a href="/refunds-outages.html" target="_blank" rel="noopener noreferrer" class="text-red-400 underline">Refund Policy</a>.</span></label><button id="mediaPurchaseSubmit" class="btn w-full" type="submit">Continue to secure payment</button><p id="mediaPurchaseMessage" class="text-sm" role="status" aria-live="polite" aria-atomic="true"></p></form>
+    <form id="mediaDeliveryForm" class="hidden mt-5 space-y-4"><p class="text-sm text-gray-300">Payment return detected. Enter the same email used at checkout to retrieve your private download.</p><input id="mediaDeliveryId" type="hidden"><input id="mediaDeliverySessionId" type="hidden"><label class="block text-sm">Checkout email<input id="mediaDeliveryEmail" class="field" type="email" autocomplete="email" maxlength="320" required placeholder="you@example.com"></label><button id="mediaDeliverySubmit" class="btn w-full" type="submit">Get my download</button><p id="mediaDeliveryMessage" class="text-sm" role="status" aria-live="polite" aria-atomic="true"></p></form>
   </div>
 </div>
 </body>
