@@ -272,7 +272,7 @@ function renderSubTabs(){
  $('subTabs').classList.toggle('hidden',group.tabs.length===1);
 }
 function mediaFormHasUnsavedWork(){
- return !!($('mediaRecordId')?.value||$('mediaTitle')?.value.trim()||$('mediaDescription')?.value.trim()||$('mediaFile')?.files?.length||$('mediaPrice')?.value||$('mediaAlsoListInOther')?.checked);
+ return !!($('mediaRecordId')?.value||$('mediaTitle')?.value.trim()||$('mediaDescription')?.value.trim()||$('mediaFile')?.files?.length||$('mediaExternalUrl')?.value.trim()||$('mediaPrice')?.value||$('mediaAlsoListInOther')?.checked);
 }
 
 let storageInventoryData=[];
