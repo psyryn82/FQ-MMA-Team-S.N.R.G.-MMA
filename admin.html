@@ -665,6 +665,7 @@ document.addEventListener('click',async e=>{
    if(next){
     if(a.external_url){const {error:updateError}=await client.from('site_assets').update({is_public:true,public_path:null,public_url:a.external_url,updated_at:new Date().toISOString()}).eq('id',a.id);if(updateError)throw updateError;$('siteAssetMessage').textContent='External URL marked public. Its hosting provider controls access.';await loadSiteAssets();return;}
     if(!a.private_path)throw new Error('No private file exists for this asset.');
+    if(!['image/jpeg','image/png','image/webp','image/gif'].includes(String(a.content_type||'').toLowerCase()))throw new Error('Only JPG, PNG, WebP, and GIF files can be copied to public website storage. The private original was not changed.');
     const blob=await downloadStorageFileWithProgress('fqmma-private',a.private_path,'Downloading private original…','asset');
     const publicPath='site-assets/'+Date.now()+'-'+a.file_name.replace(/[^a-zA-Z0-9._-]+/g,'-');
     await uploadStorageFileWithProgress('fqmma-media',publicPath,blob,a.file_name+' public copy','asset');
