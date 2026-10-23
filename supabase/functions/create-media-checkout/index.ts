@@ -55,9 +55,9 @@ Deno.serve(async (req) => {
   const rateLimit = await checkoutRateLimit(req, email, supabaseUrl, serviceKey);
   if (!rateLimit.allowed) return respond({ error: rateLimit.message }, rateLimit.status, origin);
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: media, error } = await db.from("media").select("id,title,description,category,price,price_confirmed,is_published,file_path,storage_bucket,livepeer_asset_id,livepeer_playback_id,livepeer_playback_policy").eq("id", mediaId).eq("is_published", true).maybeSingle();
+  const { data: media, error } = await db.from("media").select("id,title,description,category,price,price_confirmed,is_published,file_path,storage_bucket,livepeer_asset_id,livepeer_playback_id,livepeer_playback_policy,livepeer_status").eq("id", mediaId).eq("is_published", true).maybeSingle();
   if (error || !media || media.price_confirmed !== true || Number(media.price) <= 0 || !media.file_path || media.storage_bucket !== "fqmma-private") return respond({ error: "This paid media is not available for secure checkout." }, 404, origin);
-  if (String(media.category || "").toLowerCase() === "video" && (!media.livepeer_asset_id || !media.livepeer_playback_id || media.livepeer_playback_policy !== "jwt" || !/^[A-Za-z0-9_-]{8,128}$/.test(String(media.livepeer_playback_id)))) return respond({ error: "This video is not ready for secure playback yet. Please contact support or try again later." }, 409, origin);
+  if (String(media.category || "").toLowerCase() === "video" && (String(media.livepeer_status || "").toLowerCase() === "failed" || !media.livepeer_asset_id || !media.livepeer_playback_id || media.livepeer_playback_policy !== "jwt" || !/^[A-Za-z0-9_-]{8,128}$/.test(String(media.livepeer_playback_id)))) return respond({ error: "This video is not ready for secure playback yet. Please contact support or try again later." }, 409, origin);
   const stripe = new Stripe(stripeKey, { httpClient: Stripe.createFetchHttpClient() });
   const expectedAmountCents = Math.round(Number(media.price) * 100);
   if (!Number.isSafeInteger(expectedAmountCents) || expectedAmountCents < 1) return respond({ error: "The configured media price is invalid." }, 409, origin);
