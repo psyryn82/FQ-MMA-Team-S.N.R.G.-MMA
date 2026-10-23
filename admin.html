@@ -82,7 +82,7 @@
 <label class="block text-sm md:col-span-2">Title<input id="mediaTitle" class="field" required maxlength="200" placeholder="Fight night photos, Sasha portfolio portrait…"></label>
 <label class="block text-sm md:col-span-2">Description<textarea id="mediaDescription" class="field" rows="2" maxlength="2000" placeholder="Details shown on the public site"></textarea></label>
 <label class="block text-sm">Price in USD<input id="mediaPrice" class="field" type="number" min="0" max="9999" step="0.01" placeholder="Leave blank or enter 0 for contact pricing"><span class="muted text-xs">Leave blank or enter $0 to show “Contact us for pricing.” This does not make the media free. Confirm any positive price before it can be purchased.</span></label><label class="text-sm flex items-start gap-2 md:col-span-2"><input id="mediaPriceConfirmed" type="checkbox" class="mt-1"><span><strong>Confirm this exact price.</strong> I have verified the amount above. If the price is $0, customers will be asked to contact us for pricing, never told the item is free. A positive price must be confirmed before checkout; unconfirmed prices display “Contact us for pricing.”</span></label>
-<label class="block text-sm md:col-span-2">Upload media file (optional)<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/mp4,video/webm"><span class="muted text-xs">Supported uploads: JPG, PNG, WebP, GIF, PDF, DOC/DOCX, MP4, and WebM. Other file types are not supported by this uploader. Originals upload to private storage. Videos still require the separate supported Livepeer ingest workflow for protected streaming.</span></label><label class="block text-sm md:col-span-2">Or use an external media URL (optional)<input id="mediaExternalUrl" type="url" inputmode="url" class="field" maxlength="2000" placeholder="https://…"><span class="muted text-xs">Provide an HTTPS link to an image, PDF, document, or video as a staff-only reference. It will not be exposed as a public file link. Availability and access are controlled by the external host.</span></label><p class="muted text-xs md:col-span-2">Choose a file or enter a URL, not both. Paid originals stored here remain private. External URLs are staff references only and are not delivered to customers. Upload originals privately for paid or contact-for-pricing content. Publishing a listing does not itself make a private original public.</p>
+<label class="block text-sm md:col-span-2">Upload media file (optional)<input id="mediaFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/mp4,video/webm"><span class="muted text-xs">Supported uploads: JPG, PNG, WebP, GIF, PDF, DOC/DOCX, MP4, and WebM. Other file types are not supported by this uploader. Originals upload to private storage. Videos still require the separate supported Livepeer ingest workflow for protected streaming.</span></label><label class="block text-sm md:col-span-2">Or use an external media URL (optional)<input id="mediaExternalUrl" type="url" inputmode="url" class="field" maxlength="2000" placeholder="https://…"><span class="muted text-xs">Provide an HTTPS link to an image, PDF, document, or video as a staff-only reference. It will not be exposed as a public file link. Availability and access are controlled by the external host.</span></label><label class="block text-sm md:col-span-2">Video thumbnail image (optional)<input id="mediaPreviewFile" type="file" class="field" accept="image/jpeg,image/png,image/webp,image/gif"><span class="muted text-xs">For a video listing, upload a public poster image so the listing can appear on the website. JPG, PNG, WebP, or GIF, maximum 20 MB. The thumbnail is public; the video original stays private. This is an image, not a second video upload.</span></label><p class="muted text-xs md:col-span-2">Choose one original file or HTTPS URL, not both. A video may also have an optional thumbnail image. Paid originals stored here remain private. External URLs are staff references only and are not delivered to customers. Publishing a listing does not itself make a private original public.</p>
 <label class="text-sm flex items-center gap-2 md:col-span-2"><input id="mediaPublished" type="checkbox" checked> Publish this listing on the public website</label>
 </div>
 <div class="flex flex-wrap gap-2"><button id="mediaSaveButton" class="btn" type="submit">Upload & publish listing</button><button id="mediaClearButton" class="btn2" type="button">Clear form</button></div>
@@ -272,7 +272,7 @@ function renderSubTabs(){
  $('subTabs').classList.toggle('hidden',group.tabs.length===1);
 }
 function mediaFormHasUnsavedWork(){
- return !!($('mediaRecordId')?.value||$('mediaTitle')?.value.trim()||$('mediaDescription')?.value.trim()||$('mediaFile')?.files?.length||$('mediaExternalUrl')?.value.trim()||$('mediaPrice')?.value||$('mediaAlsoListInOther')?.checked);
+ return !!($('mediaRecordId')?.value||$('mediaTitle')?.value.trim()||$('mediaDescription')?.value.trim()||$('mediaFile')?.files?.length||$('mediaExternalUrl')?.value.trim()||$('mediaPreviewFile')?.files?.length||$('mediaPrice')?.value||$('mediaAlsoListInOther')?.checked);
 }
 
 let storageInventoryData=[];
@@ -711,7 +711,7 @@ async function createImagePreview(file){
 }
 $('mediaForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const file=$('mediaFile').files[0],externalRaw=$('mediaExternalUrl').value.trim(), id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
+  const file=$('mediaFile').files[0],previewFile=$('mediaPreviewFile').files[0],externalRaw=$('mediaExternalUrl').value.trim(), id=$('mediaRecordId').value, title=$('mediaTitle').value.trim();
   const description=$('mediaDescription').value.trim(), collection=activeMediaCollection, eventId=collection==='sasha_portfolio'?null:($('mediaEvent').value||null), alsoListInOther=$('mediaAlsoListInOther').checked; let externalUrl=''; if(externalRaw){try{const parsed=new URL(externalRaw);if(parsed.protocol!=='https:')throw new Error();externalUrl=parsed.href;}catch{say('Enter a valid HTTPS URL.',true);return}}
   const price=Number($('mediaPrice').value), published=$('mediaPublished').checked, message=$('mediaMessage');message.textContent='';
   if(!title){message.textContent='Enter a title.';return}
@@ -720,6 +720,12 @@ $('mediaForm').addEventListener('submit',async e=>{
   if((file&&externalUrl)||(!id&&!file&&!externalUrl)){message.textContent='Choose a file or HTTPS URL for a new listing, and do not choose both.';return} if(externalUrl&&price>0){message.textContent='External URLs cannot be used for paid listings because the external host could bypass payment protection. Upload the original to private storage for paid access.';return}
   if(file&&file.size>5*1024*1024*1024){message.textContent='Media exceeds the 5 GB upload limit.';return}
   if(file&&!['image/jpeg','image/png','image/webp','image/gif','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','video/mp4','video/webm'].includes(file.type)){message.textContent='Choose JPG, PNG, WebP, GIF, PDF, DOC/DOCX, MP4, or WebM.';return}
+  const existingForPreview=id?records.media?.find(m=>String(m.id)===String(id)):null;
+  const externalPreviewPath=externalUrl.split('?')[0].toLowerCase();
+  const previewTargetIsVideo=file?file.type.startsWith('video/'):externalUrl?/\.(?:mp4|webm|mov|m4v)$/.test(externalPreviewPath):String(existingForPreview?.category||'').toLowerCase()==='video';
+  if(previewFile&&!['image/jpeg','image/png','image/webp','image/gif'].includes(previewFile.type)){message.textContent='Video thumbnails must be JPG, PNG, WebP, or GIF.';return}
+  if(previewFile&&previewFile.size>20*1024*1024){message.textContent='Video thumbnails must be 20 MB or smaller.';return}
+  if(previewFile&&!previewTargetIsVideo){message.textContent='A thumbnail image can only be added to a video listing.';return}
   const button=$('mediaSaveButton'),buttonLabel=id?'Saving changes…':'Uploading media…';button.disabled=true;button.textContent=buttonLabel;const uploaded=[];let livepeerMediaId=null,livepeerSiblingId=null;startMediaProgress();
   try{
     const patch={title,description,collection,media_destination:collection==='sasha_portfolio'?'portfolio':'site',event_id:eventId,price,price_confirmed:price>0?$('mediaPriceConfirmed').checked:true,is_published:published};if(externalUrl){const path=externalUrl.split('?')[0].toLowerCase();const category=/\.(?:jpe?g|png|gif|webp|avif)$/.test(path)?'Photo':/\.(?:mp4|webm|mov|m4v)$/.test(path)?'Video':'Document';Object.assign(patch,{external_url:externalUrl,file_url:null,file_path:null,preview_path:null,storage_bucket:'fqmma-private',category,livepeer_asset_id:null,livepeer_playback_id:null,livepeer_status:'not_used',livepeer_playback_policy:'none'});}let existing=null,sibling=null;
@@ -768,6 +774,13 @@ $('mediaForm').addEventListener('submit',async e=>{
        await uploadStorageFileWithProgress(originalBucket,originalPath,file,'Uploading private video original…');
        Object.assign(patch,{category:'Video',file_path:originalPath,file_url:null,preview_path:null,storage_bucket:originalBucket,livepeer_asset_id:null,livepeer_playback_id:null,livepeer_status:'not_uploaded',livepeer_playback_policy:'none'});
     }
+    if(previewFile){
+      const safePreviewName=previewFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
+      const previewPath=collection+'/'+Date.now()+'-video-preview-'+safePreviewName;
+      await uploadStorageFileWithProgress('fqmma-media',previewPath,previewFile,'Uploading public video thumbnail…','asset');
+      uploaded.push({bucket:'fqmma-media',path:previewPath});
+      Object.assign(patch,{preview_path:previewPath,file_url:null});
+    }
     updateMediaProgress('Saving listing…',null,'The files are uploaded. Saving the listing details now.');
     if(id){
       const {error:updateError}=await client.from('media').update(patch).eq('id',id);if(updateError)throw updateError;
@@ -786,7 +799,7 @@ $('mediaForm').addEventListener('submit',async e=>{
       }
       const oldObjects=[];
       if((file||externalUrl)&&existing?.file_path)oldObjects.push({bucket:existing.storage_bucket||(Number(existing.price||0)>0?'fqmma-private':'fqmma-media'),path:existing.file_path,kind:'original'});
-      if((file||externalUrl)&&existing?.preview_path&&existing.preview_path!==patch.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path,kind:'preview'});
+      if((file||externalUrl||previewFile)&&existing?.preview_path&&existing.preview_path!==patch.preview_path)oldObjects.push({bucket:'fqmma-media',path:existing.preview_path,kind:'preview'});
       for(const object of oldObjects){
         const refs=object.kind==='original'
           ? await client.from('media').select('id',{count:'exact',head:true}).eq('file_path',object.path).eq('storage_bucket',object.bucket)
@@ -893,7 +906,7 @@ document.addEventListener('click',async e=>{
     const m=records.media?.find(x=>String(x.id)===edit.dataset.mediaEdit);if(!m)return;
     activeMediaCollection=m.collection||'mma_event';const sibling=m.file_path?records.media?.find(x=>String(x.id)!==String(m.id)&&x.file_path===m.file_path&&x.storage_bucket===m.storage_bucket&&x.collection!==m.collection):null;$('mediaAlsoListInOther').checked=!!sibling;$('mediaRecordId').value=m.id;$('mediaCollection').value=activeMediaCollection;$('mediaEvent').value=activeMediaCollection==='sasha_portfolio'?'':(m.event_id||'');$('mediaEvent').disabled=activeMediaCollection==='sasha_portfolio';
     $('mediaTitle').value=m.title||'';$('mediaDescription').value=m.description||'';$('mediaPrice').value=Number(m.price||0).toFixed(2);$('mediaPriceConfirmed').checked=m.price_confirmed===true;
-    $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaExternalUrl').value=m.external_url||'';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
+    $('mediaPublished').checked=!!m.is_published;$('mediaFile').value='';$('mediaExternalUrl').value=m.external_url||'';$('mediaPreviewFile').value='';$('mediaFile').required=false;$('mediaSaveButton').textContent='Save changes';
     $('mediaMessage').textContent=m.price_confirmed===true?'Editing listing details. Price was previously confirmed. Verify it again before saving.':'PRICE NEEDS REVIEW: The stored price is unconfirmed. Confirm the intended price before saving or publishing.';
     window.scrollTo({top:0,behavior:'smooth'});return;
   }
