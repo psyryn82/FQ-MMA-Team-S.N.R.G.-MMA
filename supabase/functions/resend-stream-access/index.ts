@@ -19,7 +19,7 @@ function escapeHtml(value: string): string {
   })[char] || char);
 }
 function cleanEmail(value: unknown): string {
-  return typeof value === "string" ? value.trim().toLowerCase().slice(0, 254) : "";
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 function getSupabaseServiceCredential(): { key: string; legacyJwt: boolean } | null {
   const legacy = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
